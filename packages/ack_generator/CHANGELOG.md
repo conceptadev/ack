@@ -1,4 +1,8 @@
-## 1.0.0-beta.12-wip
+## 1.0.0
+
+* See [release notes](https://github.com/btwld/ack/releases/tag/v1.0.0) for details.
+
+## 1.0.0-beta.12
 
 ### Breaking
 

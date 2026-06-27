@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 1.0.0 - 2026-06-26
+
+* See [release notes](https://github.com/btwld/ack/releases/tag/v1.0.0) for details.
+
 ## 2026-03-02
 
 ### Changes
@@ -547,4 +551,3 @@ Packages with other changes:
 #### `ack` - `v0.2.0`
 
  - Bump "ack" to 0.2.0 with improved SchemaModel API and enhanced string validation
-
