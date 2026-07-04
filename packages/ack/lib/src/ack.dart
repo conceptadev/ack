@@ -87,20 +87,24 @@ final class Ack {
 
   /// Creates a schema reference that is resolved lazily on first use.
   ///
-  /// The [builder] is called once and memoized. Set [maxDepth] to fail recursive
-  /// parse, runtime validation, or encode paths before they can grow without
-  /// bound. Two `Ack.lazy` instances are equal only when their `builder` closure
-  /// is the same reference -- pulling the closure into a `final` variable lets
-  /// two calls share equality.
+  /// The [builder] is called once and memoized. [maxDepth] bounds how many
+  /// times this lazy schema may recur in its active context chain before
+  /// parsing, runtime validation, or encoding fails; it defaults to
+  /// [LazySchema.defaultMaxDepth] and must be at least `1`. Two `Ack.lazy`
+  /// instances are equal only when their `builder` closure is the same
+  /// reference -- pulling the closure into a `final` variable lets two calls
+  /// share equality.
   ///
   /// `toJsonSchema()` and `toSchemaModel()` export lazy references through
   /// recursive `definitions`/`$ref` JSON Schema definitions. Bare or wrapped
-  /// `Ack.lazy` schemas cannot be used as discriminated union branches.
+  /// `Ack.lazy` schemas cannot be used as discriminated union branches. The
+  /// `maxDepth` check is a runtime-only constraint that cannot be expressed
+  /// through a `$ref`, so exported schema models warn that it was omitted.
   static LazySchema<Boundary, Runtime>
   lazy<Boundary extends Object, Runtime extends Object>(
     String name,
     AckSchema<Boundary, Runtime> Function() builder, {
-    int? maxDepth,
+    int maxDepth = LazySchema.defaultMaxDepth,
   }) {
     return LazySchema<Boundary, Runtime>(name, builder, maxDepth: maxDepth);
   }

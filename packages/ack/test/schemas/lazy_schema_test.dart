@@ -212,7 +212,7 @@ void main() {
     expect(child.warnings, hasLength(1));
     expect(child.warnings.single.code, 'lazy_runtime_checks_not_export_safe');
     expect(child.warnings.single.context, {
-      'constraintCount': 0,
+      'constraintCount': 1,
       'refinementCount': 1,
     });
   });
@@ -335,15 +335,25 @@ void main() {
       expect(categorySchema.safeEncode(tooDeep).isFail, isTrue);
     });
 
-    test('defaults to unlimited recursion depth', () {
-      late final ObjectSchema categorySchema;
-      final child = Ack.lazy<JsonMap, JsonMap>(
-        'Category',
-        () => categorySchema,
-      ).nullable().optional();
-      categorySchema = Ack.object({'name': Ack.string(), 'child': child});
+    test('defaults maxDepth to LazySchema.defaultMaxDepth', () {
+      final target = Ack.object({'name': Ack.string()});
+      final lazy = Ack.lazy<JsonMap, JsonMap>('Category', () => target);
 
-      expect(categorySchema.safeParse(_nestedCategoryJson(12)).isOk, isTrue);
+      expect(lazy.maxDepth, LazySchema.defaultMaxDepth);
+    });
+
+    test('throws for maxDepth values below 1', () {
+      final target = Ack.object({'name': Ack.string()});
+
+      expect(
+        () => Ack.lazy<JsonMap, JsonMap>('Category', () => target, maxDepth: 0),
+        throwsA(isA<ArgumentError>()),
+      );
+      expect(
+        () =>
+            Ack.lazy<JsonMap, JsonMap>('Category', () => target, maxDepth: -1),
+        throwsA(isA<ArgumentError>()),
+      );
     });
 
     test('preserves maxDepth through fluent copies', () {
