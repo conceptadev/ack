@@ -201,6 +201,8 @@ void main() {
       'invalid fontWeight': {'fontWeight': 'heavy'},
       'invalid decoration': {'decoration': 'blink'},
       'invalid color': {'color': 'not-a-color'},
+      'zero fontSize': {'fontSize': 0},
+      'negative fontSize': {'fontSize': -1},
     };
 
     invalidCases.forEach((name, input) {

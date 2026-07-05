@@ -51,7 +51,7 @@ final textStyleCodec = Ack.object({
   'inherit': Ack.boolean().withDefault(true),
   'color': colorCodec.nullable().optional(),
   'backgroundColor': colorCodec.nullable().optional(),
-  'fontSize': Ack.number().nullable().optional(),
+  'fontSize': Ack.number().positive().nullable().optional(),
   'fontWeight': fontWeightCodec.nullable().optional(),
   'fontStyle': fontStyleCodec.nullable().optional(),
   'letterSpacing': Ack.number().nullable().optional(),

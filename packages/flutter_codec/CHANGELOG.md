@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.1
+
+- Harden codec-boundary validation for Flutter values that only assert in
+  debug/release-unsafe code paths: recursive `Container.child` nesting is
+  capped, `StarBorder` rejects point/valley rounding sums above `1`, gradient
+  stops must be within `[0, 1]` and ascending, and `TextStyle.fontSize` must be
+  positive.
+- Document that the `EdgeInsets` primitive intentionally remains permissive;
+  widget codecs enforce non-negative inset rules where Flutter asserts them.
+
 ## 0.1.0
 
 Initial release. JSON value codecs for Flutter's painting and rendering layers,

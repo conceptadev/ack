@@ -15,6 +15,10 @@ import '../primitives/matrix4.dart' show matrix4Codec;
 import 'key.dart' show keyCodec;
 import 'widget.dart' show widgetCodec;
 
+/// Maximum supported depth for recursive [Container.child] widget decoding and
+/// encoding.
+const int containerWidgetMaxDepth = 64;
+
 /// Codec for [Container].
 ///
 /// `width` and `height` are accepted on decode because they are constructor
@@ -39,6 +43,7 @@ final CodecSchema<JsonMap, Container> containerWidgetCodec =
           'child': Ack.lazy<JsonMap, Widget>(
             'widgetCodec',
             () => widgetCodec,
+            maxDepth: containerWidgetMaxDepth,
           ).nullable().optional(),
         })
         // Enforce the constructor's cross-field invariants here so validation holds

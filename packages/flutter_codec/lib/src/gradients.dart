@@ -40,25 +40,43 @@ bool _stopsMatchColors(JsonMap data) {
   return colors is List && stops.length == colors.length;
 }
 
+bool _stopsAscending(JsonMap data) {
+  final stops = data['stops'];
+  if (stops is! List) return true;
+  for (var index = 0; index < stops.length - 1; index++) {
+    final current = stops[index];
+    final next = stops[index + 1];
+    if (current is! num || next is! num) return true;
+    if (current > next) return false;
+  }
+  return true;
+}
+
 const _stopsLengthMessage =
     'Gradient stops, when provided, must have the same length as colors.';
+const _stopsAscendingMessage = 'Gradient stops must be in ascending order.';
+
+final _gradientStopsSchema = Ack.list(
+  Ack.number().min(0).max(1),
+).nullable().optional();
 
 /// Codec for [LinearGradient]. Tagged with `"type": "linear"`.
 ///
 /// `colors` is required and must contain at least two entries. `stops`, when
-/// non-null, should have the same length as `colors` (enforced by Flutter at
-/// paint time, not by the schema). `transform` is not supported — apply
-/// gradient transforms outside the codec layer.
+/// non-null, must have the same length as `colors`, be ordered ascending, and
+/// stay within `[0, 1]`. `transform` is not supported — apply gradient
+/// transforms outside the codec layer.
 final linearGradientCodec =
     Ack.object({
           'type': Ack.literal('linear'),
           'begin': alignmentGeometryCodec.withDefault(Alignment.centerLeft),
           'end': alignmentGeometryCodec.withDefault(Alignment.centerRight),
           'colors': Ack.list(colorCodec).minItems(2),
-          'stops': Ack.list(Ack.number()).nullable().optional(),
+          'stops': _gradientStopsSchema,
           'tileMode': tileModeCodec.withDefault(TileMode.clamp),
         })
         .refine(_stopsMatchColors, message: _stopsLengthMessage)
+        .refine(_stopsAscending, message: _stopsAscendingMessage)
         .codec<LinearGradient>(
           decode: (data) => LinearGradient(
             begin: readValue<AlignmentGeometry>(data, 'begin'),
@@ -91,12 +109,13 @@ final radialGradientCodec =
           'center': alignmentGeometryCodec.withDefault(Alignment.center),
           'radius': Ack.number().min(0).withDefault(0.5),
           'colors': Ack.list(colorCodec).minItems(2),
-          'stops': Ack.list(Ack.number()).nullable().optional(),
+          'stops': _gradientStopsSchema,
           'tileMode': tileModeCodec.withDefault(TileMode.clamp),
           'focal': alignmentGeometryCodec.nullable().optional(),
           'focalRadius': Ack.number().min(0).withDefault(0.0),
         })
         .refine(_stopsMatchColors, message: _stopsLengthMessage)
+        .refine(_stopsAscending, message: _stopsAscendingMessage)
         .codec<RadialGradient>(
           decode: (data) => RadialGradient(
             center: readValue<AlignmentGeometry>(data, 'center'),
@@ -134,10 +153,11 @@ final sweepGradientCodec =
           'startAngle': Ack.number().withDefault(0.0),
           'endAngle': Ack.number().withDefault(math.pi * 2),
           'colors': Ack.list(colorCodec).minItems(2),
-          'stops': Ack.list(Ack.number()).nullable().optional(),
+          'stops': _gradientStopsSchema,
           'tileMode': tileModeCodec.withDefault(TileMode.clamp),
         })
         .refine(_stopsMatchColors, message: _stopsLengthMessage)
+        .refine(_stopsAscending, message: _stopsAscendingMessage)
         .codec<SweepGradient>(
           decode: (data) => SweepGradient(
             center: readValue<AlignmentGeometry>(data, 'center'),

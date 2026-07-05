@@ -296,7 +296,7 @@ void main() {
     });
   });
 
-  group('gradient rejects mismatched stops', () {
+  group('gradient rejects invalid stops', () {
     test('linearGradientCodec rejects fewer stops than colors on decode', () {
       expect(
         linearGradientCodec.safeParse({
@@ -326,6 +326,87 @@ void main() {
           'colors': _redBlueHex,
           'stops': [0.0],
         }).isFail,
+        isTrue,
+      );
+    });
+
+    test('rejects stops outside [0, 1] on decode', () {
+      expect(
+        linearGradientCodec.safeParse({
+          'type': 'linear',
+          'colors': _redBlueHex,
+          'stops': [-1, 2],
+        }).isFail,
+        isTrue,
+      );
+      expect(
+        radialGradientCodec.safeParse({
+          'type': 'radial',
+          'colors': _redBlueHex,
+          'stops': [-1, 2],
+        }).isFail,
+        isTrue,
+      );
+      expect(
+        sweepGradientCodec.safeParse({
+          'type': 'sweep',
+          'colors': _redBlueHex,
+          'stops': [-1, 2],
+        }).isFail,
+        isTrue,
+      );
+    });
+
+    test('rejects descending stops on decode', () {
+      expect(
+        linearGradientCodec.safeParse({
+          'type': 'linear',
+          'colors': _redBlueHex,
+          'stops': [1.0, 0.0],
+        }).isFail,
+        isTrue,
+      );
+      expect(
+        radialGradientCodec.safeParse({
+          'type': 'radial',
+          'colors': _redBlueHex,
+          'stops': [1.0, 0.0],
+        }).isFail,
+        isTrue,
+      );
+      expect(
+        sweepGradientCodec.safeParse({
+          'type': 'sweep',
+          'colors': _redBlueHex,
+          'stops': [1.0, 0.0],
+        }).isFail,
+        isTrue,
+      );
+    });
+
+    test('accepts ascending stops at the bounds', () {
+      expect(
+        linearGradientCodec.safeParse({
+          'type': 'linear',
+          'colors': _redBlueHex,
+          'stops': [0.0, 1.0],
+        }).isOk,
+        isTrue,
+      );
+      expect(
+        radialGradientCodec.safeParse({
+          'type': 'radial',
+          'colors': _redBlueHex,
+          'stops': [0.0, 1.0],
+        }).isOk,
+        isTrue,
+      );
+      expect(
+        sweepGradientCodec.safeParse({
+          'type': 'sweep',
+          'colors': _redBlueHex,
+          'stops': [0.0, 1.0],
+        }).isOk,
         isTrue,
       );
     });

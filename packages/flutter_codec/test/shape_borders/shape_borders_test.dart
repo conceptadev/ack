@@ -204,6 +204,27 @@ void main() {
         isTrue,
       );
     });
+
+    test('rejects point and valley rounding sums above one', () {
+      expect(
+        starBorderCodec.safeParse({
+          'pointRounding': 0.7,
+          'valleyRounding': 0.6,
+        }).isFail,
+        isTrue,
+      );
+    });
+
+    test('accepts point and valley rounding sum at one', () {
+      final parsed = starBorderCodec.parse({
+        'pointRounding': 0.5,
+        'valleyRounding': 0.5,
+      })!;
+
+      expect(parsed.pointRounding, 0.5);
+      expect(parsed.valleyRounding, 0.5);
+      expect(starBorderCodec.parse(starBorderCodec.encode(parsed)), parsed);
+    });
   });
 
   group('linearBorderEdgeCodec', () {

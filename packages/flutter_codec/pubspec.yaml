@@ -1,6 +1,6 @@
 name: flutter_codec
 description: Flutter value codecs built on ACK schemas.
-version: 0.1.0
+version: 0.1.1
 repository: https://github.com/btwld/ack
 issue_tracker: https://github.com/btwld/ack/issues
 resolution: workspace
@@ -12,7 +12,7 @@ environment:
   flutter: '>=3.32.0'
 
 dependencies:
-  ack: ^1.0.0-beta.12-wip
+  ack: ^1.0.1
   flutter:
     sdk: flutter
 

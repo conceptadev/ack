@@ -194,6 +194,23 @@ void main() {
     test('rejects negative margin on decode', () {
       expect(containerWidgetCodec.safeParse({'margin': -4}).isFail, isTrue);
     });
+
+    test('rejects child nesting beyond the widget recursion cap', () {
+      // Deep widget nesting can only arrive as untrusted JSON. The codec should
+      // return a bounded failure instead of recursing to the Dart stack limit.
+      expect(
+        containerWidgetCodec
+            .safeParse(_nestedContainerJson(containerWidgetMaxDepth))
+            .isOk,
+        isTrue,
+      );
+      expect(
+        containerWidgetCodec
+            .safeParse(_nestedContainerJson(containerWidgetMaxDepth + 1))
+            .isFail,
+        isTrue,
+      );
+    });
   });
 
   group('widgetCodec', () {
@@ -216,4 +233,12 @@ void main() {
       expectJsonSafe(encoded);
     });
   });
+}
+
+Map<String, Object?> _nestedContainerJson(int childDepth) {
+  Map<String, Object?>? child;
+  for (var depth = childDepth; depth > 0; depth--) {
+    child = {'type': 'container', if (child != null) 'child': child};
+  }
+  return {if (child != null) 'child': child};
 }

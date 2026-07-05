@@ -8,6 +8,11 @@ import '../json_readers.dart';
 /// `{"left": ..., "top": ..., "right": ..., "bottom": ...}` (each side optional,
 /// defaulting to `0`) sets them individually. Encoding emits a scalar when all
 /// sides are equal, otherwise the full object.
+///
+/// This primitive intentionally allows negative values to match Flutter's
+/// [EdgeInsets]. Widget codecs that assert non-negative insets, such as
+/// [Container], enforce that constraint at the widget boundary. Direct consumers
+/// that need non-negative insets should add their own refinement.
 final edgeInsetsCodec = Ack.codec<Object, Object, EdgeInsets>(
   input: Ack.anyOf([
     Ack.number(),

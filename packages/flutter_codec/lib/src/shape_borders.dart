@@ -126,7 +126,7 @@ final continuousRectangleBorderCodec = _rectangleBorderSchema
 /// Shares the `{side, borderRadius}` shape with the other corner-rounded
 /// rectangle border codecs ([roundedRectangleBorderCodec],
 /// [beveledRectangleBorderCodec], [continuousRectangleBorderCodec]); only the
-/// runtime [ShapeBorder] subtype differs. Requires Flutter 3.27 or later.
+/// runtime [ShapeBorder] subtype differs. Requires Flutter 3.32 or later.
 /// The `"type"` discriminator is added by [shapeBorderCodec] when this codec
 /// is used as one of its branches.
 final roundedSuperellipseBorderCodec = _rectangleBorderSchema
@@ -140,6 +140,12 @@ final roundedSuperellipseBorderCodec = _rectangleBorderSchema
         'borderRadius': value.borderRadius,
       },
     );
+
+bool _starRoundingSumValid(JsonMap data) {
+  final pointRounding = data['pointRounding'] as num;
+  final valleyRounding = data['valleyRounding'] as num;
+  return pointRounding + valleyRounding <= 1;
+}
 
 /// Codec for [StarBorder].
 ///
@@ -155,10 +161,10 @@ final roundedSuperellipseBorderCodec = _rectangleBorderSchema
 /// shorter point or corner to finish the shape, enabling smooth
 /// animation between point counts.
 ///
-/// The constructor also asserts `pointRounding + valleyRounding <= 1`;
-/// that cross-field constraint is left to the constructor rather than
-/// re-enforced here. The `"type"` discriminator is added by
-/// [shapeBorderCodec] when this codec is used as one of its branches.
+/// The codec also enforces the constructor's
+/// `pointRounding + valleyRounding <= 1` invariant so validation holds in
+/// release builds too. The `"type"` discriminator is added by [shapeBorderCodec]
+/// when this codec is used as one of its branches.
 ///
 /// `StarBorder.polygon` round-trips through the regular `StarBorder`
 /// constructor: encoding reads the computed `innerRadiusRatio` and
@@ -172,33 +178,39 @@ final roundedSuperellipseBorderCodec = _rectangleBorderSchema
 /// painted-equivalent but not `==`-equal after a round-trip.
 final starBorderCodec =
     Ack.object({
-      'side': borderSideCodec.withDefault(BorderSide.none),
-      'points': Ack.number().min(2).withDefault(5),
-      'innerRadiusRatio': Ack.number().min(0).max(1).withDefault(0.4),
-      'pointRounding': Ack.number().min(0).max(1).withDefault(0.0),
-      'valleyRounding': Ack.number().min(0).max(1).withDefault(0.0),
-      'rotation': Ack.number().withDefault(0.0),
-      'squash': Ack.number().min(0).max(1).withDefault(0.0),
-    }).codec<StarBorder>(
-      decode: (data) => StarBorder(
-        side: readValue<BorderSide>(data, 'side'),
-        points: readDouble(data, 'points'),
-        innerRadiusRatio: readDouble(data, 'innerRadiusRatio'),
-        pointRounding: readDouble(data, 'pointRounding'),
-        valleyRounding: readDouble(data, 'valleyRounding'),
-        rotation: readDouble(data, 'rotation'),
-        squash: readDouble(data, 'squash'),
-      ),
-      encode: (value) => {
-        'side': value.side,
-        'points': value.points,
-        'innerRadiusRatio': value.innerRadiusRatio,
-        'pointRounding': value.pointRounding,
-        'valleyRounding': value.valleyRounding,
-        'rotation': value.rotation,
-        'squash': value.squash,
-      },
-    );
+          'side': borderSideCodec.withDefault(BorderSide.none),
+          'points': Ack.number().min(2).withDefault(5),
+          'innerRadiusRatio': Ack.number().min(0).max(1).withDefault(0.4),
+          'pointRounding': Ack.number().min(0).max(1).withDefault(0.0),
+          'valleyRounding': Ack.number().min(0).max(1).withDefault(0.0),
+          'rotation': Ack.number().withDefault(0.0),
+          'squash': Ack.number().min(0).max(1).withDefault(0.0),
+        })
+        .refine(
+          _starRoundingSumValid,
+          message:
+              'StarBorder pointRounding + valleyRounding must not exceed 1.',
+        )
+        .codec<StarBorder>(
+          decode: (data) => StarBorder(
+            side: readValue<BorderSide>(data, 'side'),
+            points: readDouble(data, 'points'),
+            innerRadiusRatio: readDouble(data, 'innerRadiusRatio'),
+            pointRounding: readDouble(data, 'pointRounding'),
+            valleyRounding: readDouble(data, 'valleyRounding'),
+            rotation: readDouble(data, 'rotation'),
+            squash: readDouble(data, 'squash'),
+          ),
+          encode: (value) => {
+            'side': value.side,
+            'points': value.points,
+            'innerRadiusRatio': value.innerRadiusRatio,
+            'pointRounding': value.pointRounding,
+            'valleyRounding': value.valleyRounding,
+            'rotation': value.rotation,
+            'squash': value.squash,
+          },
+        );
 
 /// Codec for [LinearBorderEdge].
 ///
@@ -263,7 +275,7 @@ final linearBorderCodec =
 /// * `"roundedRectangle"` → [RoundedRectangleBorder]
 /// * `"beveledRectangle"` → [BeveledRectangleBorder]
 /// * `"continuousRectangle"` → [ContinuousRectangleBorder]
-/// * `"roundedSuperellipse"` → [RoundedSuperellipseBorder] (Flutter 3.27+)
+/// * `"roundedSuperellipse"` → [RoundedSuperellipseBorder] (Flutter 3.32+)
 /// * `"star"` → [StarBorder]
 /// * `"linear"` → [LinearBorder]
 ///
