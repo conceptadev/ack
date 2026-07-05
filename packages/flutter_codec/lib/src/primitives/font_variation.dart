@@ -23,9 +23,7 @@ final fontVariationCodec =
       'axis': Ack.string().matches(_axisPattern),
       'value': Ack.number().min(-32768).lessThan(32768),
     }).codec<FontVariation>(
-      decode: (data) => FontVariation(
-        readValue<String>(data, 'axis'),
-        readDouble(data, 'value'),
-      ),
+      decode: (data) =>
+          FontVariation(readValue(data, 'axis'), readDouble(data, 'value')),
       encode: (value) => {'axis': value.axis, 'value': value.value},
     );

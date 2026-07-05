@@ -27,11 +27,12 @@ BorderRadius _decodeBorderRadius(Object value) {
   if (value is Radius) return BorderRadius.all(value);
 
   final map = value as JsonMap;
+
   return BorderRadius.only(
-    topLeft: readValue<Radius>(map, 'topLeft'),
-    topRight: readValue<Radius>(map, 'topRight'),
-    bottomLeft: readValue<Radius>(map, 'bottomLeft'),
-    bottomRight: readValue<Radius>(map, 'bottomRight'),
+    topLeft: readValue(map, 'topLeft'),
+    topRight: readValue(map, 'topRight'),
+    bottomLeft: readValue(map, 'bottomLeft'),
+    bottomRight: readValue(map, 'bottomRight'),
   );
 }
 
@@ -63,10 +64,10 @@ final borderRadiusDirectionalCodec =
       'bottomEnd': radiusCodec.withDefault(Radius.zero),
     }).codec<BorderRadiusDirectional>(
       decode: (data) => BorderRadiusDirectional.only(
-        topStart: readValue<Radius>(data, 'topStart'),
-        topEnd: readValue<Radius>(data, 'topEnd'),
-        bottomStart: readValue<Radius>(data, 'bottomStart'),
-        bottomEnd: readValue<Radius>(data, 'bottomEnd'),
+        topStart: readValue(data, 'topStart'),
+        topEnd: readValue(data, 'topEnd'),
+        bottomStart: readValue(data, 'bottomStart'),
+        bottomEnd: readValue(data, 'bottomEnd'),
       ),
       encode: (value) => {
         'topStart': value.topStart,

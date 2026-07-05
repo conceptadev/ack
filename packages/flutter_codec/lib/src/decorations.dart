@@ -1,18 +1,6 @@
 import 'package:ack/ack.dart';
 import 'package:flutter/painting.dart'
-    show
-        BlendMode,
-        BorderRadiusGeometry,
-        BoxBorder,
-        BoxDecoration,
-        BoxShadow,
-        BoxShape,
-        Color,
-        Decoration,
-        DecorationImage,
-        Gradient,
-        ShapeBorder,
-        ShapeDecoration;
+    show BoxDecoration, BoxShape, Decoration, ShapeDecoration;
 
 import 'borders.dart' show boxBorderCodec;
 import 'decoration_image.dart' show decorationImageCodec;
@@ -69,17 +57,14 @@ final boxDecorationCodec =
 
 BoxDecoration _decodeBoxDecoration(JsonMap data) {
   return BoxDecoration(
-    color: readNullableValue<Color>(data, 'color'),
-    image: readNullableValue<DecorationImage>(data, 'image'),
-    border: readNullableValue<BoxBorder>(data, 'border'),
-    borderRadius: readNullableValue<BorderRadiusGeometry>(data, 'borderRadius'),
-    boxShadow: readNullableList<BoxShadow>(data, 'boxShadow'),
-    gradient: readNullableValue<Gradient>(data, 'gradient'),
-    backgroundBlendMode: readNullableValue<BlendMode>(
-      data,
-      'backgroundBlendMode',
-    ),
-    shape: readValue<BoxShape>(data, 'shape'),
+    color: readNullableValue(data, 'color'),
+    image: readNullableValue(data, 'image'),
+    border: readNullableValue(data, 'border'),
+    borderRadius: readNullableValue(data, 'borderRadius'),
+    boxShadow: readNullableList(data, 'boxShadow'),
+    gradient: readNullableValue(data, 'gradient'),
+    backgroundBlendMode: readNullableValue(data, 'backgroundBlendMode'),
+    shape: readValue(data, 'shape'),
   );
 }
 
@@ -128,11 +113,11 @@ final shapeDecorationCodec =
 
 ShapeDecoration _decodeShapeDecoration(JsonMap data) {
   return ShapeDecoration(
-    color: readNullableValue<Color>(data, 'color'),
-    image: readNullableValue<DecorationImage>(data, 'image'),
-    gradient: readNullableValue<Gradient>(data, 'gradient'),
-    shadows: readNullableList<BoxShadow>(data, 'shadows'),
-    shape: readValue<ShapeBorder>(data, 'shape'),
+    color: readNullableValue(data, 'color'),
+    image: readNullableValue(data, 'image'),
+    gradient: readNullableValue(data, 'gradient'),
+    shadows: readNullableList(data, 'shadows'),
+    shape: readValue(data, 'shape'),
   );
 }
 

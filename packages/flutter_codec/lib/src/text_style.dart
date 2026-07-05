@@ -1,19 +1,8 @@
-import 'dart:ui' as ui show Locale, Shadow;
+import 'dart:ui' as ui show Locale;
 
 import 'package:ack/ack.dart';
 import 'package:flutter/painting.dart'
-    show
-        Color,
-        FontFeature,
-        FontStyle,
-        FontVariation,
-        FontWeight,
-        TextBaseline,
-        TextDecoration,
-        TextDecorationStyle,
-        TextLeadingDistribution,
-        TextOverflow,
-        TextStyle;
+    show FontWeight, TextDecoration, TextStyle;
 
 import 'enums.dart'
     show
@@ -75,35 +64,29 @@ final textStyleCodec = Ack.object({
 
 TextStyle _decodeTextStyle(JsonMap data) {
   return TextStyle(
-    inherit: readValue<bool>(data, 'inherit'),
-    color: readNullableValue<Color>(data, 'color'),
-    backgroundColor: readNullableValue<Color>(data, 'backgroundColor'),
+    inherit: readValue(data, 'inherit'),
+    color: readNullableValue(data, 'color'),
+    backgroundColor: readNullableValue(data, 'backgroundColor'),
     fontSize: readNullableDouble(data, 'fontSize'),
-    fontWeight: readNullableValue<FontWeight>(data, 'fontWeight'),
-    fontStyle: readNullableValue<FontStyle>(data, 'fontStyle'),
+    fontWeight: readNullableValue(data, 'fontWeight'),
+    fontStyle: readNullableValue(data, 'fontStyle'),
     letterSpacing: readNullableDouble(data, 'letterSpacing'),
     wordSpacing: readNullableDouble(data, 'wordSpacing'),
-    textBaseline: readNullableValue<TextBaseline>(data, 'textBaseline'),
+    textBaseline: readNullableValue(data, 'textBaseline'),
     height: readNullableDouble(data, 'height'),
-    leadingDistribution: readNullableValue<TextLeadingDistribution>(
-      data,
-      'leadingDistribution',
-    ),
-    locale: readNullableValue<ui.Locale>(data, 'locale'),
-    shadows: readNullableList<ui.Shadow>(data, 'shadows'),
-    decoration: readNullableValue<TextDecoration>(data, 'decoration'),
-    decorationColor: readNullableValue<Color>(data, 'decorationColor'),
-    decorationStyle: readNullableValue<TextDecorationStyle>(
-      data,
-      'decorationStyle',
-    ),
+    leadingDistribution: readNullableValue(data, 'leadingDistribution'),
+    locale: readNullableValue(data, 'locale'),
+    shadows: readNullableList(data, 'shadows'),
+    decoration: readNullableValue(data, 'decoration'),
+    decorationColor: readNullableValue(data, 'decorationColor'),
+    decorationStyle: readNullableValue(data, 'decorationStyle'),
     decorationThickness: readNullableDouble(data, 'decorationThickness'),
-    fontFamily: readNullableValue<String>(data, 'fontFamily'),
-    fontFamilyFallback: readNullableList<String>(data, 'fontFamilyFallback'),
-    package: readNullableValue<String>(data, 'package'),
-    overflow: readNullableValue<TextOverflow>(data, 'overflow'),
-    fontFeatures: readNullableList<FontFeature>(data, 'fontFeatures'),
-    fontVariations: readNullableList<FontVariation>(data, 'fontVariations'),
+    fontFamily: readNullableValue(data, 'fontFamily'),
+    fontFamilyFallback: readNullableList(data, 'fontFamilyFallback'),
+    package: readNullableValue(data, 'package'),
+    overflow: readNullableValue(data, 'overflow'),
+    fontFeatures: readNullableList(data, 'fontFeatures'),
+    fontVariations: readNullableList(data, 'fontVariations'),
   );
 }
 

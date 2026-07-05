@@ -1,17 +1,5 @@
-import 'dart:ui' show Locale;
-
 import 'package:ack/ack.dart';
-import 'package:flutter/painting.dart'
-    show
-        Color,
-        StrutStyle,
-        TextAlign,
-        TextDirection,
-        TextHeightBehavior,
-        TextOverflow,
-        TextStyle,
-        TextWidthBasis;
-import 'package:flutter/widgets.dart' show Key, Text;
+import 'package:flutter/widgets.dart' show Text;
 
 import '../enums.dart'
     show
@@ -54,24 +42,21 @@ final CodecSchema<JsonMap, Text> textWidgetCodec = Ack.object({
 
 Text _decodeText(JsonMap data) {
   return Text(
-    readValue<String>(data, 'data'),
-    key: readNullableValue<Key>(data, 'key'),
-    style: readNullableValue<TextStyle>(data, 'style'),
-    strutStyle: readNullableValue<StrutStyle>(data, 'strutStyle'),
-    textAlign: readNullableValue<TextAlign>(data, 'textAlign'),
-    textDirection: readNullableValue<TextDirection>(data, 'textDirection'),
-    locale: readNullableValue<Locale>(data, 'locale'),
-    softWrap: readNullableValue<bool>(data, 'softWrap'),
-    overflow: readNullableValue<TextOverflow>(data, 'overflow'),
-    maxLines: readNullableValue<int>(data, 'maxLines'),
-    semanticsLabel: readNullableValue<String>(data, 'semanticsLabel'),
-    semanticsIdentifier: readNullableValue<String>(data, 'semanticsIdentifier'),
-    textWidthBasis: readNullableValue<TextWidthBasis>(data, 'textWidthBasis'),
-    textHeightBehavior: readNullableValue<TextHeightBehavior>(
-      data,
-      'textHeightBehavior',
-    ),
-    selectionColor: readNullableValue<Color>(data, 'selectionColor'),
+    readValue(data, 'data'),
+    key: readNullableValue(data, 'key'),
+    style: readNullableValue(data, 'style'),
+    strutStyle: readNullableValue(data, 'strutStyle'),
+    textAlign: readNullableValue(data, 'textAlign'),
+    textDirection: readNullableValue(data, 'textDirection'),
+    locale: readNullableValue(data, 'locale'),
+    softWrap: readNullableValue(data, 'softWrap'),
+    overflow: readNullableValue(data, 'overflow'),
+    maxLines: readNullableValue(data, 'maxLines'),
+    semanticsLabel: readNullableValue(data, 'semanticsLabel'),
+    semanticsIdentifier: readNullableValue(data, 'semanticsIdentifier'),
+    textWidthBasis: readNullableValue(data, 'textWidthBasis'),
+    textHeightBehavior: readNullableValue(data, 'textHeightBehavior'),
+    selectionColor: readNullableValue(data, 'selectionColor'),
   );
 }
 

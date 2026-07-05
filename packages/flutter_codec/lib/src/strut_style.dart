@@ -1,6 +1,5 @@
 import 'package:ack/ack.dart';
-import 'package:flutter/painting.dart'
-    show FontStyle, FontWeight, StrutStyle, TextLeadingDistribution;
+import 'package:flutter/painting.dart' show StrutStyle;
 
 import 'enums.dart' show fontStyleCodec, textLeadingDistributionCodec;
 import 'font_family_packing.dart' show unpackFontFamily;
@@ -39,19 +38,16 @@ final strutStyleCodec = Ack.object({
 
 StrutStyle _decodeStrutStyle(JsonMap data) {
   return StrutStyle(
-    fontFamily: readNullableValue<String>(data, 'fontFamily'),
-    fontFamilyFallback: readNullableList<String>(data, 'fontFamilyFallback'),
-    package: readNullableValue<String>(data, 'package'),
+    fontFamily: readNullableValue(data, 'fontFamily'),
+    fontFamilyFallback: readNullableList(data, 'fontFamilyFallback'),
+    package: readNullableValue(data, 'package'),
     fontSize: readNullableDouble(data, 'fontSize'),
     height: readNullableDouble(data, 'height'),
-    leadingDistribution: readNullableValue<TextLeadingDistribution>(
-      data,
-      'leadingDistribution',
-    ),
+    leadingDistribution: readNullableValue(data, 'leadingDistribution'),
     leading: readNullableDouble(data, 'leading'),
-    fontWeight: readNullableValue<FontWeight>(data, 'fontWeight'),
-    fontStyle: readNullableValue<FontStyle>(data, 'fontStyle'),
-    forceStrutHeight: readNullableValue<bool>(data, 'forceStrutHeight'),
+    fontWeight: readNullableValue(data, 'fontWeight'),
+    fontStyle: readNullableValue(data, 'fontStyle'),
+    forceStrutHeight: readNullableValue(data, 'forceStrutHeight'),
   );
 }
 

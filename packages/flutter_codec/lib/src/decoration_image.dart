@@ -1,14 +1,6 @@
 import 'package:ack/ack.dart';
 import 'package:flutter/painting.dart'
-    show
-        Alignment,
-        AlignmentGeometry,
-        BoxFit,
-        DecorationImage,
-        FilterQuality,
-        ImageProvider,
-        ImageRepeat,
-        Rect;
+    show Alignment, BoxFit, DecorationImage, FilterQuality, ImageRepeat;
 
 import 'enums.dart' show boxFitCodec, filterQualityCodec, imageRepeatCodec;
 import 'image_providers.dart' show imageProviderCodec;
@@ -58,17 +50,17 @@ final decorationImageCodec =
       'isAntiAlias': Ack.boolean().withDefault(false),
     }).codec<DecorationImage>(
       decode: (data) => DecorationImage(
-        image: readValue<ImageProvider>(data, 'image'),
-        fit: readNullableValue<BoxFit>(data, 'fit'),
-        alignment: readValue<AlignmentGeometry>(data, 'alignment'),
-        centerSlice: readNullableValue<Rect>(data, 'centerSlice'),
-        repeat: readValue<ImageRepeat>(data, 'repeat'),
-        matchTextDirection: readValue<bool>(data, 'matchTextDirection'),
+        image: readValue(data, 'image'),
+        fit: readNullableValue(data, 'fit'),
+        alignment: readValue(data, 'alignment'),
+        centerSlice: readNullableValue(data, 'centerSlice'),
+        repeat: readValue(data, 'repeat'),
+        matchTextDirection: readValue(data, 'matchTextDirection'),
         scale: readDouble(data, 'scale'),
         opacity: readDouble(data, 'opacity'),
-        filterQuality: readValue<FilterQuality>(data, 'filterQuality'),
-        invertColors: readValue<bool>(data, 'invertColors'),
-        isAntiAlias: readValue<bool>(data, 'isAntiAlias'),
+        filterQuality: readValue(data, 'filterQuality'),
+        invertColors: readValue(data, 'invertColors'),
+        isAntiAlias: readValue(data, 'isAntiAlias'),
       ),
       encode: (value) {
         if (value.colorFilter != null) {
@@ -79,6 +71,7 @@ final decorationImageCodec =
             'equality. Remove the colorFilter before encoding.',
           );
         }
+
         return {
           'image': value.image,
           'fit': value.fit,

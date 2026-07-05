@@ -58,12 +58,14 @@ double _readMinBound(JsonMap data, String key) {
   if (!data.containsKey(key)) return 0;
   final value = data[key];
   if (value == null) return double.infinity;
+
   return (value as num).toDouble();
 }
 
 double _readMaxBound(JsonMap data, String key) {
   final value = data[key];
   if (value == null) return double.infinity;
+
   return (value as num).toDouble();
 }
 

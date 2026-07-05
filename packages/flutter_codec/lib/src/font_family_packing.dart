@@ -78,5 +78,6 @@ String? _sharedPackagePrefix(List<String> families) {
       return null;
     }
   }
+
   return shared;
 }

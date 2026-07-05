@@ -4,8 +4,6 @@ import 'package:ack/ack.dart';
 import 'package:flutter/painting.dart'
     show
         Alignment,
-        AlignmentGeometry,
-        Color,
         Gradient,
         GradientTransform,
         LinearGradient,
@@ -37,6 +35,7 @@ bool _stopsMatchColors(JsonMap data) {
   final stops = data['stops'];
   if (stops is! List) return true;
   final colors = data['colors'];
+
   return colors is List && stops.length == colors.length;
 }
 
@@ -49,6 +48,7 @@ bool _stopsAscending(JsonMap data) {
     if (current is! num || next is! num) return true;
     if (current > next) return false;
   }
+
   return true;
 }
 
@@ -79,14 +79,15 @@ final linearGradientCodec =
         .refine(_stopsAscending, message: _stopsAscendingMessage)
         .codec<LinearGradient>(
           decode: (data) => LinearGradient(
-            begin: readValue<AlignmentGeometry>(data, 'begin'),
-            end: readValue<AlignmentGeometry>(data, 'end'),
-            colors: readList<Color>(data, 'colors'),
+            begin: readValue(data, 'begin'),
+            end: readValue(data, 'end'),
+            colors: readList(data, 'colors'),
             stops: readNullableDoubleList(data, 'stops'),
-            tileMode: readValue<TileMode>(data, 'tileMode'),
+            tileMode: readValue(data, 'tileMode'),
           ),
           encode: (value) {
             _requireEncodableTransform(value.transform);
+
             return {
               'type': 'linear',
               'begin': value.begin,
@@ -118,16 +119,17 @@ final radialGradientCodec =
         .refine(_stopsAscending, message: _stopsAscendingMessage)
         .codec<RadialGradient>(
           decode: (data) => RadialGradient(
-            center: readValue<AlignmentGeometry>(data, 'center'),
+            center: readValue(data, 'center'),
             radius: readDouble(data, 'radius'),
-            colors: readList<Color>(data, 'colors'),
+            colors: readList(data, 'colors'),
             stops: readNullableDoubleList(data, 'stops'),
-            tileMode: readValue<TileMode>(data, 'tileMode'),
-            focal: readNullableValue<AlignmentGeometry>(data, 'focal'),
+            tileMode: readValue(data, 'tileMode'),
+            focal: readNullableValue(data, 'focal'),
             focalRadius: readDouble(data, 'focalRadius'),
           ),
           encode: (value) {
             _requireEncodableTransform(value.transform);
+
             return {
               'type': 'radial',
               'center': value.center,
@@ -160,15 +162,16 @@ final sweepGradientCodec =
         .refine(_stopsAscending, message: _stopsAscendingMessage)
         .codec<SweepGradient>(
           decode: (data) => SweepGradient(
-            center: readValue<AlignmentGeometry>(data, 'center'),
+            center: readValue(data, 'center'),
             startAngle: readDouble(data, 'startAngle'),
             endAngle: readDouble(data, 'endAngle'),
-            colors: readList<Color>(data, 'colors'),
+            colors: readList(data, 'colors'),
             stops: readNullableDoubleList(data, 'stops'),
-            tileMode: readValue<TileMode>(data, 'tileMode'),
+            tileMode: readValue(data, 'tileMode'),
           ),
           encode: (value) {
             _requireEncodableTransform(value.transform);
+
             return {
               'type': 'sweep',
               'center': value.center,

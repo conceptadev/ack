@@ -25,9 +25,7 @@ final fontFeatureCodec =
       'feature': Ack.string().matches(_tagPattern),
       'value': Ack.integer().min(0).withDefault(1),
     }).codec<FontFeature>(
-      decode: (data) => FontFeature(
-        readValue<String>(data, 'feature'),
-        readValue<int>(data, 'value'),
-      ),
+      decode: (data) =>
+          FontFeature(readValue(data, 'feature'), readValue(data, 'value')),
       encode: (value) => {'feature': value.feature, 'value': value.value},
     );

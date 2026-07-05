@@ -1,8 +1,6 @@
 import 'package:ack/ack.dart';
-import 'package:flutter/painting.dart'
-    show AlignmentGeometry, Color, Decoration, EdgeInsetsGeometry;
-import 'package:flutter/rendering.dart' show BoxConstraints;
-import 'package:flutter/widgets.dart' show Clip, Container, Matrix4, Widget;
+import 'package:flutter/painting.dart' show EdgeInsetsGeometry;
+import 'package:flutter/widgets.dart' show Clip, Container, Widget;
 
 import '../constraints.dart' show boxConstraintsCodec;
 import '../decorations.dart' show decorationCodec;
@@ -61,10 +59,12 @@ final CodecSchema<JsonMap, Container> containerWidgetCodec =
         // non-negative edges in debug, and the assert is stripped in release.
         .refine((data) {
           final padding = data['padding'];
+
           return padding is! EdgeInsetsGeometry || padding.isNonNegative;
         }, message: 'Container padding must not be negative.')
         .refine((data) {
           final margin = data['margin'];
+
           return margin is! EdgeInsetsGeometry || margin.isNonNegative;
         }, message: 'Container margin must not be negative.')
         .codec<Container>(decode: _decodeContainer, encode: _encodeContainer);
@@ -72,26 +72,20 @@ final CodecSchema<JsonMap, Container> containerWidgetCodec =
 Container _decodeContainer(JsonMap data) {
   return Container(
     key: readNullableValue(data, 'key'),
-    alignment: readNullableValue<AlignmentGeometry>(data, 'alignment'),
-    padding: readNullableValue<EdgeInsetsGeometry>(data, 'padding'),
-    color: readNullableValue<Color>(data, 'color'),
-    isAntiAlias: readValue<bool>(data, 'isAntiAlias'),
-    decoration: readNullableValue<Decoration>(data, 'decoration'),
-    foregroundDecoration: readNullableValue<Decoration>(
-      data,
-      'foregroundDecoration',
-    ),
+    alignment: readNullableValue(data, 'alignment'),
+    padding: readNullableValue(data, 'padding'),
+    color: readNullableValue(data, 'color'),
+    isAntiAlias: readValue(data, 'isAntiAlias'),
+    decoration: readNullableValue(data, 'decoration'),
+    foregroundDecoration: readNullableValue(data, 'foregroundDecoration'),
     width: readNullableDouble(data, 'width'),
     height: readNullableDouble(data, 'height'),
-    constraints: readNullableValue<BoxConstraints>(data, 'constraints'),
-    margin: readNullableValue<EdgeInsetsGeometry>(data, 'margin'),
-    transform: readNullableValue<Matrix4>(data, 'transform'),
-    transformAlignment: readNullableValue<AlignmentGeometry>(
-      data,
-      'transformAlignment',
-    ),
-    clipBehavior: readValue<Clip>(data, 'clipBehavior'),
-    child: readNullableValue<Widget>(data, 'child'),
+    constraints: readNullableValue(data, 'constraints'),
+    margin: readNullableValue(data, 'margin'),
+    transform: readNullableValue(data, 'transform'),
+    transformAlignment: readNullableValue(data, 'transformAlignment'),
+    clipBehavior: readValue(data, 'clipBehavior'),
+    child: readNullableValue(data, 'child'),
   );
 }
 

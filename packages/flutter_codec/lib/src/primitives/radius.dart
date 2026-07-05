@@ -20,10 +20,12 @@ Radius _decodeRadius(Object value) {
   }
 
   final map = value as JsonMap;
+
   return Radius.elliptical(readDouble(map, 'x'), readDouble(map, 'y'));
 }
 
 Object _encodeRadius(Radius value) {
   if (value.x == value.y) return value.x;
+
   return {'x': value.x, 'y': value.y};
 }

@@ -31,6 +31,7 @@ EdgeInsets _decodeEdgeInsets(Object value) {
   if (value is num) return EdgeInsets.all(value.toDouble());
 
   final map = value as JsonMap;
+
   return EdgeInsets.fromLTRB(
     readDouble(map, 'left'),
     readDouble(map, 'top'),

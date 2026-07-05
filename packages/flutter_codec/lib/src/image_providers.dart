@@ -32,13 +32,10 @@ final networkImageCodec =
       ),
     }).codec<NetworkImage>(
       decode: (data) => NetworkImage(
-        readValue<String>(data, 'url'),
+        readValue(data, 'url'),
         scale: readDouble(data, 'scale'),
-        headers: readNullableValue<Map<String, String>>(data, 'headers'),
-        webHtmlElementStrategy: readValue<WebHtmlElementStrategy>(
-          data,
-          'webHtmlElementStrategy',
-        ),
+        headers: readNullableValue(data, 'headers'),
+        webHtmlElementStrategy: readValue(data, 'webHtmlElementStrategy'),
       ),
       encode: (value) => {
         'url': value.url,
@@ -60,8 +57,8 @@ final assetImageCodec =
       'package': Ack.string().nullable().optional(),
     }).codec<AssetImage>(
       decode: (data) => AssetImage(
-        readValue<String>(data, 'assetName'),
-        package: readNullableValue<String>(data, 'package'),
+        readValue(data, 'assetName'),
+        package: readNullableValue(data, 'package'),
       ),
       encode: (value) {
         if (value.bundle != null) {

@@ -60,17 +60,20 @@ Color _parseColor(String value) {
 Color _parseHexColor(String value) {
   final hex = value.substring(1);
   final argb = hex.length == 6 ? 'FF$hex' : hex;
+
   return Color(int.parse(argb, radix: 16));
 }
 
 Color _parseRgbColor(String value) {
   final channels = _parseChannelList(value, prefix: 'rgb(', count: 3);
+
   return Color.fromARGB(0xFF, channels[0], channels[1], channels[2]);
 }
 
 Color _parseRgbaColor(String value) {
   final channels = _parseChannelList(value, prefix: 'rgba(', count: 4);
   final alpha = channels[3];
+
   return Color.fromARGB(alpha, channels[0], channels[1], channels[2]);
 }
 
@@ -91,6 +94,7 @@ List<int> _parseChannelList(
         if (channel < 0 || channel > 255) {
           throw FormatException('Color channel out of range: $channel');
         }
+
         return channel;
       })
       .toList(growable: false);
@@ -101,6 +105,7 @@ List<int> _parseChannelList(
   if (alpha < 0 || alpha > 1) {
     throw FormatException('Alpha channel out of range: $alpha');
   }
+
   return [...rgb, (alpha * 255).round()];
 }
 

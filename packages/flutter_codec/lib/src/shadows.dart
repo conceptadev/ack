@@ -18,8 +18,8 @@ final shadowCodec =
       'blurRadius': Ack.number().min(0).withDefault(0.0),
     }).codec<ui.Shadow>(
       decode: (data) => ui.Shadow(
-        color: readValue<Color>(data, 'color'),
-        offset: readValue<Offset>(data, 'offset'),
+        color: readValue(data, 'color'),
+        offset: readValue(data, 'offset'),
         blurRadius: readDouble(data, 'blurRadius'),
       ),
       encode: (value) => {
@@ -43,11 +43,11 @@ final boxShadowCodec =
       'blurStyle': blurStyleCodec.withDefault(BlurStyle.normal),
     }).codec<BoxShadow>(
       decode: (data) => BoxShadow(
-        color: readValue<Color>(data, 'color'),
-        offset: readValue<Offset>(data, 'offset'),
+        color: readValue(data, 'color'),
+        offset: readValue(data, 'offset'),
         blurRadius: readDouble(data, 'blurRadius'),
         spreadRadius: readDouble(data, 'spreadRadius'),
-        blurStyle: readValue<BlurStyle>(data, 'blurStyle'),
+        blurStyle: readValue(data, 'blurStyle'),
       ),
       encode: (value) => {
         'color': value.color,

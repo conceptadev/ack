@@ -37,6 +37,7 @@ Alignment _decodeAlignment(Object value) {
   if (value is _Alignment) return value.value;
 
   final map = value as JsonMap;
+
   return Alignment(readDouble(map, 'x'), readDouble(map, 'y'));
 }
 
@@ -83,6 +84,7 @@ AlignmentDirectional _decodeAlignmentDirectional(Object value) {
   if (value is _AlignmentDirectional) return value.value;
 
   final map = value as JsonMap;
+
   return AlignmentDirectional(readDouble(map, 'start'), readDouble(map, 'y'));
 }
 
@@ -126,6 +128,7 @@ AlignmentGeometry _decodeAlignmentGeometry(Object value) {
   final isDirectional =
       value is _AlignmentDirectional ||
       (value is JsonMap && value.containsKey('start'));
+
   return isDirectional
       ? _decodeAlignmentDirectional(value)
       : _decodeAlignment(value);
@@ -134,7 +137,7 @@ AlignmentGeometry _decodeAlignmentGeometry(Object value) {
 /// The center-column directional constants share a spelling with [Alignment]
 /// names, so they must not be emitted as names through [alignmentGeometryCodec].
 /// (Not `const`: [AlignmentDirectional] overrides `==`.)
-final _centerColumnDirectionals = <AlignmentDirectional>{
+final _centerColumnDirectionals = {
   AlignmentDirectional.topCenter,
   AlignmentDirectional.center,
   AlignmentDirectional.bottomCenter,

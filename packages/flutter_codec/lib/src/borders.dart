@@ -70,11 +70,12 @@ BorderSide _decodeBorderSide(Object value) {
   if (value == 'none') return BorderSide.none;
 
   final map = value as JsonMap;
+
   return BorderSide(
-    color: readValue<Color>(map, 'color'),
+    color: readValue(map, 'color'),
     width: readDouble(map, 'width'),
-    style: readValue<BorderStyle>(map, 'style'),
-    strokeAlign: readValue<double>(map, 'strokeAlign'),
+    style: readValue(map, 'style'),
+    strokeAlign: readValue(map, 'strokeAlign'),
   );
 }
 
@@ -120,11 +121,12 @@ Border _decodeBorder(Object value) {
   if (value is BorderSide) return Border.fromBorderSide(value);
 
   final map = value as JsonMap;
+
   return Border(
-    top: readValue<BorderSide>(map, 'top'),
-    right: readValue<BorderSide>(map, 'right'),
-    bottom: readValue<BorderSide>(map, 'bottom'),
-    left: readValue<BorderSide>(map, 'left'),
+    top: readValue(map, 'top'),
+    right: readValue(map, 'right'),
+    bottom: readValue(map, 'bottom'),
+    left: readValue(map, 'left'),
   );
 }
 
@@ -155,10 +157,10 @@ final borderDirectionalCodec =
       'bottom': borderSideCodec.withDefault(BorderSide.none),
     }).codec<BorderDirectional>(
       decode: (data) => BorderDirectional(
-        top: readValue<BorderSide>(data, 'top'),
-        start: readValue<BorderSide>(data, 'start'),
-        end: readValue<BorderSide>(data, 'end'),
-        bottom: readValue<BorderSide>(data, 'bottom'),
+        top: readValue(data, 'top'),
+        start: readValue(data, 'start'),
+        end: readValue(data, 'end'),
+        bottom: readValue(data, 'bottom'),
       ),
       encode: (value) => {
         'top': value.top,

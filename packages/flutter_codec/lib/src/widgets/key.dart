@@ -29,12 +29,10 @@ Key _decodeKey(JsonMap data) {
   final value = data['value'];
 
   return switch (valueType) {
-    _ValueKeyValueType.string when value is String => ValueKey<String>(value),
-    _ValueKeyValueType.int when value is int => ValueKey<int>(value),
-    _ValueKeyValueType.double when value is num => ValueKey<double>(
-      value.toDouble(),
-    ),
-    _ValueKeyValueType.bool when value is bool => ValueKey<bool>(value),
+    _ValueKeyValueType.string when value is String => ValueKey(value),
+    _ValueKeyValueType.int when value is int => ValueKey(value),
+    _ValueKeyValueType.double when value is num => ValueKey(value.toDouble()),
+    _ValueKeyValueType.bool when value is bool => ValueKey(value),
     _ => throw FormatException(
       'ValueKey payload for valueType "${valueType.name}" has invalid '
       'runtime type '

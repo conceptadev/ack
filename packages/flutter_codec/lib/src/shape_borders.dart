@@ -3,7 +3,6 @@ import 'package:flutter/painting.dart'
     show
         BeveledRectangleBorder,
         BorderRadius,
-        BorderRadiusGeometry,
         BorderSide,
         CircleBorder,
         ContinuousRectangleBorder,
@@ -43,7 +42,7 @@ final circleBorderCodec =
       'eccentricity': Ack.number().min(0).max(1).withDefault(0.0),
     }).codec<CircleBorder>(
       decode: (data) => CircleBorder(
-        side: readValue<BorderSide>(data, 'side'),
+        side: readValue(data, 'side'),
         eccentricity: readDouble(data, 'eccentricity'),
       ),
       encode: (value) => {
@@ -61,8 +60,7 @@ final stadiumBorderCodec =
     Ack.object({
       'side': borderSideCodec.withDefault(BorderSide.none),
     }).codec<StadiumBorder>(
-      decode: (data) =>
-          StadiumBorder(side: readValue<BorderSide>(data, 'side')),
+      decode: (data) => StadiumBorder(side: readValue(data, 'side')),
       encode: (value) => {'side': value.side},
     );
 
@@ -76,8 +74,8 @@ final stadiumBorderCodec =
 final roundedRectangleBorderCodec = _rectangleBorderSchema
     .codec<RoundedRectangleBorder>(
       decode: (data) => RoundedRectangleBorder(
-        side: readValue<BorderSide>(data, 'side'),
-        borderRadius: readValue<BorderRadiusGeometry>(data, 'borderRadius'),
+        side: readValue(data, 'side'),
+        borderRadius: readValue(data, 'borderRadius'),
       ),
       encode: (value) => {
         'side': value.side,
@@ -94,8 +92,8 @@ final roundedRectangleBorderCodec = _rectangleBorderSchema
 final beveledRectangleBorderCodec = _rectangleBorderSchema
     .codec<BeveledRectangleBorder>(
       decode: (data) => BeveledRectangleBorder(
-        side: readValue<BorderSide>(data, 'side'),
-        borderRadius: readValue<BorderRadiusGeometry>(data, 'borderRadius'),
+        side: readValue(data, 'side'),
+        borderRadius: readValue(data, 'borderRadius'),
       ),
       encode: (value) => {
         'side': value.side,
@@ -112,8 +110,8 @@ final beveledRectangleBorderCodec = _rectangleBorderSchema
 final continuousRectangleBorderCodec = _rectangleBorderSchema
     .codec<ContinuousRectangleBorder>(
       decode: (data) => ContinuousRectangleBorder(
-        side: readValue<BorderSide>(data, 'side'),
-        borderRadius: readValue<BorderRadiusGeometry>(data, 'borderRadius'),
+        side: readValue(data, 'side'),
+        borderRadius: readValue(data, 'borderRadius'),
       ),
       encode: (value) => {
         'side': value.side,
@@ -132,8 +130,8 @@ final continuousRectangleBorderCodec = _rectangleBorderSchema
 final roundedSuperellipseBorderCodec = _rectangleBorderSchema
     .codec<RoundedSuperellipseBorder>(
       decode: (data) => RoundedSuperellipseBorder(
-        side: readValue<BorderSide>(data, 'side'),
-        borderRadius: readValue<BorderRadiusGeometry>(data, 'borderRadius'),
+        side: readValue(data, 'side'),
+        borderRadius: readValue(data, 'borderRadius'),
       ),
       encode: (value) => {
         'side': value.side,
@@ -144,6 +142,7 @@ final roundedSuperellipseBorderCodec = _rectangleBorderSchema
 bool _starRoundingSumValid(JsonMap data) {
   final pointRounding = data['pointRounding'] as num;
   final valleyRounding = data['valleyRounding'] as num;
+
   return pointRounding + valleyRounding <= 1;
 }
 
@@ -193,7 +192,7 @@ final starBorderCodec =
         )
         .codec<StarBorder>(
           decode: (data) => StarBorder(
-            side: readValue<BorderSide>(data, 'side'),
+            side: readValue(data, 'side'),
             points: readDouble(data, 'points'),
             innerRadiusRatio: readDouble(data, 'innerRadiusRatio'),
             pointRounding: readDouble(data, 'pointRounding'),
@@ -250,11 +249,11 @@ final linearBorderCodec =
       'bottom': linearBorderEdgeCodec.nullable().optional(),
     }).codec<LinearBorder>(
       decode: (data) => LinearBorder(
-        side: readValue<BorderSide>(data, 'side'),
-        start: readNullableValue<LinearBorderEdge>(data, 'start'),
-        end: readNullableValue<LinearBorderEdge>(data, 'end'),
-        top: readNullableValue<LinearBorderEdge>(data, 'top'),
-        bottom: readNullableValue<LinearBorderEdge>(data, 'bottom'),
+        side: readValue(data, 'side'),
+        start: readNullableValue(data, 'start'),
+        end: readNullableValue(data, 'end'),
+        top: readNullableValue(data, 'top'),
+        bottom: readNullableValue(data, 'bottom'),
       ),
       encode: (value) => {
         'side': value.side,

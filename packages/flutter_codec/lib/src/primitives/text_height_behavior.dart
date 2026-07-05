@@ -21,18 +21,9 @@ final textHeightBehaviorCodec =
       ),
     }).codec<TextHeightBehavior>(
       decode: (data) => TextHeightBehavior(
-        applyHeightToFirstAscent: readValue<bool>(
-          data,
-          'applyHeightToFirstAscent',
-        ),
-        applyHeightToLastDescent: readValue<bool>(
-          data,
-          'applyHeightToLastDescent',
-        ),
-        leadingDistribution: readValue<TextLeadingDistribution>(
-          data,
-          'leadingDistribution',
-        ),
+        applyHeightToFirstAscent: readValue(data, 'applyHeightToFirstAscent'),
+        applyHeightToLastDescent: readValue(data, 'applyHeightToLastDescent'),
+        leadingDistribution: readValue(data, 'leadingDistribution'),
       ),
       encode: (value) => {
         'applyHeightToFirstAscent': value.applyHeightToFirstAscent,

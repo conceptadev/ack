@@ -19,6 +19,7 @@ final localeCodec = Ack.codec<String, String, Locale>(
   input: Ack.string().matches(_localePattern),
   decode: (value) {
     final match = _localeRegex.firstMatch(value)!;
+
     return Locale.fromSubtags(
       languageCode: match.group(1)!,
       scriptCode: match.group(2),
