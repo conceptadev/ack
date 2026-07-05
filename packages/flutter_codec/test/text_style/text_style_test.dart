@@ -193,6 +193,18 @@ void main() {
       );
       expect(roundTripped!.fontFamily, 'packages/foo/Bar');
     });
+
+    test('encodes a package with no fontFamily as a null family', () {
+      // TextStyle(package: 'my_pkg') with no fontFamily folds to the literal
+      // 'packages/my_pkg/null'. Encode must recover a genuine null primary
+      // family (not the four-char string 'null') so the JSON is valid for any
+      // consumer, and it must still round-trip.
+      const original = TextStyle(package: 'my_pkg');
+      final encoded = textStyleCodec.encode(original) as Map;
+      expect(encoded['fontFamily'], isNull);
+      expect(encoded['package'], 'my_pkg');
+      expect(textStyleCodec.parse(encoded), original);
+    });
   });
 
   group('textStyleCodec rejects invalid input', () {

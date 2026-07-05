@@ -213,6 +213,14 @@ void main() {
       }
     });
 
+    test('rejects encoding a mixed geometry', () {
+      // Combining Alignment with AlignmentDirectional yields a private
+      // _MixedAlignment that matches neither branch, so encode fails loudly
+      // rather than coercing it.
+      final mixed = Alignment.center.add(AlignmentDirectional.centerStart);
+      expect(alignmentGeometryCodec.safeEncode(mixed).isFail, isTrue);
+    });
+
     group('rejects invalid input', () {
       const invalidCases = <String, Object>{
         'unknown name': 'middle',

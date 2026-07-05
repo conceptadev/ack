@@ -419,5 +419,34 @@ void main() {
         isTrue,
       );
     });
+
+    test('fails to encode descending stops', () {
+      // The ascending-order invariant is enforced on encode too, not only on
+      // decode: an in-range but out-of-order [1.0, 0.0] must be rejected.
+      expect(
+        linearGradientCodec
+            .safeEncode(
+              const LinearGradient(colors: _redBlue, stops: [1.0, 0.0]),
+            )
+            .isFail,
+        isTrue,
+      );
+      expect(
+        radialGradientCodec
+            .safeEncode(
+              const RadialGradient(colors: _redBlue, stops: [1.0, 0.0]),
+            )
+            .isFail,
+        isTrue,
+      );
+      expect(
+        sweepGradientCodec
+            .safeEncode(
+              const SweepGradient(colors: _redBlue, stops: [1.0, 0.0]),
+            )
+            .isFail,
+        isTrue,
+      );
+    });
   });
 }

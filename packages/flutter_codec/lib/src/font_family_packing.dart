@@ -13,11 +13,19 @@
 /// families share the same prefix. Falls back to the stored (prefixed) form
 /// when the prefix is missing or inconsistent.
 ///
-/// A package is only recovered when the primary [family] is non-null. With a
-/// null family the constructor would re-fold `package` into the literal string
-/// `'packages/<pkg>/null'` (it interpolates the null family), corrupting the
-/// round-trip; keeping the fallback verbatim with `package: null` reproduces
-/// the original exactly because decode then performs no folding.
+/// The primary [family] drives package recovery:
+/// * A Dart `null` primary family (e.g. only a package-prefixed fallback was
+///   supplied) recovers no package. Re-folding a recovered `package` into a
+///   null family would yield the literal string `'packages/<pkg>/null'` (the
+///   constructor interpolates the null family), corrupting the round-trip;
+///   keeping the fallback verbatim with `package: null` reproduces the
+///   original exactly because decode then performs no folding.
+/// * A primary family that is already that folded-null *string*
+///   `'packages/<pkg>/null'` — the shape Flutter stores for
+///   `TextStyle(package: <pkg>)` with no `fontFamily` — is recovered as a
+///   genuine `null` primary family plus `package: <pkg>`. Emitting the
+///   four-char string `'null'` instead would round-trip through this library
+///   but be wrong JSON for any other consumer.
 ///
 /// Note: a literal `fontFamily: 'packages/<pkg>/<x>'` supplied without a
 /// `package:` argument is indistinguishable from the folded
@@ -25,7 +33,9 @@
 /// private and is compared by `TextStyle` equality). It is intentionally
 /// interpreted as package-qualified — the common case — so such a literal
 /// does not round-trip under `TextStyle` equality, though the resolved font
-/// family string is preserved.
+/// family string is preserved. This includes the `<x> == 'null'` sentinel: a
+/// literal `'packages/<pkg>/null'` is read as `package: <pkg>` with a null
+/// family, the same documented tradeoff.
 ({String? family, List<String>? fallback, String? packageName})
 unpackFontFamily(String? family, List<String>? fallback) {
   final pkg = _sharedPackagePrefix([if (family != null) family, ...?fallback]);
@@ -36,8 +46,14 @@ unpackFontFamily(String? family, List<String>? fallback) {
   final prefix = 'packages/$pkg/';
   String strip(String f) =>
       f.startsWith(prefix) ? f.substring(prefix.length) : f;
+
+  // Flutter folds a null fontFamily with a package into the literal
+  // 'packages/<pkg>/null' (it interpolates the null family). Recover that as a
+  // genuine null primary family instead of the four-char string 'null'.
+  final resolvedFamily = family == '${prefix}null' ? null : strip(family);
+
   return (
-    family: strip(family),
+    family: resolvedFamily,
     fallback: fallback?.map(strip).toList(),
     packageName: pkg,
   );

@@ -1,7 +1,8 @@
 name: flutter_codec
-description: Flutter value codecs built on ACK schemas.
+description: JSON codecs for Flutter painting and rendering value types (Color, Gradient, TextStyle, ShapeBorder, EdgeInsets, and more), built on ACK schemas.
 version: 0.1.1
 repository: https://github.com/btwld/ack
+homepage: https://github.com/btwld/ack/tree/main/packages/flutter_codec
 issue_tracker: https://github.com/btwld/ack/issues
 resolution: workspace
 

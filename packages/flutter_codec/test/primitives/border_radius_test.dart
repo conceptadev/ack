@@ -210,6 +210,16 @@ void main() {
       );
     });
 
+    test('rejects encoding a mixed geometry', () {
+      // Combining BorderRadius with BorderRadiusDirectional yields a private
+      // _MixedBorderRadius that matches neither branch, so encode fails loudly
+      // rather than coercing it.
+      final mixed = BorderRadius.circular(
+        1,
+      ).add(BorderRadiusDirectional.circular(2));
+      expect(borderRadiusGeometryCodec.safeEncode(mixed).isFail, isTrue);
+    });
+
     group('rejects invalid input', () {
       const invalidCases = <String, Object>{
         'mixed keys': {'topLeft': 8, 'topStart': 8},
