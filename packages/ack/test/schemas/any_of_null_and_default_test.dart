@@ -167,11 +167,8 @@ void main() {
   });
 
   group('AnyOf Edge Cases', () {
-    test('should handle empty schemas list gracefully', () {
-      final schema = Ack.anyOf([]);
-
-      final result = schema.safeParse('anything');
-      expect(result.isFail, isTrue, reason: 'Empty anyOf should always fail');
+    test('should reject an empty schemas list', () {
+      expect(() => Ack.anyOf([]), throwsArgumentError);
     });
 
     test('should handle single schema in anyOf', () {

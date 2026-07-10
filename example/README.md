@@ -17,8 +17,8 @@ This package demonstrates Ack schemas built directly in source and typed with
 ## Running the examples
 
 ```bash
-melos bootstrap
+dart run melos bootstrap
 cd example
-dart run build_runner build --delete-conflicting-outputs
+dart run build_runner build
 dart test
 ```

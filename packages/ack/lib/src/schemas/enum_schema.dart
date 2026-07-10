@@ -7,6 +7,11 @@ final class EnumSchema<T extends Enum> extends AckSchema<String, T>
     with FluentSchema<String, T, EnumSchema<T>> {
   final List<T> values;
 
+  /// Creates a low-level enum schema from an immutable, non-empty set of
+  /// uniquely named [values].
+  ///
+  /// Prefer `Ack.enumValues`, which validates and snapshots caller-owned lists.
+  /// Direct callers must not mutate [values] after construction.
   const EnumSchema({
     required this.values,
     super.isNullable,

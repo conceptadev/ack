@@ -6,8 +6,8 @@ review.
 ## Development setup
 
 ```bash
-dart pub global activate melos
-melos bootstrap
+dart pub get
+dart run melos bootstrap
 ```
 
 Ack uses a Melos workspace. Run commands from the repository root unless a
@@ -22,20 +22,20 @@ package README says otherwise.
 4. Run the relevant checks:
 
 ```bash
-melos analyze
-melos test
+dart run melos run analyze
+dart run melos run test
 ```
 
 For code generation changes, also run:
 
 ```bash
-melos run test:gen
+dart run melos run test:gen
 ```
 
 For JSON Schema export changes, also run:
 
 ```bash
-melos run validate-jsonschema
+dart run melos run validate-jsonschema
 ```
 
 ## Commit style

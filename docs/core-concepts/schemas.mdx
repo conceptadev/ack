@@ -61,7 +61,9 @@ final roleSchema = Ack.enumValues(Role.values);
 > **`Ack.string().date()` vs `Ack.date()`:** `Ack.string().date()` checks the
 > format and keeps the value a `String`. [`Ack.date()`](./codecs.mdx) (a codec)
 > validates the same format but returns a `DateTime`. The same applies to
-> `Ack.string().datetime()` vs `Ack.datetime()`.
+> `Ack.string().datetime()` vs `Ack.datetime()`, except announced leap seconds:
+> the string schema preserves them, while the codec rejects them because Dart's
+> `DateTime` cannot represent `:60`.
 
 ### Number
 

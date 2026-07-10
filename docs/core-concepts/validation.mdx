@@ -82,7 +82,10 @@ Ack.string().date()
 ```
 
 ### `datetime()`
-Requires a valid ISO 8601 date-time string.
+Requires a valid ISO 8601 date-time string with a timezone. Announced RFC 3339
+leap seconds are accepted and preserved because this schema returns the input
+`String`. The `Ack.datetime()` codec rejects leap seconds because Dart's
+`DateTime` cannot represent them without normalization.
 ```dart
 Ack.string().datetime()
 ```

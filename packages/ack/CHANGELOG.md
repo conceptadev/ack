@@ -1,3 +1,20 @@
+## Unreleased
+
+### Fixed
+
+* Keep `safeParse` non-throwing when refinements fail with exceptions.
+* Validate numeric `multipleOf`, IPv6, and RFC 3339 date-time edge cases
+  strictly; preserve announced leap seconds in string schemas while rejecting
+  them in `Ack.datetime()`, where Dart cannot represent them; and reject invalid
+  constraint configuration at schema construction.
+* Snapshot factory collections; reject empty unions and empty or duplicate
+  enum inputs.
+* Preserve intersecting constraints in JSON Schema output and correct
+  behavior-based schema/deep-collection equality.
+* Reject union schemas that can produce nullable list items.
+* Bound direct, indirect, wrapper-mediated, and fluent-copy lazy-schema alias
+  recursion.
+
 ## 1.0.1
 
 * See [release notes](https://github.com/btwld/ack/releases/tag/v1.0.1) for details.

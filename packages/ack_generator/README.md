@@ -84,7 +84,7 @@ validate through the union's effective branch.
 ## Build commands
 
 ```bash
-dart run build_runner build --delete-conflicting-outputs
+dart run build_runner build
 dart run build_runner watch
 ```
 

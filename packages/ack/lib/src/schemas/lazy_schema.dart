@@ -21,6 +21,7 @@ final class LazySchema<Boundary extends Object, Runtime extends Object>
   final int maxDepth;
 
   final AckSchema<Boundary, Runtime> Function() _builder;
+  final Object _recursionToken;
 
   late final AckSchema<Boundary, Runtime> _target = _builder();
 
@@ -33,7 +34,25 @@ final class LazySchema<Boundary extends Object, Runtime extends Object>
     super.description,
     super.constraints,
     super.refinements,
+  }) : _recursionToken = Object() {
+    _validateMaxDepth(maxDepth);
+  }
+
+  LazySchema._copy(
+    this.name,
+    this._builder,
+    this._recursionToken, {
+    this.maxDepth = defaultMaxDepth,
+    super.isNullable,
+    super.isOptional,
+    super.description,
+    super.constraints,
+    super.refinements,
   }) {
+    _validateMaxDepth(maxDepth);
+  }
+
+  static void _validateMaxDepth(int maxDepth) {
     if (maxDepth < 1) {
       throw ArgumentError.value(maxDepth, 'maxDepth', 'Must be >= 1.');
     }
@@ -56,10 +75,12 @@ final class LazySchema<Boundary extends Object, Runtime extends Object>
     final nullResult = handleNullInput(value, context);
     if (nullResult != null) return nullResult;
 
-    final depthResult = _checkMaxDepth<Runtime>(context);
+    final recursionContext = _enterRecursion(value, context);
+    final depthResult = _checkMaxDepth<Runtime>(recursionContext);
     if (depthResult != null) return depthResult;
 
-    final result = _target.parseWithContext(value, context);
+    final target = _target;
+    final result = target.parseWithContext(value, recursionContext);
     if (result.isFail) return SchemaResult.fail(result.getError());
 
     final runtime = result.getOrNull();
@@ -77,10 +98,12 @@ final class LazySchema<Boundary extends Object, Runtime extends Object>
     final nullResult = handleNullInput(value, context);
     if (nullResult != null) return nullResult;
 
-    final depthResult = _checkMaxDepth<Runtime>(context);
+    final recursionContext = _enterRecursion(value, context);
+    final depthResult = _checkMaxDepth<Runtime>(recursionContext);
     if (depthResult != null) return depthResult;
 
-    final result = _target.validateRuntimeWithContext(value, context);
+    final target = _target;
+    final result = target.validateRuntimeWithContext(value, recursionContext);
     if (result.isFail) return SchemaResult.fail(result.getError());
 
     final runtime = result.getOrNull();
@@ -95,19 +118,34 @@ final class LazySchema<Boundary extends Object, Runtime extends Object>
     Runtime value,
     SchemaContext context,
   ) {
-    final depthResult = _checkMaxDepth<Boundary>(context);
+    final recursionContext = _enterRecursion(value, context);
+    final depthResult = _checkMaxDepth<Boundary>(recursionContext);
     if (depthResult != null) return depthResult;
 
     final ownChecked = applyConstraintsAndRefinements(value, context);
     if (ownChecked.isFail) return SchemaResult.fail(ownChecked.getError());
 
-    return _target.encodeWithContext(ownChecked.getOrThrow()!, context);
+    final target = _target;
+    return target.encodeWithContext(ownChecked.getOrThrow()!, recursionContext);
+  }
+
+  SchemaContext _enterRecursion(Object? value, SchemaContext context) {
+    return _LazyRecursionContext(
+      name: name,
+      owner: this as AnyAckSchema,
+      recursionToken: _recursionToken,
+      value: value,
+      parent: context,
+    );
   }
 
   SchemaResult<T>? _checkMaxDepth<T extends Object>(SchemaContext context) {
     var depth = 0;
     for (SchemaContext? c = context; c != null; c = c.parent) {
-      if (identical(c.schema, this)) depth++;
+      if (c is _LazyRecursionContext &&
+          identical(c.recursionToken, _recursionToken)) {
+        depth++;
+      }
     }
     if (depth <= maxDepth) return null;
 
@@ -134,9 +172,10 @@ final class LazySchema<Boundary extends Object, Runtime extends Object>
     List<Refinement<Runtime>>? refinements,
     int? maxDepth,
   }) {
-    return LazySchema(
+    return LazySchema<Boundary, Runtime>._copy(
       name,
       _builder,
+      _recursionToken,
       maxDepth: maxDepth ?? this.maxDepth,
       isNullable: isNullable ?? this.isNullable,
       isOptional: isOptional ?? this.isOptional,
@@ -176,6 +215,28 @@ final class LazySchema<Boundary extends Object, Runtime extends Object>
       identityHashCode(_builder),
     );
   }
+}
+
+/// Marks one active lazy invocation without conflating it with structural
+/// child contexts created by object, list, union, or wrapper schemas.
+final class _LazyRecursionContext extends SchemaContext {
+  _LazyRecursionContext({
+    required String name,
+    required this.owner,
+    required this.recursionToken,
+    required Object? value,
+    required SchemaContext parent,
+  }) : super(
+         name: name,
+         schema: owner,
+         value: value,
+         parent: parent,
+         pathSegment: '',
+         operation: parent.operation,
+       );
+
+  final AnyAckSchema owner;
+  final Object recursionToken;
 }
 
 final class _LazyMaxDepthConstraint extends Constraint<Object> {

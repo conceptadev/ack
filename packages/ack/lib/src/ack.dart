@@ -51,8 +51,16 @@ final class Ack {
   ) => ListSchema<B, R>(itemSchema);
 
   /// Creates an enum schema for validating enum values.
-  static EnumSchema<T> enumValues<T extends Enum>(List<T> values) =>
-      EnumSchema(values: values);
+  static EnumSchema<T> enumValues<T extends Enum>(List<T> values) {
+    if (values.isEmpty) {
+      throw ArgumentError.value(values, 'values', 'Must not be empty.');
+    }
+    final names = values.map((value) => value.name).toSet();
+    if (names.length != values.length) {
+      throw ArgumentError.value(values, 'values', 'Must be unique.');
+    }
+    return EnumSchema(values: List.unmodifiable(values));
+  }
 
   /// Creates a bidirectional codec for Dart enums, with boundary `String` and
   /// runtime [T].
@@ -67,16 +75,28 @@ final class Ack {
   /// (e.g. adding constraints, copying with new flags). Prefer [enumCodec]
   /// when downstream code expects every value-shape to be a `CodecSchema`.
   static CodecSchema<String, T> enumCodec<T extends Enum>(List<T> values) =>
-      enumValues(
-        values,
-      ).codec<T>(decode: (value) => value, encode: (value) => value);
+      enumValues(values).codec<T>(decode: _identity, encode: _identity);
 
   /// Creates a string schema that only accepts one of the given [values].
-  static StringSchema enumString(List<String> values) =>
-      string().withConstraint(PatternConstraint.enumString(values));
+  static StringSchema enumString(List<String> values) {
+    if (values.isEmpty) {
+      throw ArgumentError.value(values, 'values', 'Must not be empty.');
+    }
+    if (values.toSet().length != values.length) {
+      throw ArgumentError.value(values, 'values', 'Must be unique.');
+    }
+    return string().withConstraint(
+      PatternConstraint.enumString(List.unmodifiable(values)),
+    );
+  }
 
   /// Creates a schema that can be one of many types.
-  static AnyOfSchema anyOf(List<AnyAckSchema> schemas) => AnyOfSchema(schemas);
+  static AnyOfSchema anyOf(List<AnyAckSchema> schemas) {
+    if (schemas.isEmpty) {
+      throw ArgumentError.value(schemas, 'schemas', 'Must not be empty.');
+    }
+    return AnyOfSchema(List.unmodifiable(schemas));
+  }
 
   /// Creates a schema that accepts any non-null JSON-safe value.
   ///
@@ -157,13 +177,20 @@ final class Ack {
   /// Bidirectional datetime codec: ISO 8601 datetime strings ↔ UTC
   /// `DateTime` runtime values.
   ///
+  /// Announced RFC 3339 leap seconds are valid for `Ack.string().datetime()`,
+  /// but this codec rejects them because Dart normalizes `:60` to the following
+  /// minute instead of preserving the instant's textual representation.
+  ///
   /// Runtime invariant: the encoded `DateTime` must be UTC. Local-time
   /// values fail validation; convert with `.toUtc()` before encoding.
   static CodecSchema<String, DateTime> datetime() {
     return CodecSchema.create<String, String, DateTime>(
-      inputSchema: string().datetime(),
+      inputSchema: string().datetime().refine(
+        isDateTimeSecondRepresentableByDart,
+        message: 'Dart DateTime cannot represent leap seconds.',
+      ),
       outputSchema: InstanceSchema<DateTime>().refine(
-        (value) => value.isUtc,
+        _isUtcDateTime,
         message: 'Expected a UTC DateTime.',
       ),
       decoder: DateTime.parse,
@@ -179,11 +206,11 @@ final class Ack {
     return CodecSchema.create<String, String, Uri>(
       inputSchema: string().uri(),
       outputSchema: InstanceSchema<Uri>().refine(
-        (u) => u.hasScheme && u.host.isNotEmpty,
+        _isAbsoluteUri,
         message: 'Expected an absolute URI with scheme and host.',
       ),
       decoder: Uri.parse,
-      encoder: (value) => value.toString(),
+      encoder: _encodeUri,
     );
   }
 
@@ -196,15 +223,16 @@ final class Ack {
     return CodecSchema.create<int, int, Duration>(
       inputSchema: integer(),
       outputSchema: InstanceSchema<Duration>().refine(
-        (value) =>
-            value.inMicroseconds % Duration.microsecondsPerMillisecond == 0,
+        _isWholeMillisecondDuration,
         message: 'Expected a whole-millisecond Duration.',
       ),
-      decoder: (ms) => Duration(milliseconds: ms),
-      encoder: (value) => value.inMilliseconds,
+      decoder: _decodeDuration,
+      encoder: _encodeDuration,
     );
   }
 }
+
+T _identity<T extends Object>(T value) => value;
 
 bool _isLocalMidnightDate(DateTime value) {
   if (value.isUtc) return false;
@@ -214,6 +242,22 @@ bool _isLocalMidnightDate(DateTime value) {
       value.millisecond == 0 &&
       value.microsecond == 0;
 }
+
+bool _isUtcDateTime(DateTime value) => value.isUtc;
+
+bool _isAbsoluteUri(Uri value) => value.hasScheme && value.host.isNotEmpty;
+
+String _encodeUri(Uri value) => value.toString();
+
+bool _isWholeMillisecondDuration(Duration value) {
+  return value.inMicroseconds % Duration.microsecondsPerMillisecond == 0;
+}
+
+Duration _decodeDuration(int milliseconds) {
+  return Duration(milliseconds: milliseconds);
+}
+
+int _encodeDuration(Duration value) => value.inMilliseconds;
 
 String _encodeIsoDate(DateTime value) {
   final y = value.year.toString().padLeft(4, '0');

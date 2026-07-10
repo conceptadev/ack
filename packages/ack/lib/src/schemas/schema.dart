@@ -79,6 +79,12 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
 
   Iterable<Object?> get _refinementsForEquality => _refinements;
 
+  /// Creates the shared configuration for a concrete schema.
+  ///
+  /// Direct concrete-schema constructors retain [constraints] and [refinements]
+  /// without copying so they can remain `const`. Prefer the `Ack` factories and
+  /// fluent methods, which own the collections they create; callers using a
+  /// concrete constructor must not mutate supplied collections afterward.
   const AckSchema({
     this.isNullable = false,
     this.isOptional = false,
@@ -137,7 +143,23 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
     Runtime value,
     SchemaContext context,
   ) {
-    final constraintViolations = _checkConstraints(value);
+    final constraintViolations = <ConstraintError>[];
+    for (final constraint in _constraints) {
+      if (constraint is! Validator<Runtime>) continue;
+      try {
+        final violation = constraint.validate(value);
+        if (violation != null) constraintViolations.add(violation);
+      } catch (error, stackTrace) {
+        return SchemaResult.fail(
+          SchemaValidationError(
+            message: 'Constraint "${constraint.constraintKey}" threw: $error',
+            context: context,
+            cause: error,
+            stackTrace: stackTrace,
+          ),
+        );
+      }
+    }
     if (constraintViolations.isNotEmpty) {
       return SchemaResult.fail(
         SchemaConstraintsError(
@@ -149,23 +171,22 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
     return _runRefinements(value, context);
   }
 
-  List<ConstraintError> _checkConstraints(Runtime value) {
-    if (_constraints.isEmpty) return const [];
-    final errors = <ConstraintError>[];
-    for (final constraint in _constraints) {
-      if (constraint is Validator<Runtime>) {
-        final error = constraint.validate(value);
-        if (error != null) {
-          errors.add(error);
-        }
-      }
-    }
-    return errors;
-  }
-
   SchemaResult<Runtime> _runRefinements(Runtime value, SchemaContext context) {
     for (final refinement in _refinements) {
-      if (!refinement.validate(value)) {
+      final bool isValid;
+      try {
+        isValid = refinement.validate(value);
+      } catch (error, stackTrace) {
+        return SchemaResult.fail(
+          SchemaValidationError(
+            message: 'Refinement threw: $error',
+            context: context,
+            cause: error,
+            stackTrace: stackTrace,
+          ),
+        );
+      }
+      if (!isValid) {
         return SchemaResult.fail(
           SchemaValidationError(message: refinement.message, context: context),
         );
@@ -337,7 +358,18 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
       debugName: debugName,
       operation: SchemaOperation.parse,
     );
-    return parseWithContext(value, context);
+    try {
+      return parseWithContext(value, context);
+    } catch (error, stackTrace) {
+      return SchemaResult.fail(
+        SchemaValidationError(
+          message: 'Validation threw: $error',
+          context: context,
+          cause: error,
+          stackTrace: stackTrace,
+        ),
+      );
+    }
   }
 
   /// Parses and validates a value, then maps the validated value to [TOut].
@@ -522,6 +554,17 @@ class _ConstraintMessageOverride<T extends Object> extends Constraint<T>
     }
     return const {};
   }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is _ConstraintMessageOverride<T> &&
+        inner == other.inner &&
+        customMessage == other.customMessage;
+  }
+
+  @override
+  int get hashCode => Object.hash(runtimeType, inner, customMessage);
 }
 
 /// Returns [value] if it is composed entirely of JSON-safe primitives

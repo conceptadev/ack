@@ -97,6 +97,60 @@ void main() {
           throwsA(isA<AckException>()),
         );
       });
+
+      test('rejects calendar and time components normalized by DateTime', () {
+        final schema = Ack.datetime();
+
+        expect(schema.safeParse('2025-02-30T10:30:00Z').isFail, isTrue);
+        expect(schema.safeParse('2025-06-15T24:00:00Z').isFail, isTrue);
+        expect(schema.safeParse('2025-06-15T10:60:00Z').isFail, isTrue);
+        expect(schema.safeParse('2025-06-15T10:30:60Z').isFail, isTrue);
+        expect(schema.safeParse('2025-06-15T10:30:00+24:00').isFail, isTrue);
+      });
+
+      test('accepts fractional seconds', () {
+        final schema = Ack.datetime();
+
+        expect(schema.safeParse('2025-06-15T10:30:00.123Z').isOk, isTrue);
+        expect(schema.safeParse('2025-06-15T10:30:00.123456Z').isOk, isTrue);
+      });
+
+      test('string validation accepts announced leap seconds', () {
+        final schema = Ack.string().datetime();
+
+        final utc = schema.safeParse('1990-12-31T23:59:60Z');
+        final offset = schema.safeParse('1990-12-31T15:59:60-08:00');
+
+        expect(utc.isOk, isTrue);
+        expect(offset.isOk, isTrue);
+        expect(utc.getOrThrow(), '1990-12-31T23:59:60Z');
+        expect(offset.getOrThrow(), '1990-12-31T15:59:60-08:00');
+      });
+
+      test('datetime codec rejects unrepresentable leap seconds', () {
+        final schema = Ack.datetime();
+
+        for (final value in [
+          '1990-12-31T23:59:60Z',
+          '1990-12-31T15:59:60-08:00',
+        ]) {
+          final result = schema.safeParse(value);
+          expect(result.isFail, isTrue);
+          expect(
+            result.getError().message,
+            contains('Dart DateTime cannot represent leap seconds'),
+          );
+        }
+
+        expect(schema.safeParse('1991-01-01T00:00:00Z').isOk, isTrue);
+      });
+
+      test('string validation rejects unannounced leap seconds', () {
+        final schema = Ack.string().datetime();
+
+        expect(schema.safeParse('2025-06-30T23:59:60Z').isFail, isTrue);
+        expect(schema.safeParse('2025-12-31T23:59:60Z').isFail, isTrue);
+      });
     });
 
     group('.min() Constraint', () {

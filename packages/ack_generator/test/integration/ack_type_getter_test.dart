@@ -3,6 +3,7 @@ import 'package:build/build.dart';
 import 'package:build_test/build_test.dart';
 import 'package:test/test.dart';
 
+import '../test_utils/generation_test_utils.dart';
 import '../test_utils/test_assets.dart';
 
 void main() {
@@ -153,12 +154,12 @@ ObjectSchema get userSchema => Ack.object({
       );
     });
 
-    test('documents nullable list element type inference loss', () async {
+    test('rejects nullable list element schemas', () async {
       final builder = ackGenerator(BuilderOptions.empty);
 
-      await testBuilder(
-        builder,
-        {
+      await expectGenerationFailure(
+        builder: builder,
+        assets: {
           ...allAssets,
           'test_pkg|lib/schema.dart': '''
 import 'package:ack/ack.dart';
@@ -170,16 +171,32 @@ ObjectSchema get userSchema => Ack.object({
 });
 ''',
         },
-        outputs: {
-          'test_pkg|lib/schema.g.dart': decodedMatches(
-            allOf([
-              contains(
-                "List<String> get tags => _\$ackListCast<String>(_data['tags'])",
-              ),
-              isNot(contains('List<String?> get tags')),
-            ]),
-          ),
+        expectedMessage:
+            'Ack.list(...) does not support nullable element schemas',
+      );
+    });
+
+    test('rejects nullable list element schema references', () async {
+      final builder = ackGenerator(BuilderOptions.empty);
+
+      await expectGenerationFailure(
+        builder: builder,
+        assets: {
+          ...allAssets,
+          'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+final tagSchema = Ack.string().nullable();
+
+@AckType()
+ObjectSchema get userSchema => Ack.object({
+  'tags': Ack.list(tagSchema),
+});
+''',
         },
+        expectedMessage:
+            'Ack.list(...) does not support nullable element schemas',
       );
     });
   });

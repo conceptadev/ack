@@ -388,6 +388,73 @@ void main() {
       expect(capped.hashCode, matchingCap.hashCode);
       expect(capped, isNot(uncapped));
     });
+
+    test('terminates direct and indirect lazy aliases', () {
+      late final LazySchema<String, String> direct;
+      direct = Ack.lazy<String, String>('Direct', () => direct, maxDepth: 1);
+
+      late final LazySchema<String, String> first;
+      late final LazySchema<String, String> second;
+      first = Ack.lazy<String, String>('First', () => second, maxDepth: 1);
+      second = Ack.lazy<String, String>('Second', () => first, maxDepth: 1);
+
+      for (final result in [direct.safeParse('x'), first.safeParse('x')]) {
+        expect(result.isFail, isTrue);
+        final error = result.getError();
+        expect(error, isA<SchemaConstraintsError>());
+        expect(error.message, contains('Maximum recursion depth'));
+      }
+    });
+
+    test('terminates lazy aliases hidden behind wrappers', () {
+      late final LazySchema<String, String> defaultWrapped;
+      defaultWrapped = Ack.lazy<String, String>(
+        'DefaultWrapped',
+        () => defaultWrapped.withDefault('fallback'),
+        maxDepth: 1,
+      );
+
+      late final LazySchema<String, String> codecWrapped;
+      codecWrapped = Ack.lazy<String, String>(
+        'CodecWrapped',
+        () => codecWrapped.codec<String>(
+          decode: (value) => value,
+          encode: (value) => value,
+        ),
+        maxDepth: 1,
+      );
+
+      for (final schema in [defaultWrapped, codecWrapped]) {
+        for (final result in [
+          schema.safeParse('value'),
+          schema.safeEncode('value'),
+        ]) {
+          expect(result.isFail, isTrue);
+          final error = result.getError();
+          expect(error, isA<SchemaConstraintsError>());
+          expect(error.message, contains('Maximum recursion depth'));
+        }
+      }
+    });
+
+    test('terminates lazy aliases hidden behind fluent copies', () {
+      late final LazySchema<String, String> optionalAlias;
+      optionalAlias = Ack.lazy<String, String>(
+        'OptionalAlias',
+        () => optionalAlias.optional(),
+        maxDepth: 1,
+      );
+
+      for (final result in [
+        optionalAlias.safeParse('value'),
+        optionalAlias.safeEncode('value'),
+      ]) {
+        expect(result.isFail, isTrue);
+        final error = result.getError();
+        expect(error, isA<SchemaConstraintsError>());
+        expect(error.message, contains('Maximum recursion depth'));
+      }
+    });
   });
 }
 

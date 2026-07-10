@@ -31,7 +31,7 @@ Ack ships codecs for the most common boundary conversions:
 | Factory | Boundary ↔ Runtime | Runtime invariant |
 | --- | --- | --- |
 | `Ack.date()` | ISO `YYYY-MM-DD` `String` ↔ `DateTime` | local midnight (no time-of-day) |
-| `Ack.datetime()` | ISO 8601 `String` ↔ `DateTime` | must be UTC |
+| `Ack.datetime()` | ISO 8601 `String` ↔ `DateTime` | must be UTC; leap-second strings are rejected |
 | `Ack.uri()` | `String` ↔ `Uri` | absolute URI (scheme + host) |
 | `Ack.duration()` | milliseconds `int` ↔ `Duration` | whole milliseconds |
 | `Ack.enumCodec(values)` | enum-name `String` ↔ enum value | one of `values` |
@@ -54,7 +54,11 @@ final event = schema.parse({
 // event['timeout']  is a Duration (5 seconds)
 ```
 
-Each built-in enforces a runtime invariant on encode. `Ack.datetime()` requires a UTC `DateTime`; convert local values with `.toUtc()` before encoding.
+Each built-in enforces a runtime invariant on encode. `Ack.datetime()` requires
+a UTC `DateTime`; convert local values with `.toUtc()` before encoding. It also
+rejects RFC leap-second strings before decoding because Dart normalizes `:60`.
+Use `Ack.string().datetime()` when leap-second text must be validated and
+preserved.
 
 ## Custom codecs
 

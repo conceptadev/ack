@@ -12,7 +12,7 @@ workspace:
   - packages/ack_firebase_ai
   - packages/ack_json_schema_builder
   - example
-  
+
 dependencies:
   meta: ^1.15.0
 
@@ -25,6 +25,9 @@ dev_dependencies:
   dart_code_metrics_presets: ^2.22.0
 
 melos:
+  ide:
+    intellij: false
+
   bootstrap:
     dependencies:
       meta: ^1.15.0
@@ -50,7 +53,7 @@ melos:
 
   scripts:
     analyze:
-      run: melos exec -- "dart analyze . --fatal-infos"
+      run: dart run melos exec -- "dart analyze . --fatal-infos"
       description: Run analyzer on all packages
       packageFilters:
         scope:
@@ -62,47 +65,46 @@ melos:
           - ack_annotations
 
     fix:
-      run: melos exec -- "dart fix --apply"
+      run: dart run melos exec -- "dart fix --apply"
       description: Apply fixes to all packages
 
     test:
-      run: melos run analyze --no-select && melos run test:dart --no-select && melos run test:flutter --no-select
-      description: Run strict analysis (fatal infos) and all Dart & Flutter tests
+      run: >-
+        dart run melos run analyze --no-select &&
+        dart test test &&
+        dart run melos run test:dart --no-select &&
+        dart run melos run test:flutter --no-select
+      description: Run strict analysis and all root, Dart, and Flutter tests
 
     test:dart:
-      run: melos exec -c 1 --fail-fast -- "dart test"
+      run: dart run melos exec -c 1 --fail-fast -- "dart test"
       description: Run Dart tests for pure Dart packages
       packageFilters:
         flutter: false
         dirExists: test
 
     test:flutter:
-      run: melos exec -c 1 --fail-fast -- "flutter test"
+      run: dart run melos exec -c 1 --fail-fast -- "flutter test"
       description: Run Flutter tests for Flutter packages
       packageFilters:
         flutter: true
         dirExists: test
 
     format:
-      run: melos exec -- "dart format ."
+      run: dart run melos exec -- "dart format ."
       description: Format code for all packages
 
     deps-outdated:
-      run: melos exec -- "dart pub outdated"
+      run: dart run melos exec -- "dart pub outdated"
       description: Check for outdated dependencies in all packages
 
-    # Create proper analysis_options.yaml files
-    ensure_analysis_options:
-      run: .scripts/ensure_analysis_options.sh
-      description: Ensures each package has DCM configuration in analysis_options.yaml
-
     clean:
-      run: melos clean
+      run: dart run melos clean
       description: Clean all build outputs.
 
     # Build scripts for code generation
     build:
-      run: melos exec -- "dart run build_runner build --delete-conflicting-outputs"
+      run: dart run melos exec -- "dart run build_runner build"
       description: Run build_runner for all packages
       packageFilters:
         dependsOn: build_runner
@@ -110,72 +112,50 @@ melos:
     # Version and publish scripts
     # Publishing helpers
     publish:
-      run: melos publish --no-dry-run --yes
+      run: dart run melos publish --no-dry-run --yes
       description: Publish packages to pub.dev
-      
+
     release:
       run: |
-        melos version --yes
-        melos publish --no-dry-run --yes
+        dart run melos version --yes
+        dart run melos publish --no-dry-run --yes
       description: One-step version and publish
 
     # ACK Generator specific test commands
     test:gen:
-      run: melos exec -c 1 -- dart test
+      run: dart run melos exec -c 1 -- dart test
       description: Run generator tests
       packageFilters:
         scope: ack_generator
-
-    test:gen:watch:
-      run: melos exec -c 1 -- dart test --watch
-      description: Run generator tests in watch mode
-      packageFilters:
-        scope: ack_generator
-
-    update-golden:
-      run: cd packages/ack_generator && dart tool/update_goldens.dart
-      description: Update golden test files (interactive - specify test names)
-
-    update-golden:all:
-      run: cd packages/ack_generator && dart tool/update_goldens.dart --all
-      description: Update all golden test files
 
     firebase-ai-fixtures:
       run: cd packages/ack_firebase_ai && dart run tool/generate_firebase_ai_response_json_schema_fixtures.dart
       description: Regenerate Firebase AI adapter and native schema fixtures
 
-    test:golden:
-      run: melos exec -c 1 -- dart test test/golden_test.dart
-      description: Run only golden tests
-      packageFilters:
-        dirExists: test/golden
-
     # JSON Schema Draft-7 validation
     validate-jsonschema:
       run: |
         echo "🔧 Installing Node.js dependencies..."
-        (cd tools && npm install)
+        (cd tools && npm ci)
         echo "🧪 Running JSON Schema Draft-7 validation tests..."
         (cd packages/ack && dart test test/json_schema_conformance_test.dart)
       description: Validate JSON Schema Draft-7 specifications
 
     validate-jsonschema:batch:
       run: |
-        cd tools && npm install
+        cd tools && npm ci
         node jsonschema-validator.js validate-batch --input test-fixtures/reference-config.json
       description: Run batch JSON Schema Draft-7 validation
 
     validate-jsonschema:setup:
-      run: cd tools && npm install
+      run: cd tools && npm ci
       description: Install Node.js dependencies for JSON Schema validation
 
     # API compatibility checking with dart_apitool
     api-check:
       run: dart scripts/api_check.dart
-      description: "Check API compatibility for packages against specified version (usage: melos api-check v0.2.0)"
+      description: "Check API compatibility against a published version"
 
     ci:
-      run: melos run test --no-select
+      run: dart run melos run test --no-select
       description: Run strict analysis (fatal infos) and all Dart & Flutter tests
-
-  sdkPath: .fvm/flutter_sdk

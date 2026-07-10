@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## Unreleased
+
+* Fix validation edge cases, schema export consistency, schema immutability,
+  generator diagnostics, and workspace/release tooling reliability.
+* Bound lazy recursion through wrappers and fluent copies, align RFC date-time
+  and IPv6 behavior, run root tooling tests in CI, prevent stale API reports,
+  and avoid partial changelog updates when validation fails.
+
 ## 1.0.0 - 2026-06-26
 
 * See [release notes](https://github.com/btwld/ack/releases/tag/v1.0.0) for details.

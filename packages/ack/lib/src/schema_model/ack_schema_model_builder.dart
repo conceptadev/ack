@@ -353,6 +353,11 @@ AckSchemaModel _applyConstraints(
   AckSchema<dynamic, dynamic> schema,
 ) {
   var next = model;
+  const deepEquality = DeepCollectionEquality();
+  final appliedKeywordValues = {
+    for (final entry in _renderedKeywords(model).entries)
+      entry.key: <Object?>[entry.value],
+  };
   for (final constraint in schema.constraints) {
     if (constraint is DateTimeConstraint) {
       next = _applyDateTimeConstraint(next, constraint);
@@ -360,11 +365,50 @@ AckSchemaModel _applyConstraints(
     }
 
     if (constraint is JsonSchemaSpec) {
-      next = next.withJsonSchemaKeywords(constraint.toJsonSchema());
+      final keywords = constraint.toJsonSchema();
+      final newKeywords = <String, Object?>{};
+      final conflicts = <String, Object?>{};
+      for (final entry in keywords.entries) {
+        final seenValues = appliedKeywordValues[entry.key];
+        if (seenValues == null) {
+          appliedKeywordValues[entry.key] = [entry.value];
+          newKeywords[entry.key] = entry.value;
+        } else if (!seenValues.any(
+          (value) => deepEquality.equals(value, entry.value),
+        )) {
+          seenValues.add(entry.value);
+          conflicts[entry.key] = entry.value;
+        }
+      }
+      if (newKeywords.isNotEmpty) {
+        next = next.withJsonSchemaKeywords(newKeywords);
+      }
+      if (conflicts.isNotEmpty) {
+        final existingAllOf = switch (next.extensions['allOf']) {
+          final List<Object?> value => value,
+          _ => const <Object?>[],
+        };
+        next = next.withExtensions({
+          ...next.extensions,
+          'allOf': [...existingAllOf, conflicts],
+        });
+      }
     }
   }
 
   return next;
+}
+
+Map<String, Object?> _renderedKeywords(AckSchemaModel model) {
+  final rendered = model.toJsonSchema();
+  final branches = rendered['anyOf'];
+  if (model.nullable && branches is List && branches.isNotEmpty) {
+    final nonNullBranch = branches.first;
+    if (nonNullBranch is Map) {
+      return Map<String, Object?>.from(nonNullBranch);
+    }
+  }
+  return rendered;
 }
 
 AckSchemaModel _applyDateTimeConstraint(

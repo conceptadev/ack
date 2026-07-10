@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'src/release_changelog.dart';
+
 /// Updates package changelog entries for the latest release so they contain
 /// only a link to the GitHub release notes.
 ///
@@ -37,66 +39,43 @@ void main(List<String> args) {
     'packages/ack_firebase_ai/CHANGELOG.md',
     'packages/ack_json_schema_builder/CHANGELOG.md',
   ];
+  var hasErrors = false;
+  final updates = <({File file, String path, ChangelogUpdate update})>[];
 
   for (final path in changelogPaths) {
     final file = File(path);
     if (!file.existsSync()) {
-      stderr.writeln('Skipping $path (file not found)');
+      stderr.writeln('Could not update $path (file not found)');
+      hasErrors = true;
       continue;
     }
 
-    final lines = file.readAsLinesSync();
-    final headingIndex = lines.indexWhere(
-      (line) => line.startsWith('## ') && line.contains(version),
+    final original = file.readAsStringSync();
+    final update = updateReleaseChangelog(
+      original,
+      version: version,
+      releaseUrl: releaseUrl,
     );
-    if (headingIndex == -1) {
+    if (!update.found) {
       stderr.writeln('Warning: Could not find version $version in $path');
+      hasErrors = true;
       continue;
     }
 
-    final currentHeading = lines[headingIndex].trim();
-    lines[headingIndex] = currentHeading.startsWith('## [')
-        ? '## [$version]'
-        : '## $version';
+    updates.add((file: file, path: path, update: update));
+  }
+  if (hasErrors) {
+    exitCode = 1;
+    return;
+  }
 
-    var sectionEnd = headingIndex + 1;
-    while (sectionEnd < lines.length && !lines[sectionEnd].startsWith('## ')) {
-      sectionEnd++;
-    }
-
-    final newSection = [
-      '',
-      '* See [release notes]($releaseUrl) for details.',
-      '',
-    ];
-
-    final existingSection = lines.sublist(headingIndex + 1, sectionEnd);
-    if (!_sectionMatches(existingSection, newSection)) {
-      lines.replaceRange(headingIndex + 1, sectionEnd, newSection);
-      stdout.writeln('Updated changelog entry in $path');
+  for (final entry in updates) {
+    if (entry.update.changed) {
+      entry.file.writeAsStringSync(entry.update.content);
+      stdout.writeln('Updated changelog entry in ${entry.path}');
     } else {
-      stdout.writeln('No changes required for $path');
+      stdout.writeln('No changes required for ${entry.path}');
     }
-
-    // Remove any duplicate headings for the same version further down the file.
-    var duplicateIndex = lines.indexWhere(
-      (line) => line.startsWith('## ') && line.contains(version),
-      headingIndex + 1,
-    );
-    while (duplicateIndex != -1) {
-      var duplicateEnd = duplicateIndex + 1;
-      while (duplicateEnd < lines.length &&
-          !lines[duplicateEnd].startsWith('## ')) {
-        duplicateEnd++;
-      }
-      lines.removeRange(duplicateIndex, duplicateEnd);
-      duplicateIndex = lines.indexWhere(
-        (line) => line.startsWith('## ') && line.contains(version),
-        headingIndex + 1,
-      );
-    }
-
-    file.writeAsStringSync(lines.join('\n'));
   }
 }
 
@@ -113,23 +92,4 @@ String? _readVersionFromPubspec(String path) {
     }
   }
   return null;
-}
-
-bool _sectionMatches(List<String> existing, List<String> expected) {
-  List<String> clean(List<String> input) => input
-      .map((line) => line.trimRight())
-      .skipWhile((line) => line.isEmpty)
-      .toList();
-
-  final cleanedExisting = clean(existing);
-  final cleanedExpected = clean(expected);
-  if (cleanedExisting.length != cleanedExpected.length) {
-    return false;
-  }
-  for (var i = 0; i < cleanedExisting.length; i++) {
-    if (cleanedExisting[i] != cleanedExpected[i]) {
-      return false;
-    }
-  }
-  return true;
 }

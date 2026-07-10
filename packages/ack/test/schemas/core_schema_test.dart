@@ -196,6 +196,10 @@ void main() {
     group('ListSchema', () {
       test('should reject nullable item schemas at construction', () {
         expect(() => Ack.list(Ack.string().nullable()), throwsArgumentError);
+        expect(
+          () => Ack.list(Ack.anyOf([Ack.string().nullable(), Ack.integer()])),
+          throwsArgumentError,
+        );
       });
     });
   });
