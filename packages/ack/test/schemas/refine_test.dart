@@ -98,9 +98,9 @@ void main() {
       );
     });
 
-    test('safeParse converts refinement exceptions to failures', () {
+    test('safeParse converts refinement Exceptions to failures', () {
       final schema = Ack.string().refine(
-        (_) => throw StateError('refinement exploded'),
+        (_) => throw FormatException('refinement exploded'),
       );
 
       final result = schema.safeParse('value', debugName: 'explosiveField');
@@ -111,8 +111,15 @@ void main() {
       expect(error.message, contains('Refinement threw'));
       expect(error.name, 'explosiveField');
       expect(error.value, 'value');
-      expect(error.cause, isA<StateError>());
+      expect(error.cause, isA<FormatException>());
       expect(error.stackTrace, isNotNull);
+    });
+
+    test('safeParse rethrows Error instances from refinements', () {
+      final thrown = StateError('refinement exploded');
+      final schema = Ack.string().refine((_) => throw thrown);
+
+      expect(() => schema.safeParse('value'), throwsA(same(thrown)));
     });
   });
 }

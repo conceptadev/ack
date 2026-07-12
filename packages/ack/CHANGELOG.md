@@ -2,7 +2,12 @@
 
 ### Fixed
 
-* Keep `safeParse` non-throwing when refinements or constraints throw exceptions.
+* Keep `safeParse` non-throwing when refinements or constraints throw
+  recoverable `Exception`s, while preserving `Error` values such as
+  `StateError` so programming defects are not masked as validation failures.
+* Decode RFC 3339 lowercase `t`/`z` separators in `Ack.datetime()`, which its
+  own string validation already accepts (previously they failed at the decode
+  step with a misleading "Codec decode failed" message).
 * Bound direct, indirect, wrapper-mediated, and fluent-copy lazy-schema alias
   recursion (previously unbounded and prone to stack overflow).
 * Snapshot factory collections so a caller mutating the passed list or map can no

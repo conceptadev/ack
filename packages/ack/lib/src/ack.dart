@@ -182,7 +182,7 @@ final class Ack {
         _isUtcDateTime,
         message: 'Expected a UTC DateTime.',
       ),
-      decoder: DateTime.parse,
+      decoder: _decodeIso8601DateTime,
       encoder: _encodeIsoDateTime,
     );
   }
@@ -257,6 +257,15 @@ String _encodeIsoDate(DateTime value) {
 
 String _encodeIsoDateTime(DateTime value) {
   return value.toIso8601String();
+}
+
+DateTime _decodeIso8601DateTime(String value) {
+  // The input schema accepts RFC 3339's lowercase `t`/`z` separators, but
+  // `DateTime.parse` only accepts the uppercase forms. Normalize so the codec
+  // decodes every string its own format validation admitted. The value is
+  // already known to match the ISO 8601 pattern, whose only letters are these
+  // separators, so upper-casing cannot corrupt any other field.
+  return DateTime.parse(value.toUpperCase());
 }
 
 List<T> _requireNonEmpty<T>(List<T> values, String name) {

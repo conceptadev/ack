@@ -115,8 +115,8 @@ void main() {
     });
   });
 
-  group('total validation', () {
-    test('preserves nested context when a constraint throws', () {
+  group('callback failure handling', () {
+    test('preserves nested context when a constraint throws an Exception', () {
       final schema = Ack.object({
         'name': Ack.string().constrain(const _ThrowingConstraint()),
       });
@@ -128,7 +128,18 @@ void main() {
       final error = nested.errors.single;
       expect(error, isA<SchemaValidationError>());
       expect(error.path, '#/name');
-      expect(error.cause, isA<StateError>());
+      expect(error.cause, isA<FormatException>());
+    });
+
+    test('rethrows Error instances from constraints', () {
+      final schema = Ack.object({
+        'name': Ack.string().constrain(const _ThrowingErrorConstraint()),
+      });
+
+      expect(
+        () => schema.safeParse({'name': 'Ada'}),
+        throwsA(isA<StateError>()),
+      );
     });
   });
 
@@ -173,6 +184,21 @@ final class _ThrowingConstraint extends Constraint<String>
     : super(
         constraintKey: 'throwing_test_constraint',
         description: 'Throws for test coverage.',
+      );
+
+  @override
+  bool isValid(String value) => throw FormatException('constraint exploded');
+
+  @override
+  String buildMessage(String value) => 'unreachable';
+}
+
+final class _ThrowingErrorConstraint extends Constraint<String>
+    with Validator<String> {
+  const _ThrowingErrorConstraint()
+    : super(
+        constraintKey: 'throwing_error_test_constraint',
+        description: 'Throws an Error for test coverage.',
       );
 
   @override

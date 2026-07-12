@@ -115,6 +115,18 @@ void main() {
         expect(schema.safeParse('2025-06-15T10:30:00.123456Z').isOk, isTrue);
       });
 
+      test('decodes RFC 3339 lowercase t/z separators', () {
+        final schema = Ack.datetime();
+
+        final zulu = schema.safeParse('2025-06-15t10:30:00z');
+        final offset = schema.safeParse('2025-06-15t10:30:00+05:30');
+
+        expect(zulu.isOk, isTrue);
+        expect(zulu.getOrThrow(), DateTime.utc(2025, 6, 15, 10, 30));
+        expect(offset.isOk, isTrue);
+        expect(offset.getOrThrow(), DateTime.utc(2025, 6, 15, 5, 0));
+      });
+
       test('string validation accepts announced leap seconds', () {
         final schema = Ack.string().datetime();
 

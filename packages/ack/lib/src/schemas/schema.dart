@@ -198,6 +198,14 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
     Object error,
     StackTrace stackTrace,
   ) {
+    // Callback failures that are not [Error] values become validation failures.
+    // An [Error] (for example, `StateError`, `TypeError`, or a VM error) signals
+    // a programmer or runtime defect rather than invalid input. Preserve its
+    // identity and original stack trace instead of disguising it as a failed
+    // validation result.
+    if (error is Error) {
+      Error.throwWithStackTrace(error, stackTrace);
+    }
     return SchemaResult.fail(
       SchemaValidationError(
         message: message,
