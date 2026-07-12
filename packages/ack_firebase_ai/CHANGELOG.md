@@ -1,3 +1,7 @@
+## 1.1.0
+
+* See [release notes](https://github.com/btwld/ack/releases/tag/v1.1.0) for details.
+
 ## 1.0.1
 
 * See [release notes](https://github.com/btwld/ack/releases/tag/v1.0.1) for details.

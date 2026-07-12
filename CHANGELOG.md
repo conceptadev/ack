@@ -3,7 +3,7 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
-## Unreleased
+## 1.1.0 - 2026-07-12
 
 * Fix validation edge cases, schema export consistency, schema immutability,
   generator diagnostics, and workspace/release tooling reliability.
