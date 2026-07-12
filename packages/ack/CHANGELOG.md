@@ -2,18 +2,33 @@
 
 ### Fixed
 
-* Keep `safeParse` non-throwing when refinements fail with exceptions.
-* Validate numeric `multipleOf`, IPv6, and RFC 3339 date-time edge cases
-  strictly; preserve announced leap seconds in string schemas while rejecting
-  them in `Ack.datetime()`, where Dart cannot represent them; and reject invalid
-  constraint configuration at schema construction.
-* Snapshot factory collections; reject empty unions and empty or duplicate
-  enum inputs.
-* Preserve intersecting constraints in JSON Schema output and correct
-  behavior-based schema/deep-collection equality.
-* Reject union schemas that can produce nullable list items.
+* Keep `safeParse` non-throwing when refinements or constraints throw exceptions.
 * Bound direct, indirect, wrapper-mediated, and fluent-copy lazy-schema alias
-  recursion.
+  recursion (previously unbounded and prone to stack overflow).
+* Snapshot factory collections so a caller mutating the passed list or map can no
+  longer corrupt a constructed schema.
+* Correct behavior-based schema and deep-collection equality.
+
+### Behavior changes
+
+No public API changed (verified with `dart_apitool` against 1.0.1); the following
+now reject inputs that previously passed or misbehaved silently.
+
+* Validate numeric `multipleOf`, IPv6, and RFC 3339 date-time values strictly.
+  Announced leap seconds are preserved by `Ack.string().datetime()` but rejected
+  by `Ack.datetime()`, where Dart cannot represent them. *(migration: some
+  previously-accepted strings and numbers now fail validation.)*
+* Reject invalid constraint configuration at construction — negative
+  lengths/item counts, non-finite numeric bounds, `min > max` ranges,
+  `multipleOf <= 0`, empty unions, empty or duplicate enum inputs, and unions
+  that can yield nullable list items — all throw `ArgumentError`. *(migration:
+  fix the schema definition; put nullability on the list via
+  `Ack.list(item).nullable()`.)*
+* `toJsonSchema()` merges conflicting duplicate keywords into `allOf` and emits
+  `min/maxItems` and `min/maxProperties` for exact counts. *(migration: refresh
+  snapshot or golden tests of exported schemas.)*
+* `parse()` throws `AckException` — instead of the raw callback error — when a
+  constraint or refinement throws.
 
 ## 1.0.1
 

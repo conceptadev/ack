@@ -288,6 +288,11 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
             return extracted.remainder(multipleValue!) == 0;
           }
 
+          // Deliberate: scale the tolerance to the reconstructed value rather
+          // than using a fixed absolute epsilon. A constant epsilon (the former
+          // 1e-10) accepts every value once the divisor drops below it and is
+          // meaningless at large magnitudes; a relative tolerance stays correct
+          // across scales. Do not revert to a fixed epsilon.
           final quotient = extracted / multipleValue!;
           if (!quotient.isFinite) return false;
 
