@@ -52,13 +52,8 @@ final class Ack {
 
   /// Creates an enum schema for validating enum values.
   static EnumSchema<T> enumValues<T extends Enum>(List<T> values) {
-    if (values.isEmpty) {
-      throw ArgumentError.value(values, 'values', 'Must not be empty.');
-    }
-    final names = values.map((value) => value.name).toSet();
-    if (names.length != values.length) {
-      throw ArgumentError.value(values, 'values', 'Must be unique.');
-    }
+    _requireNonEmpty(values, 'values');
+    _requireUniqueBy(values, 'values', (value) => value.name);
     return EnumSchema(values: List.unmodifiable(values));
   }
 
@@ -79,12 +74,8 @@ final class Ack {
 
   /// Creates a string schema that only accepts one of the given [values].
   static StringSchema enumString(List<String> values) {
-    if (values.isEmpty) {
-      throw ArgumentError.value(values, 'values', 'Must not be empty.');
-    }
-    if (values.toSet().length != values.length) {
-      throw ArgumentError.value(values, 'values', 'Must be unique.');
-    }
+    _requireNonEmpty(values, 'values');
+    _requireUniqueBy(values, 'values', (value) => value);
     return string().withConstraint(
       PatternConstraint.enumString(List.unmodifiable(values)),
     );
@@ -92,9 +83,7 @@ final class Ack {
 
   /// Creates a schema that can be one of many types.
   static AnyOfSchema anyOf(List<AnyAckSchema> schemas) {
-    if (schemas.isEmpty) {
-      throw ArgumentError.value(schemas, 'schemas', 'Must not be empty.');
-    }
+    _requireNonEmpty(schemas, 'schemas');
     return AnyOfSchema(List.unmodifiable(schemas));
   }
 
@@ -268,4 +257,22 @@ String _encodeIsoDate(DateTime value) {
 
 String _encodeIsoDateTime(DateTime value) {
   return value.toIso8601String();
+}
+
+List<T> _requireNonEmpty<T>(List<T> values, String name) {
+  if (values.isEmpty) {
+    throw ArgumentError.value(values, name, 'Must not be empty.');
+  }
+  return values;
+}
+
+List<T> _requireUniqueBy<T, K>(
+  List<T> values,
+  String name,
+  K Function(T) keyOf,
+) {
+  if (values.map(keyOf).toSet().length != values.length) {
+    throw ArgumentError.value(values, name, 'Must be unique.');
+  }
+  return values;
 }

@@ -10,8 +10,9 @@ final class EnumSchema<T extends Enum> extends AckSchema<String, T>
   /// Creates a low-level enum schema from an immutable, non-empty set of
   /// uniquely named [values].
   ///
-  /// Prefer `Ack.enumValues`, which validates and snapshots caller-owned lists.
-  /// Direct callers must not mutate [values] after construction.
+  /// See [AckSchema] for the low-level-constructor policy; prefer
+  /// [Ack.enumValues]. Direct callers must not mutate [values] after
+  /// construction.
   const EnumSchema({
     required this.values,
     super.isNullable,

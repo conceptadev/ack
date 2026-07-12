@@ -25,7 +25,6 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
   final Runtime Function(Object value) _decoder;
   final Object Function(Runtime value)? _encoder;
   final Object _decoderIdentity;
-  final Object? _encoderIdentity;
 
   CodecSchema._({
     required this.inputSchema,
@@ -33,7 +32,6 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
     required Runtime Function(Object value) decoder,
     required Object Function(Runtime value)? encoder,
     required Object decoderIdentity,
-    required Object? encoderIdentity,
     super.isNullable,
     super.isOptional,
     super.description,
@@ -41,8 +39,7 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
     super.refinements,
   }) : _decoder = decoder,
        _encoder = encoder,
-       _decoderIdentity = decoderIdentity,
-       _encoderIdentity = encoderIdentity;
+       _decoderIdentity = decoderIdentity;
 
   /// Creates a codec while preserving the input schema's runtime type.
   static CodecSchema<Boundary, Runtime> create<
@@ -66,7 +63,6 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
       decoder: (value) => decoder(value as InputRuntime),
       encoder: encoder,
       decoderIdentity: decoder,
-      encoderIdentity: encoder,
       isNullable: isNullable,
       isOptional: isOptional,
       description: description,
@@ -169,7 +165,6 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
       decoder: _decoder,
       encoder: _encoder,
       decoderIdentity: _decoderIdentity,
-      encoderIdentity: _encoderIdentity,
       isNullable: isNullable,
       isOptional: isOptional,
       description: description,
@@ -192,7 +187,6 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
       decoder: _decoder,
       encoder: _encoder,
       decoderIdentity: _decoderIdentity,
-      encoderIdentity: _encoderIdentity,
       isNullable: isNullable ?? this.isNullable,
       isOptional: isOptional ?? this.isOptional,
       description: description ?? this.description,
@@ -210,7 +204,7 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
         inputSchema == other.inputSchema &&
         outputSchema == other.outputSchema &&
         _decoderIdentity == other._decoderIdentity &&
-        _encoderIdentity == other._encoderIdentity;
+        _encoder == other._encoder;
   }
 
   @override
@@ -225,6 +219,6 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
     inputSchema,
     outputSchema,
     _decoderIdentity,
-    _encoderIdentity,
+    _encoder,
   );
 }

@@ -3,13 +3,9 @@
 import 'dart:convert';
 import 'dart:io';
 
-const ackPackages = [
-  'ack',
-  'ack_annotations',
-  'ack_generator',
-  'ack_firebase_ai',
-  'ack_json_schema_builder',
-];
+import 'src/workspace_packages.dart';
+
+final ackPackages = publishableAckPackages;
 const dartApiToolVersion = '0.23.0';
 
 Future<void> main(List<String> args) async {
@@ -164,9 +160,7 @@ Future<bool> checkPackage(
     print('✅ $packageName: API check completed');
   } else {
     stderr.writeln('❌ $packageName: API changes detected or check failed');
-    if ((result.stderr as String).isNotEmpty) {
-      stderr.writeln(result.stderr);
-    }
+    _writeProcessStderr(result);
   }
 
   final reportExists = report.existsSync();
@@ -185,13 +179,17 @@ Future<bool> runCommand(String command, List<String> args) async {
     if (result.exitCode == 0) return true;
 
     stderr.writeln('Error running $command ${args.join(' ')}');
-    if ((result.stderr as String).isNotEmpty) {
-      stderr.writeln(result.stderr);
-    }
+    _writeProcessStderr(result);
   } on ProcessException catch (error) {
     stderr.writeln('Error running $command ${args.join(' ')}: $error');
   }
   return false;
+}
+
+void _writeProcessStderr(ProcessResult result) {
+  if ((result.stderr as String).isNotEmpty) {
+    stderr.writeln(result.stderr);
+  }
 }
 
 void printUsage() {

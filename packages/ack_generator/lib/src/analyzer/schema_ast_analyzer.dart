@@ -2098,14 +2098,7 @@ class SchemaAstAnalyzer {
       }
 
       if (chain.schemaReference != null) {
-        final resolved = _resolveSchemaReference(
-          chain.schemaReference!,
-          element,
-        );
-        _rejectNullableListElement(
-          resolved?.modelInfo.isNullableSchema ?? false,
-          element,
-        );
+        _rejectIfReferencesNullableSchema(chain.schemaReference!, element);
         final mapping = _resolveSchemaVariableType(
           chain.schemaReference!,
           element,
@@ -2168,11 +2161,7 @@ class SchemaAstAnalyzer {
     }
 
     if (ref.schemaRef != null) {
-      final resolved = _resolveSchemaReference(ref.schemaRef!, element);
-      _rejectNullableListElement(
-        resolved?.modelInfo.isNullableSchema ?? false,
-        element,
-      );
+      _rejectIfReferencesNullableSchema(ref.schemaRef!, element);
       final mapping = _resolveSchemaVariableType(
         ref.schemaRef!,
         element,
@@ -2204,6 +2193,17 @@ class SchemaAstAnalyzer {
       element: element,
       todo:
           'Remove `.nullable()` from the element schema. Make the list itself nullable with `Ack.list(item).nullable()` when needed.',
+    );
+  }
+
+  void _rejectIfReferencesNullableSchema(
+    _SchemaReference reference,
+    Element2 element,
+  ) {
+    final resolved = _resolveSchemaReference(reference, element);
+    _rejectNullableListElement(
+      resolved?.modelInfo.isNullableSchema ?? false,
+      element,
     );
   }
 

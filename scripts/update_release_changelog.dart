@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'src/release_changelog.dart';
+import 'src/workspace_packages.dart';
 
 /// Updates package changelog entries for the latest release so they contain
 /// only a link to the GitHub release notes.
@@ -32,15 +33,11 @@ void main(List<String> args) {
       : 'v$version';
 
   final releaseUrl = 'https://github.com/btwld/ack/releases/tag/$tag';
-  final changelogPaths = [
-    'packages/ack/CHANGELOG.md',
-    'packages/ack_annotations/CHANGELOG.md',
-    'packages/ack_generator/CHANGELOG.md',
-    'packages/ack_firebase_ai/CHANGELOG.md',
-    'packages/ack_json_schema_builder/CHANGELOG.md',
-  ];
+  final changelogPaths = publishableAckPackages
+      .map((p) => 'packages/$p/CHANGELOG.md')
+      .toList();
   var hasErrors = false;
-  final updates = <({File file, String path, ChangelogUpdate update})>[];
+  final updates = <({File file, ChangelogUpdate update})>[];
 
   for (final path in changelogPaths) {
     final file = File(path);
@@ -62,7 +59,7 @@ void main(List<String> args) {
       continue;
     }
 
-    updates.add((file: file, path: path, update: update));
+    updates.add((file: file, update: update));
   }
   if (hasErrors) {
     exitCode = 1;
@@ -72,9 +69,9 @@ void main(List<String> args) {
   for (final entry in updates) {
     if (entry.update.changed) {
       entry.file.writeAsStringSync(entry.update.content);
-      stdout.writeln('Updated changelog entry in ${entry.path}');
+      stdout.writeln('Updated changelog entry in ${entry.file.path}');
     } else {
-      stdout.writeln('No changes required for ${entry.path}');
+      stdout.writeln('No changes required for ${entry.file.path}');
     }
   }
 }

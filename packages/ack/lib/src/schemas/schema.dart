@@ -150,13 +150,11 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
         final violation = constraint.validate(value);
         if (violation != null) constraintViolations.add(violation);
       } catch (error, stackTrace) {
-        return SchemaResult.fail(
-          SchemaValidationError(
-            message: 'Constraint "${constraint.constraintKey}" threw: $error',
-            context: context,
-            cause: error,
-            stackTrace: stackTrace,
-          ),
+        return _failFromThrown(
+          'Constraint "${constraint.constraintKey}" threw: $error',
+          context,
+          error,
+          stackTrace,
         );
       }
     }
@@ -177,13 +175,11 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
       try {
         isValid = refinement.validate(value);
       } catch (error, stackTrace) {
-        return SchemaResult.fail(
-          SchemaValidationError(
-            message: 'Refinement threw: $error',
-            context: context,
-            cause: error,
-            stackTrace: stackTrace,
-          ),
+        return _failFromThrown(
+          'Refinement threw: $error',
+          context,
+          error,
+          stackTrace,
         );
       }
       if (!isValid) {
@@ -194,6 +190,22 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
     }
 
     return SchemaResult.ok(value);
+  }
+
+  SchemaResult<Runtime> _failFromThrown(
+    String message,
+    SchemaContext context,
+    Object error,
+    StackTrace stackTrace,
+  ) {
+    return SchemaResult.fail(
+      SchemaValidationError(
+        message: message,
+        context: context,
+        cause: error,
+        stackTrace: stackTrace,
+      ),
+    );
   }
 
   /// Helper for schemas whose boundary == runtime: validates the runtime
@@ -361,13 +373,11 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
     try {
       return parseWithContext(value, context);
     } catch (error, stackTrace) {
-      return SchemaResult.fail(
-        SchemaValidationError(
-          message: 'Validation threw: $error',
-          context: context,
-          cause: error,
-          stackTrace: stackTrace,
-        ),
+      return _failFromThrown(
+        'Validation threw: $error',
+        context,
+        error,
+        stackTrace,
       );
     }
   }

@@ -14,7 +14,7 @@ final class AnyOfSchema extends AckSchema<Object, Object>
 
   /// Creates a low-level union from an immutable, non-empty list of [schemas].
   ///
-  /// Prefer `Ack.anyOf`, which validates and snapshots caller-owned lists.
+  /// See [AckSchema] for the low-level-constructor policy; prefer [Ack.anyOf].
   /// Direct callers must not mutate [schemas] after construction.
   const AnyOfSchema(
     this.schemas, {

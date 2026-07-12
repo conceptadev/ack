@@ -132,7 +132,7 @@ final class LazySchema<Boundary extends Object, Runtime extends Object>
   SchemaContext _enterRecursion(Object? value, SchemaContext context) {
     return _LazyRecursionContext(
       name: name,
-      owner: this as AnyAckSchema,
+      schema: this as AnyAckSchema,
       recursionToken: _recursionToken,
       value: value,
       parent: context,
@@ -222,20 +222,19 @@ final class LazySchema<Boundary extends Object, Runtime extends Object>
 final class _LazyRecursionContext extends SchemaContext {
   _LazyRecursionContext({
     required String name,
-    required this.owner,
+    required AnyAckSchema schema,
     required this.recursionToken,
     required Object? value,
     required SchemaContext parent,
   }) : super(
          name: name,
-         schema: owner,
+         schema: schema,
          value: value,
          parent: parent,
          pathSegment: '',
          operation: parent.operation,
        );
 
-  final AnyAckSchema owner;
   final Object recursionToken;
 }
 
