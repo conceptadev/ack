@@ -22,6 +22,20 @@ _ConstraintCategory _categorize(String constraintKey) {
   return _ConstraintCategory.numeric;
 }
 
+int _requireNonNegative(int value, String name) {
+  if (value < 0) {
+    throw ArgumentError.value(value, name, 'Must not be negative.');
+  }
+  return value;
+}
+
+N _requireFinite<N extends num>(N value, String name) {
+  if (!value.isFinite) {
+    throw ArgumentError.value(value, name, 'Must be finite.');
+  }
+  return value;
+}
+
 /// A generic constraint for various comparison-based validations.
 ///
 /// This versatile constraint handles comparisons like minimum/maximum length for strings/lists,
@@ -39,14 +53,14 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
   /// Optional custom message builder. If provided, overrides default messages.
   final String Function(T value, num extractedValue)? customMessageBuilder;
 
-  /// Tolerance for floating-point multipleOf comparisons.
+  /// Machine epsilon used for floating-point multipleOf comparisons.
   ///
-  /// Accounts for IEEE 754 floating-point representation errors when
-  /// checking if a number is a multiple of another. The value 1e-10 was chosen
-  /// to handle typical double precision errors (around 1e-15 to 1e-16) while
-  /// providing a safe margin for accumulated rounding in common use cases
-  /// like currency (0.01 multiples) and percentages (0.1 multiples).
-  static const _multipleOfEpsilon = 1e-10;
+  /// The tolerance is scaled to the reconstructed value below so it follows
+  /// floating-point precision instead of accepting a fixed quotient error.
+  static const _doubleMachineEpsilon = 2.220446049250313e-16;
+
+  /// Allows for rounding in division, integer rounding, and multiplication.
+  static const _multipleOfPrecisionFactor = 4;
 
   const ComparisonConstraint({
     required super.constraintKey,
@@ -68,7 +82,7 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
   static ComparisonConstraint<String> stringMinLength(int min) =>
       ComparisonConstraint<String>(
         type: ComparisonType.gte,
-        threshold: min,
+        threshold: _requireNonNegative(min, 'min'),
         valueExtractor: (s) => s.length,
         constraintKey: 'string_min_length',
         description: 'String must be at least $min characters.',
@@ -78,7 +92,7 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
   static ComparisonConstraint<String> stringMaxLength(int max) =>
       ComparisonConstraint<String>(
         type: ComparisonType.lte,
-        threshold: max,
+        threshold: _requireNonNegative(max, 'max'),
         valueExtractor: (s) => s.length,
         constraintKey: 'string_max_length',
         description: 'String must be at most $max characters.',
@@ -88,7 +102,7 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
   static ComparisonConstraint<String> stringExactLength(int length) =>
       ComparisonConstraint<String>(
         type: ComparisonType.eq,
-        threshold: length,
+        threshold: _requireNonNegative(length, 'length'),
         valueExtractor: (s) => s.length,
         constraintKey: 'string_exact_length',
         description: 'String must be exactly $length characters.',
@@ -100,7 +114,7 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
   static ComparisonConstraint<N> numberMin<N extends num>(N min) =>
       ComparisonConstraint<N>(
         type: ComparisonType.gte,
-        threshold: min,
+        threshold: _requireFinite(min, 'min'),
         valueExtractor: (n) => n,
         constraintKey: 'number_min',
         description: 'Number must be at least $min.',
@@ -108,7 +122,7 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
   static ComparisonConstraint<N> numberMax<N extends num>(N max) =>
       ComparisonConstraint<N>(
         type: ComparisonType.lte,
-        threshold: max,
+        threshold: _requireFinite(max, 'max'),
         valueExtractor: (n) => n,
         constraintKey: 'number_max',
         description: 'Number must be at most $max.',
@@ -116,7 +130,7 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
   static ComparisonConstraint<N> numberExclusiveMin<N extends num>(N min) =>
       ComparisonConstraint<N>(
         type: ComparisonType.gt,
-        threshold: min,
+        threshold: _requireFinite(min, 'min'),
         valueExtractor: (n) => n,
         constraintKey: 'number_exclusive_min',
         description: 'Number must be greater than $min.',
@@ -124,20 +138,31 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
   static ComparisonConstraint<N> numberExclusiveMax<N extends num>(N max) =>
       ComparisonConstraint<N>(
         type: ComparisonType.lt,
-        threshold: max,
+        threshold: _requireFinite(max, 'max'),
         valueExtractor: (n) => n,
         constraintKey: 'number_exclusive_max',
         description: 'Number must be less than $max.',
       );
-  static ComparisonConstraint<N> numberRange<N extends num>(N min, N max) =>
-      ComparisonConstraint<N>(
-        type: ComparisonType.range,
-        threshold: min,
-        maxThreshold: max,
-        valueExtractor: (n) => n,
-        constraintKey: 'number_range',
-        description: 'Number must be between $min and $max (inclusive).',
+  static ComparisonConstraint<N> numberRange<N extends num>(N min, N max) {
+    _requireFinite(min, 'min');
+    _requireFinite(max, 'max');
+    if (min > max) {
+      throw ArgumentError.value(
+        max,
+        'max',
+        'Must be greater than or equal to min ($min).',
       );
+    }
+    return ComparisonConstraint<N>(
+      type: ComparisonType.range,
+      threshold: min,
+      maxThreshold: max,
+      valueExtractor: (n) => n,
+      constraintKey: 'number_range',
+      description: 'Number must be between $min and $max (inclusive).',
+    );
+  }
+
   static ComparisonConstraint<N> numberMultipleOf<N extends num>(N multiple) {
     if (multiple == 0) {
       throw ArgumentError.value(
@@ -146,12 +171,19 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
         'multipleOf value cannot be zero',
       );
     }
+    if (!multiple.isFinite || multiple < 0) {
+      throw ArgumentError.value(
+        multiple,
+        'multiple',
+        'multipleOf value must be finite and greater than zero',
+      );
+    }
 
     return ComparisonConstraint<N>(
       type: ComparisonType.eq,
       threshold: 0,
       multipleValue: multiple,
-      valueExtractor: (n) => n.remainder(multiple), // Check if remainder is 0
+      valueExtractor: (n) => n,
       constraintKey: 'number_multiple_of',
       description: 'Number must be a multiple of $multiple.',
       customMessageBuilder: (value, _) =>
@@ -183,7 +215,7 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
   static ComparisonConstraint<List<E>> listMinItems<E>(int min) =>
       ComparisonConstraint<List<E>>(
         type: ComparisonType.gte,
-        threshold: min,
+        threshold: _requireNonNegative(min, 'min'),
         valueExtractor: (l) => l.length,
         constraintKey: 'list_min_items',
         description: 'List must have at least $min items.',
@@ -193,7 +225,7 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
   static ComparisonConstraint<List<E>> listMaxItems<E>(int max) =>
       ComparisonConstraint<List<E>>(
         type: ComparisonType.lte,
-        threshold: max,
+        threshold: _requireNonNegative(max, 'max'),
         valueExtractor: (l) => l.length,
         constraintKey: 'list_max_items',
         description: 'List must have at most $max items.',
@@ -203,7 +235,7 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
   static ComparisonConstraint<List<E>> listExactItems<E>(int length) =>
       ComparisonConstraint<List<E>>(
         type: ComparisonType.eq,
-        threshold: length,
+        threshold: _requireNonNegative(length, 'length'),
         valueExtractor: (l) => l.length,
         constraintKey: 'list_exact_items',
         description: 'List must have exactly $length items.',
@@ -216,7 +248,7 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
     int min,
   ) => ComparisonConstraint<Map<String, Object?>>(
     type: ComparisonType.gte,
-    threshold: min,
+    threshold: _requireNonNegative(min, 'min'),
     valueExtractor: (m) => m.keys.length,
     constraintKey: 'object_min_properties',
     description: 'Object must have at least $min properties.',
@@ -227,7 +259,7 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
     int max,
   ) => ComparisonConstraint<Map<String, Object?>>(
     type: ComparisonType.lte,
-    threshold: max,
+    threshold: _requireNonNegative(max, 'max'),
     valueExtractor: (m) => m.keys.length,
     constraintKey: 'object_max_properties',
     description: 'Object must have at most $max properties.',
@@ -251,14 +283,29 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
       ComparisonType.lte => extracted <= threshold,
       ComparisonType.eq => () {
         if (multipleValue != null && constraintKey == 'number_multiple_of') {
-          // Due to IEEE 754 floating-point errors, remainder can be:
-          // - Close to 0 (e.g., 1.5 % 0.5 = 0.0)
-          // - Close to the multiple itself (e.g., 0.6 % 0.1 = 0.0999... ≈ 0.1)
-          final rem = extracted.abs();
-          final multiple = multipleValue!.abs();
+          if (!extracted.isFinite) return false;
+          if (extracted is int && multipleValue is int) {
+            return extracted.remainder(multipleValue!) == 0;
+          }
 
-          return rem < _multipleOfEpsilon ||
-              (multiple - rem).abs() < _multipleOfEpsilon;
+          // Deliberate: scale the tolerance to the reconstructed value rather
+          // than using a fixed absolute epsilon. A constant epsilon (the former
+          // 1e-10) accepts every value once the divisor drops below it and is
+          // meaningless at large magnitudes; a relative tolerance stays correct
+          // across scales. Do not revert to a fixed epsilon.
+          final quotient = extracted / multipleValue!;
+          if (!quotient.isFinite) return false;
+
+          final nearestMultiple = quotient.roundToDouble();
+          final reconstructed = nearestMultiple * multipleValue!;
+          if (!reconstructed.isFinite) return false;
+
+          final magnitude = extracted.abs() > reconstructed.abs()
+              ? extracted.abs()
+              : reconstructed.abs();
+          final tolerance =
+              magnitude * _doubleMachineEpsilon * _multipleOfPrecisionFactor;
+          return (extracted - reconstructed).abs() <= tolerance;
         }
 
         return extracted == threshold;
@@ -322,14 +369,21 @@ class ComparisonConstraint<T extends Object> extends Constraint<T>
         if (constraintKey == 'number_multiple_of' && multipleValue != null) {
           return {'multipleOf': multipleValue};
         }
-        if (category == _ConstraintCategory.stringLength) {
-          return {
+        return switch (category) {
+          _ConstraintCategory.stringLength => {
             'minLength': threshold.toInt(),
             'maxLength': threshold.toInt(),
-          };
-        }
-
-        return {'const': threshold};
+          },
+          _ConstraintCategory.listItems => {
+            'minItems': threshold.toInt(),
+            'maxItems': threshold.toInt(),
+          },
+          _ConstraintCategory.objectProperties => {
+            'minProperties': threshold.toInt(),
+            'maxProperties': threshold.toInt(),
+          },
+          _ConstraintCategory.numeric => {'const': threshold},
+        };
       }(),
       ComparisonType.range => switch (category) {
         _ConstraintCategory.stringLength => {

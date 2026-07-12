@@ -10,6 +10,8 @@ import '../schemas/schema.dart';
 import 'ack_schema_model.dart';
 import 'ack_schema_model_warning.dart';
 
+const _deepEquality = DeepCollectionEquality();
+
 extension AckSchemaModelExtension<
   Boundary extends Object,
   Runtime extends Object
@@ -47,10 +49,9 @@ final class _SchemaModelBuilder {
       merged[key] = entry.value;
     }
 
-    const equality = DeepCollectionEquality();
     for (final entry in lazyDefinitions.entries) {
       if (merged.containsKey(entry.key)) {
-        if (!equality.equals(merged[entry.key], entry.value)) {
+        if (!_deepEquality.equals(merged[entry.key], entry.value)) {
           throw ArgumentError(
             'Ack.lazy definition "${entry.key}" collides with an existing root '
             'JSON Schema definition. Use a unique lazy name or rename the '
@@ -353,6 +354,10 @@ AckSchemaModel _applyConstraints(
   AckSchema<dynamic, dynamic> schema,
 ) {
   var next = model;
+  final appliedKeywordValues = {
+    for (final entry in _renderedKeywords(model).entries)
+      entry.key: <Object?>[entry.value],
+  };
   for (final constraint in schema.constraints) {
     if (constraint is DateTimeConstraint) {
       next = _applyDateTimeConstraint(next, constraint);
@@ -360,11 +365,50 @@ AckSchemaModel _applyConstraints(
     }
 
     if (constraint is JsonSchemaSpec) {
-      next = next.withJsonSchemaKeywords(constraint.toJsonSchema());
+      final keywords = constraint.toJsonSchema();
+      final newKeywords = <String, Object?>{};
+      final conflicts = <String, Object?>{};
+      for (final entry in keywords.entries) {
+        final seenValues = appliedKeywordValues[entry.key];
+        if (seenValues == null) {
+          appliedKeywordValues[entry.key] = [entry.value];
+          newKeywords[entry.key] = entry.value;
+        } else if (!seenValues.any(
+          (value) => _deepEquality.equals(value, entry.value),
+        )) {
+          seenValues.add(entry.value);
+          conflicts[entry.key] = entry.value;
+        }
+      }
+      if (newKeywords.isNotEmpty) {
+        next = next.withJsonSchemaKeywords(newKeywords);
+      }
+      if (conflicts.isNotEmpty) {
+        final existingAllOf = switch (next.extensions['allOf']) {
+          final List<Object?> value => value,
+          _ => const <Object?>[],
+        };
+        next = next.withExtensions({
+          ...next.extensions,
+          'allOf': [...existingAllOf, conflicts],
+        });
+      }
     }
   }
 
   return next;
+}
+
+Map<String, Object?> _renderedKeywords(AckSchemaModel model) {
+  final rendered = model.toJsonSchema();
+  final branches = rendered['anyOf'];
+  if (model.nullable && branches is List && branches.isNotEmpty) {
+    final nonNullBranch = branches.first;
+    if (nonNullBranch is Map) {
+      return Map<String, Object?>.from(nonNullBranch);
+    }
+  }
+  return rendered;
 }
 
 AckSchemaModel _applyDateTimeConstraint(

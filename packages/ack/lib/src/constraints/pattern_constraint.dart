@@ -180,23 +180,7 @@ class PatternConstraint extends Constraint<String>
 
   static PatternConstraint dateTimeIso8601() => PatternConstraint(
     type: PatternType.format,
-    // RFC 3339 / ISO-8601 validation using Dart's built-in DateTime parser
-    // Dart's tryParse implements RFC 3339, which is a subset of ISO-8601
-    formatValidator: (v) {
-      // Use Dart's built-in RFC 3339/ISO-8601 parser
-      final dt = DateTime.tryParse(v);
-      if (dt == null) return false;
-
-      // Must contain 'T' separator (distinguishes datetime from date-only)
-      // Must contain timezone indicator (Z or +/-HH:MM)
-      final hasTimeSeparator = v.contains('T') || v.contains('t');
-      final hasTimezone =
-          v.endsWith('Z') ||
-          v.endsWith('z') ||
-          RegExp(r'[+-]\d{2}:\d{2}$').hasMatch(v);
-
-      return hasTimeSeparator && hasTimezone;
-    },
+    formatValidator: _isValidIso8601DateTime,
     constraintKey: 'string_format_datetime',
     description: 'Must be a valid ISO 8601 date-time string.',
     example: '2023-10-27T10:30:00Z',
@@ -361,3 +345,87 @@ class PatternConstraint extends Constraint<String>
     );
   }
 }
+
+final _iso8601DateTimePattern = RegExp(
+  r'^(\d{4})-(\d{2})-(\d{2})[Tt](\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(?:[Zz]|[+-](\d{2}):(\d{2}))$',
+);
+
+/// Whether the seconds field in [value] can be represented by [DateTime].
+///
+/// Dart normalizes an RFC 3339 leap second (`:60`) to the following minute,
+/// so a lossless datetime codec must reject it before decoding.
+bool isDateTimeSecondRepresentableByDart(String value) {
+  final match = _iso8601DateTimePattern.firstMatch(value);
+  return match != null && match[6] != '60';
+}
+
+bool _isValidIso8601DateTime(String value) {
+  final match = _iso8601DateTimePattern.firstMatch(value);
+  if (match == null) return false;
+
+  final year = int.parse(match[1]!);
+  final month = int.parse(match[2]!);
+  final day = int.parse(match[3]!);
+  final hour = int.parse(match[4]!);
+  final minute = int.parse(match[5]!);
+  final second = int.parse(match[6]!);
+  final offsetHour = int.tryParse(match[7] ?? '') ?? 0;
+  final offsetMinute = int.tryParse(match[8] ?? '') ?? 0;
+
+  if (hour > 23 || minute > 59 || second > 60) return false;
+  if (offsetHour > 23 || offsetMinute > 59) return false;
+
+  final date = DateTime.utc(year, month, day);
+  final validDate = date.year == year && date.month == month && date.day == day;
+  if (!validDate) return false;
+
+  return second < 60 || _isAnnouncedLeapSecond(value);
+}
+
+bool _isAnnouncedLeapSecond(String value) {
+  final normalized = DateTime.tryParse(value)?.toUtc();
+  if (normalized == null) return false;
+
+  final precedingSecond = normalized.subtract(const Duration(seconds: 1));
+  final utcDate = (
+    precedingSecond.year,
+    precedingSecond.month,
+    precedingSecond.day,
+  );
+  return precedingSecond.hour == 23 &&
+      precedingSecond.minute == 59 &&
+      precedingSecond.second == 59 &&
+      _announcedLeapSecondUtcDates.contains(utcDate);
+}
+
+// Positive leap seconds announced through IERS Bulletin C 72 (July 2026).
+// Source: https://hpiers.obspm.fr/iers/bul/bulc/Leap_Second.dat
+const _announcedLeapSecondUtcDates = <(int, int, int)>{
+  (1972, 6, 30),
+  (1972, 12, 31),
+  (1973, 12, 31),
+  (1974, 12, 31),
+  (1975, 12, 31),
+  (1976, 12, 31),
+  (1977, 12, 31),
+  (1978, 12, 31),
+  (1979, 12, 31),
+  (1981, 6, 30),
+  (1982, 6, 30),
+  (1983, 6, 30),
+  (1985, 6, 30),
+  (1987, 12, 31),
+  (1989, 12, 31),
+  (1990, 12, 31),
+  (1992, 6, 30),
+  (1993, 6, 30),
+  (1994, 6, 30),
+  (1995, 12, 31),
+  (1997, 6, 30),
+  (1998, 12, 31),
+  (2005, 12, 31),
+  (2008, 12, 31),
+  (2012, 6, 30),
+  (2015, 6, 30),
+  (2016, 12, 31),
+};

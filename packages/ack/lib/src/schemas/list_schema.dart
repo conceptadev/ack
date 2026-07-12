@@ -21,7 +21,7 @@ final class ListSchema<ItemBoundary extends Object, ItemRuntime extends Object>
     super.constraints,
     super.refinements,
   }) {
-    if (itemSchema.isNullable) {
+    if (itemSchema.acceptsNull) {
       throw ArgumentError.value(
         itemSchema,
         'itemSchema',

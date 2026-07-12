@@ -133,7 +133,7 @@ final userSchema = Ack.object({
 Run the generator:
 
 ```bash
-dart run build_runner build --delete-conflicting-outputs
+dart run build_runner build
 ```
 
 This emits a `UserType` extension type with `parse`/`safeParse` and typed
@@ -185,55 +185,55 @@ This project uses [Melos](https://github.com/invertase/melos) to manage the mono
 ### Setup
 
 ```bash
-# Install Melos (if not already installed)
-dart pub global activate melos
+# Resolve the workspace-local Melos dependency
+dart pub get
 
 # Bootstrap the workspace (installs dependencies for all packages)
-melos bootstrap
+dart run melos bootstrap
 ```
 
 ### Common commands (run from root)
 
 ```bash
 # Run tests across all packages
-melos test
+dart run melos run test
 
 # Format code across all packages
-melos format
+dart run melos run format
 
 # Analyze code across all packages
-melos analyze
+dart run melos run analyze
 
 # Check for outdated dependencies
-melos deps-outdated
+dart run melos run deps-outdated
 
 # Run build_runner for packages that need it (e.g., ack_generator, example)
-melos build
+dart run melos run build
 
 # Clean build artifacts
-melos clean
+dart run melos run clean
 
 # Propose/apply version and changelog updates
-melos version
+dart run melos version
 
 # Dry-run pub.dev validation for one package
 (cd packages/ack && dart pub publish --dry-run)
 
 # Publish all packages (no dry-run)
-melos run publish
+dart run melos run publish
 ```
 
 ### Development tools
 
 ```bash
 # JSON Schema validation (JSON Schema Draft-7 compatibility)
-melos validate-jsonschema
+dart run melos run validate-jsonschema
 
 # API compatibility check (for semantic versioning)
-melos api-check v0.2.0
+dart run melos run api-check -- v0.2.0
 
 # See all available scripts
-melos list-scripts
+dart run melos run --list
 ```
 
 Additional development documentation is available in the `tools/` directory.
@@ -249,6 +249,6 @@ Contributions are welcome. Follow these steps:
 1. Fork the repository
 2. Create a feature branch
 3. Add your changes
-4. Run tests with `melos test`
+4. Run tests with `dart run melos run test`
 5. Follow [Conventional Commits](https://www.conventionalcommits.org/) in your commit messages
 6. Submit a pull request

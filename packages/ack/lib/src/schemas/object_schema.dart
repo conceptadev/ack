@@ -33,7 +33,7 @@ final class ObjectSchema extends AckSchema<JsonMap, JsonMap>
     super.description,
     super.constraints,
     super.refinements,
-  }) : properties = properties ?? const {};
+  }) : properties = Map.unmodifiable(properties ?? const {});
 
   @override
   @protected

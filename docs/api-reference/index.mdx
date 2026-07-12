@@ -110,7 +110,8 @@ Schema for validating strings. See [String Validation](../core-concepts/validati
 ### Date and Time
 
 - `date()`: Must be valid ISO 8601 date (YYYY-MM-DD)
-- `datetime()`: Must be valid ISO 8601 datetime
+- `datetime()`: Must be a valid ISO 8601 datetime; announced RFC leap seconds
+  are accepted and preserved as strings
 - `time()`: Must be valid time format (HH:MM:SS)
 
 ### Transformations
@@ -246,7 +247,7 @@ Schema reference for recursive object graphs.
 Use the [`ack_generator`](https://pub.dev/packages/ack_generator) builder to turn annotations into extension types. After adding the annotations below, run:
 
 ```bash
-dart run build_runner build --delete-conflicting-outputs
+dart run build_runner build
 ```
 
 ### `@AckType()`
@@ -337,7 +338,9 @@ reverse direction. See [Codecs](../core-concepts/codecs.mdx).
 **Built-in codecs:**
 
 - `Ack.date()` → `CodecSchema<String, DateTime>` (ISO `YYYY-MM-DD` ↔ local-midnight `DateTime`)
-- `Ack.datetime()` → `CodecSchema<String, DateTime>` (ISO 8601 ↔ UTC `DateTime`)
+- `Ack.datetime()` → `CodecSchema<String, DateTime>` (ISO 8601 ↔ UTC
+  `DateTime`; leap-second strings are rejected because Dart cannot represent
+  them)
 - `Ack.uri()` → `CodecSchema<String, Uri>` (absolute URI string ↔ `Uri`)
 - `Ack.duration()` → `CodecSchema<int, Duration>` (milliseconds ↔ `Duration`)
 - `Ack.enumCodec(List<T> values)` → `CodecSchema<String, T>` (enum `.name` ↔ enum value)

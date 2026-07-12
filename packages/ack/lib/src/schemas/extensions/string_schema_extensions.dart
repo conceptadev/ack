@@ -115,6 +115,9 @@ extension StringSchemaExtensions on StringSchema {
   /// Adds a constraint that the string must be a valid IP address.
   /// If [version] is provided, it must be 4 or 6.
   StringSchema ip({int? version}) {
+    if (version != null && version != 4 && version != 6) {
+      throw ArgumentError.value(version, 'version', 'Must be 4 or 6.');
+    }
     return withConstraint(StringIpConstraint(version: version));
   }
 
@@ -127,18 +130,24 @@ extension StringSchemaExtensions on StringSchema {
   /// Trims leading and trailing whitespace from the string before validation.
   /// Returns a one-way codec that applies String.trim() to the input.
   CodecSchema<String, String> trim() {
-    return transform((s) => s.trim());
+    return transform(_trimString);
   }
 
   /// Converts the string to lowercase after validation.
   /// Returns a one-way codec that applies String.toLowerCase() to the input.
   CodecSchema<String, String> toLowerCase() {
-    return transform((s) => s.toLowerCase());
+    return transform(_lowercaseString);
   }
 
   /// Converts the string to uppercase after validation.
   /// Returns a one-way codec that applies String.toUpperCase() to the input.
   CodecSchema<String, String> toUpperCase() {
-    return transform((s) => s.toUpperCase());
+    return transform(_uppercaseString);
   }
 }
+
+String _trimString(String value) => value.trim();
+
+String _lowercaseString(String value) => value.toLowerCase();
+
+String _uppercaseString(String value) => value.toUpperCase();

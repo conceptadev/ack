@@ -78,13 +78,20 @@ void main() {
 
       test('accepts valid IPv6 addresses - link-local', () {
         expect(ipv6Constraint.isValid('fe80::1'), isTrue);
+        expect(ipv6Constraint.isValid('FE80::1'), isTrue);
         expect(ipv6Constraint.isValid('fe80::204:61ff:fe9d:f156'), isTrue);
+      });
+
+      test('rejects scoped notation outside JSON Schema IPv6 format', () {
+        expect(ipv6Constraint.isValid('fe80::1%eth0'), isFalse);
+        expect(ipv6Constraint.isValid('ff02::1%eth0'), isFalse);
       });
 
       test('rejects invalid IPv6 addresses', () {
         expect(ipv6Constraint.isValid(''), isFalse);
         expect(ipv6Constraint.isValid('not an ipv6'), isFalse);
         expect(ipv6Constraint.isValid('192.168.1.1'), isFalse); // IPv4
+        expect(ipv6Constraint.isValid('prefix ::1 suffix'), isFalse);
       });
 
       test('rejects IPv4 addresses when version is 6', () {
@@ -177,6 +184,10 @@ void main() {
         expect(ipSchema.safeParse('192.168.1.1').isOk, isTrue);
         expect(ipSchema.safeParse('::1').isOk, isTrue);
         expect(ipSchema.safeParse('invalid').isOk, isFalse);
+      });
+
+      test('rejects unsupported IP versions at construction', () {
+        expect(() => Ack.string().ip(version: 5), throwsArgumentError);
       });
     });
   });

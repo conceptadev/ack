@@ -1,3 +1,18 @@
+## Unreleased
+
+### Changed
+
+* Use the current source_gen generation error type and keep diagnostic output in
+  the build pipeline instead of writing undeclared debug files.
+* Remove obsolete exploratory and golden-test utilities.
+
+### Behavior changes
+
+* Reject direct and referenced nullable list element schemas during generation,
+  matching the runtime schema contract. *(migration: a previously-succeeding
+  `Ack.list(x.nullable())` build now fails; put nullability on the list with
+  `Ack.list(x).nullable()`.)*
+
 ## 1.0.1
 
 * See [release notes](https://github.com/btwld/ack/releases/tag/v1.0.1) for details.

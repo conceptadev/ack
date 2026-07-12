@@ -17,10 +17,10 @@ The Ack project uses GitHub Releases to manage versioning and publishing. This a
 Before creating a release:
 
 1. Ensure all changes are committed and pushed to the `main` branch
-2. Verify that all tests pass by running `melos test` (include `melos run validate-jsonschema` and `melos run test:gen` for full coverage)
+2. Verify that all tests pass by running `dart run melos run test` (include `dart run melos run validate-jsonschema` and `dart run melos run test:gen` for full coverage)
 3. Check that the documentation is up to date across the repo and docs site
 4. Decide on the new version number following [Semantic Versioning](https://semver.org/) and apply it consistently to every publishable package (`ack`, `ack_annotations`, `ack_generator`, `ack_firebase_ai`, `ack_json_schema_builder`)
-5. Ensure package CHANGELOG entries are finalized before tagging. If you want a link-only entry for a version, you can run `dart scripts/update_release_changelog.dart <version> [tag]` after `melos version`.
+5. Ensure package CHANGELOG entries are finalized before tagging. If you want a link-only entry for a version, you can run `dart scripts/update_release_changelog.dart <version> [tag]` after `dart run melos version`.
 
 ### 2. Create a GitHub Release
 
@@ -86,10 +86,10 @@ If needed, you can version packages locally from conventional commits:
 
 ```bash
 # Propose/apply version and changelog updates
-melos version
+dart run melos version
 
 # Non-interactive
-melos version --yes
+dart run melos version --yes
 
 # Push the changes and tags
 git push --follow-tags
@@ -106,7 +106,7 @@ for pkg in ack ack_annotations ack_generator ack_json_schema_builder ack_firebas
 done
 
 # Actual publish (no dry-run)
-melos run publish
+dart run melos run publish
 ```
 
 ## Troubleshooting

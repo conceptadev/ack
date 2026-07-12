@@ -38,7 +38,7 @@ plus `parse()` and `safeParse()` helpers.
 Generate the wrapper with:
 
 ```bash
-dart run build_runner build --delete-conflicting-outputs
+dart run build_runner build
 ```
 
 ## Custom names

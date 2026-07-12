@@ -82,7 +82,10 @@ Ack.string().date()
 ```
 
 ### `datetime()`
-Requires a valid ISO 8601 date-time string.
+Requires a valid ISO 8601 date-time string with a timezone. Announced RFC 3339
+leap seconds are accepted and preserved because this schema returns the input
+`String`. The `Ack.datetime()` codec rejects leap seconds because Dart's
+`DateTime` cannot represent them without normalization.
 ```dart
 Ack.string().datetime()
 ```
@@ -219,7 +222,7 @@ Ack.number().lessThan(100) // < 100
 ```
 
 ### `multipleOf(num factor)`
-Requires a value that is a multiple of `factor`.
+Requires a value that is a multiple of `factor`. Integer checks are exact; doubles use a small scale-relative tolerance, so round accumulated floating-point sums (or validate integer units such as cents) before parsing.
 ```dart
 Ack.integer().multipleOf(5) // Must be divisible by 5
 Ack.double().multipleOf(0.5) // Use factors that avoid floating point rounding issues

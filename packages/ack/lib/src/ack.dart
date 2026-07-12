@@ -51,8 +51,11 @@ final class Ack {
   ) => ListSchema<B, R>(itemSchema);
 
   /// Creates an enum schema for validating enum values.
-  static EnumSchema<T> enumValues<T extends Enum>(List<T> values) =>
-      EnumSchema(values: values);
+  static EnumSchema<T> enumValues<T extends Enum>(List<T> values) {
+    _requireNonEmpty(values, 'values');
+    _requireUniqueBy(values, 'values', (value) => value.name);
+    return EnumSchema(values: List.unmodifiable(values));
+  }
 
   /// Creates a bidirectional codec for Dart enums, with boundary `String` and
   /// runtime [T].
@@ -67,16 +70,22 @@ final class Ack {
   /// (e.g. adding constraints, copying with new flags). Prefer [enumCodec]
   /// when downstream code expects every value-shape to be a `CodecSchema`.
   static CodecSchema<String, T> enumCodec<T extends Enum>(List<T> values) =>
-      enumValues(
-        values,
-      ).codec<T>(decode: (value) => value, encode: (value) => value);
+      enumValues(values).codec<T>(decode: _identity, encode: _identity);
 
   /// Creates a string schema that only accepts one of the given [values].
-  static StringSchema enumString(List<String> values) =>
-      string().withConstraint(PatternConstraint.enumString(values));
+  static StringSchema enumString(List<String> values) {
+    _requireNonEmpty(values, 'values');
+    _requireUniqueBy(values, 'values', (value) => value);
+    return string().withConstraint(
+      PatternConstraint.enumString(List.unmodifiable(values)),
+    );
+  }
 
   /// Creates a schema that can be one of many types.
-  static AnyOfSchema anyOf(List<AnyAckSchema> schemas) => AnyOfSchema(schemas);
+  static AnyOfSchema anyOf(List<AnyAckSchema> schemas) {
+    _requireNonEmpty(schemas, 'schemas');
+    return AnyOfSchema(List.unmodifiable(schemas));
+  }
 
   /// Creates a schema that accepts any non-null JSON-safe value.
   ///
@@ -157,16 +166,23 @@ final class Ack {
   /// Bidirectional datetime codec: ISO 8601 datetime strings ↔ UTC
   /// `DateTime` runtime values.
   ///
+  /// Announced RFC 3339 leap seconds are valid for `Ack.string().datetime()`,
+  /// but this codec rejects them because Dart normalizes `:60` to the following
+  /// minute instead of preserving the instant's textual representation.
+  ///
   /// Runtime invariant: the encoded `DateTime` must be UTC. Local-time
   /// values fail validation; convert with `.toUtc()` before encoding.
   static CodecSchema<String, DateTime> datetime() {
     return CodecSchema.create<String, String, DateTime>(
-      inputSchema: string().datetime(),
+      inputSchema: string().datetime().refine(
+        isDateTimeSecondRepresentableByDart,
+        message: 'Dart DateTime cannot represent leap seconds.',
+      ),
       outputSchema: InstanceSchema<DateTime>().refine(
-        (value) => value.isUtc,
+        _isUtcDateTime,
         message: 'Expected a UTC DateTime.',
       ),
-      decoder: DateTime.parse,
+      decoder: _decodeIso8601DateTime,
       encoder: _encodeIsoDateTime,
     );
   }
@@ -179,11 +195,11 @@ final class Ack {
     return CodecSchema.create<String, String, Uri>(
       inputSchema: string().uri(),
       outputSchema: InstanceSchema<Uri>().refine(
-        (u) => u.hasScheme && u.host.isNotEmpty,
+        _isAbsoluteUri,
         message: 'Expected an absolute URI with scheme and host.',
       ),
       decoder: Uri.parse,
-      encoder: (value) => value.toString(),
+      encoder: _encodeUri,
     );
   }
 
@@ -196,15 +212,16 @@ final class Ack {
     return CodecSchema.create<int, int, Duration>(
       inputSchema: integer(),
       outputSchema: InstanceSchema<Duration>().refine(
-        (value) =>
-            value.inMicroseconds % Duration.microsecondsPerMillisecond == 0,
+        _isWholeMillisecondDuration,
         message: 'Expected a whole-millisecond Duration.',
       ),
-      decoder: (ms) => Duration(milliseconds: ms),
-      encoder: (value) => value.inMilliseconds,
+      decoder: _decodeDuration,
+      encoder: _encodeDuration,
     );
   }
 }
+
+T _identity<T extends Object>(T value) => value;
 
 bool _isLocalMidnightDate(DateTime value) {
   if (value.isUtc) return false;
@@ -215,6 +232,22 @@ bool _isLocalMidnightDate(DateTime value) {
       value.microsecond == 0;
 }
 
+bool _isUtcDateTime(DateTime value) => value.isUtc;
+
+bool _isAbsoluteUri(Uri value) => value.hasScheme && value.host.isNotEmpty;
+
+String _encodeUri(Uri value) => value.toString();
+
+bool _isWholeMillisecondDuration(Duration value) {
+  return value.inMicroseconds % Duration.microsecondsPerMillisecond == 0;
+}
+
+Duration _decodeDuration(int milliseconds) {
+  return Duration(milliseconds: milliseconds);
+}
+
+int _encodeDuration(Duration value) => value.inMilliseconds;
+
 String _encodeIsoDate(DateTime value) {
   final y = value.year.toString().padLeft(4, '0');
   final m = value.month.toString().padLeft(2, '0');
@@ -224,4 +257,31 @@ String _encodeIsoDate(DateTime value) {
 
 String _encodeIsoDateTime(DateTime value) {
   return value.toIso8601String();
+}
+
+DateTime _decodeIso8601DateTime(String value) {
+  // The input schema accepts RFC 3339's lowercase `t`/`z` separators, but
+  // `DateTime.parse` only accepts the uppercase forms. Normalize so the codec
+  // decodes every string its own format validation admitted. The value is
+  // already known to match the ISO 8601 pattern, whose only letters are these
+  // separators, so upper-casing cannot corrupt any other field.
+  return DateTime.parse(value.toUpperCase());
+}
+
+List<T> _requireNonEmpty<T>(List<T> values, String name) {
+  if (values.isEmpty) {
+    throw ArgumentError.value(values, name, 'Must not be empty.');
+  }
+  return values;
+}
+
+List<T> _requireUniqueBy<T, K>(
+  List<T> values,
+  String name,
+  K Function(T) keyOf,
+) {
+  if (values.map(keyOf).toSet().length != values.length) {
+    throw ArgumentError.value(values, name, 'Must be unique.');
+  }
+  return values;
 }
