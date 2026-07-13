@@ -19,25 +19,43 @@ final keyCodec = Ack.discriminated<Key>(
   schemas: {_valueKeyType: _valueKeyCodec},
 );
 
-final _valueKeyCodec = Ack.object({
-  'valueType': Ack.enumCodec(_ValueKeyValueType.values),
-  'value': Ack.any(),
-}).codec<Key>(decode: _decodeKey, encode: _encodeKey);
+final _valueKeyCodec =
+    Ack.object({
+          'valueType': Ack.enumCodec(_ValueKeyValueType.values),
+          'value': Ack.anyOf([
+            Ack.string(),
+            Ack.integer(),
+            Ack.double(),
+            Ack.boolean(),
+          ]),
+        })
+        .refine(
+          _valueMatchesValueType,
+          message: 'ValueKey value must match its declared valueType.',
+        )
+        .codec<Key>(decode: _decodeKey, encode: _encodeKey);
+
+bool _valueMatchesValueType(JsonMap data) {
+  final valueType = readValue<_ValueKeyValueType>(data, 'valueType');
+  final value = data['value'];
+
+  return switch (valueType) {
+    _ValueKeyValueType.string => value is String,
+    _ValueKeyValueType.int => value is int,
+    _ValueKeyValueType.double => value is num,
+    _ValueKeyValueType.bool => value is bool,
+  };
+}
 
 Key _decodeKey(JsonMap data) {
   final valueType = readValue<_ValueKeyValueType>(data, 'valueType');
   final value = data['value'];
 
   return switch (valueType) {
-    _ValueKeyValueType.string when value is String => ValueKey(value),
-    _ValueKeyValueType.int when value is int => ValueKey(value),
-    _ValueKeyValueType.double when value is num => ValueKey(value.toDouble()),
-    _ValueKeyValueType.bool when value is bool => ValueKey(value),
-    _ => throw FormatException(
-      'ValueKey payload for valueType "${valueType.name}" has invalid '
-      'runtime type '
-      '${value.runtimeType}.',
-    ),
+    _ValueKeyValueType.string => ValueKey(value as String),
+    _ValueKeyValueType.int => ValueKey(value as int),
+    _ValueKeyValueType.double => ValueKey((value as num).toDouble()),
+    _ValueKeyValueType.bool => ValueKey(value as bool),
   };
 }
 

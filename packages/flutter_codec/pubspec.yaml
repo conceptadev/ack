@@ -8,9 +8,9 @@ resolution: workspace
 
 environment:
   sdk: '>=3.8.0 <4.0.0'
-  # Floor is 3.32.0: RoundedSuperellipseBorder and Text.semanticsIdentifier
-  # first shipped stable in 3.32.0 (WebHtmlElementStrategy in 3.29.0).
-  flutter: '>=3.32.0'
+  # Floor is 3.41.0: FontWeight(int) and Container.isAntiAlias are part of the
+  # codec contract and are unavailable in Flutter 3.38.1.
+  flutter: '>=3.41.0'
 
 dependencies:
   ack: ^1.0.1

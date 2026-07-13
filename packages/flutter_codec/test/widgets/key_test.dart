@@ -117,11 +117,37 @@ void main() {
           'valueType': 'double',
           'value': 'oops',
         },
+        'object value': {
+          'type': 'value',
+          'valueType': 'string',
+          'value': {'nested': 'value'},
+        },
+        'list value': {
+          'type': 'value',
+          'valueType': 'string',
+          'value': ['value'],
+        },
       };
 
       invalidCases.forEach((name, input) {
         expect(keyCodec.safeParse(input).isFail, isTrue, reason: name);
       });
+    });
+
+    test('exports only supported scalar value schemas', () {
+      final jsonSchema = keyCodec.toJsonSchema();
+      final branches = jsonSchema['anyOf']! as List<Object?>;
+      final valueKeySchema = branches.single! as Map<String, Object?>;
+      final properties = valueKeySchema['properties']! as Map<String, Object?>;
+      final valueSchema = properties['value']! as Map<String, Object?>;
+      final valueBranches = valueSchema['anyOf']! as List<Object?>;
+
+      expect(valueBranches, [
+        {'type': 'string'},
+        {'type': 'integer'},
+        {'type': 'number'},
+        {'type': 'boolean'},
+      ]);
     });
   });
 }

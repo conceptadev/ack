@@ -72,11 +72,8 @@ String? _sharedPackagePrefix(List<String> families) {
     if (separator <= 0 || separator == rest.length - 1) return null;
 
     final name = rest.substring(0, separator);
-    if (shared == null) {
-      shared = name;
-    } else if (shared != name) {
-      return null;
-    }
+    shared ??= name;
+    if (shared != name) return null;
   }
 
   return shared;

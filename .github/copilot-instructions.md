@@ -11,10 +11,11 @@
 - `packages/ack_generator`: build_runner generator + golden tests.
 - `packages/ack_firebase_ai`: Firebase AI schema adapter.
 - `packages/ack_json_schema_builder`: JSON Schema adapter.
+- `packages/flutter_codec`: ACK codecs for portable Flutter value types.
 - `example`: sample usage.
 
 ## Environment and setup
-- Required SDKs: Dart `>=3.8.0 <4.0.0`, Flutter `>=3.16.0` (see `/pubspec.yaml`).
+- Required SDKs: Dart `>=3.8.0 <4.0.0`, Flutter `>=3.41.0` (see `/pubspec.yaml`).
 - Use from repo root:
   1. `dart pub global activate melos`
   2. `melos bootstrap`

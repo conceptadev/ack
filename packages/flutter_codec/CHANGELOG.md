@@ -14,7 +14,7 @@
 
 Initial release. JSON value codecs for Flutter's painting and rendering layers,
 plus a small set of widget codecs, built on [`ack`](../ack/README.md).
-Requires Flutter `>=3.32.0`.
+Requires Flutter `>=3.41.0`.
 
 - **Primitives**: `Color`, `Offset`, `Radius`, `Rect`, `Alignment` /
   `AlignmentDirectional` / `AlignmentGeometry`, `EdgeInsets` /

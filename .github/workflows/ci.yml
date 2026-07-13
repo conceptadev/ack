@@ -8,9 +8,19 @@ on:
 
 jobs:
   test:
+    name: Flutter stable
     uses: btwld/dart-actions/.github/workflows/ci.yml@main
     secrets:
       token: ${{ secrets.GITHUB_TOKEN }}
     with:
       flutter-version: "stable"
       run-dcm: true
+
+  test-minimum:
+    name: Flutter 3.41.0
+    uses: btwld/dart-actions/.github/workflows/ci.yml@main
+    secrets:
+      token: ${{ secrets.GITHUB_TOKEN }}
+    with:
+      flutter-version: "3.41.0"
+      run-dcm: false

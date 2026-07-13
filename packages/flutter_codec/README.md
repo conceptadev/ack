@@ -2,7 +2,7 @@
 
 JSON value codecs for Flutter's painting and rendering layers — plus a small,
 growing set of widget codecs (`Container`, `Text`, `Key`) — built on
-[`ack`](../ack/README.md).
+[`ack`](https://pub.dev/packages/ack).
 
 Every codec is an Ack `CodecSchema` and exposes the same surface:
 
@@ -10,6 +10,7 @@ Every codec is an Ack `CodecSchema` and exposes the same surface:
 codec.parse(json);      // decode, throws on failure
 codec.safeParse(json);  // decode, returns SchemaResult
 codec.encode(value);    // encode to a JSON-safe map / scalar
+codec.safeEncode(value); // encode, returns SchemaResult
 codec.toJsonSchema();   // emit JSON Schema for downstream tooling
 ```
 
@@ -38,6 +39,20 @@ final json = boxDecorationCodec.encode(decoration);
 final roundTripped = boxDecorationCodec.parse(json);
 assert(roundTripped == decoration);
 ```
+
+## ACK patterns in this package
+
+- [`colorCodec`](lib/src/primitives/color.dart) shows a custom codec with a
+  compact boundary and a rich Flutter runtime value.
+- [`boxDecorationCodec`](lib/src/decorations.dart) composes child codecs and
+  applies defaults while keeping its canonical output explicit.
+- [`gradientCodec`](lib/src/gradients.dart) combines literals, named
+  refinements, and a discriminated union.
+- [`widgetCodec`](lib/src/widgets/widget.dart) uses `Ack.lazy` through its
+  recursive `Container` branch, with a bounded runtime depth.
+
+Together, `safeParse`, `safeEncode`, and `toJsonSchema` provide the public
+validation, encoding, and boundary-schema workflow for all of these patterns.
 
 ## Coverage
 
@@ -141,6 +156,12 @@ Every codec implements `.toJsonSchema()`, returning a `Map<String, Object?>`
 that round-trips through `jsonEncode`. Composition flows through: the schema
 for `boxDecorationCodec` embeds the schemas for its dependent codecs (color
 pattern, gradient discriminator, shape enum, and so on).
+
+Draft-7 output describes the portable boundary and the constraints that JSON
+Schema can express. Cross-field Dart refinements, such as correlated gradient
+stops or `Container` constructor invariants, and the `Ack.lazy` widget recursion
+cap remain runtime-only. Use `safeParse` and `safeEncode` when those checks must
+be enforced; exported JSON Schema alone does not include them.
 
 ## Roadmap
 

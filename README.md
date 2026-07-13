@@ -25,6 +25,7 @@ This repository is a monorepo containing:
 - **[ack_generator](./packages/ack_generator)**: Code generator that turns `@AckType()` schemas into type-safe extension types
 - **[ack_firebase_ai](./packages/ack_firebase_ai)**: Firebase AI (Gemini) schema converter for structured-output generation
 - **[ack_json_schema_builder](./packages/ack_json_schema_builder)**: Converter to `json_schema_builder` schemas
+- **[flutter_codec](./packages/flutter_codec)**: ACK codecs for portable Flutter painting, rendering, and widget values
 - **[example](./example)**: Example projects demonstrating usage of all packages
 
 ## Quick start

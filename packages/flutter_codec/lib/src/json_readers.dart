@@ -37,9 +37,5 @@ List<double> readDoubleList(JsonMap map, String key) =>
     (map[key]! as List).map((value) => (value as num).toDouble()).toList();
 
 /// Reads the optional numeric list field [key] as `List<double>`.
-List<double>? readNullableDoubleList(JsonMap map, String key) {
-  final raw = map[key];
-  if (raw == null) return null;
-
-  return (raw as List).map((value) => (value as num).toDouble()).toList();
-}
+List<double>? readNullableDoubleList(JsonMap map, String key) =>
+    (map[key] as List?)?.map((value) => (value as num).toDouble()).toList();

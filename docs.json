@@ -75,7 +75,7 @@
   ],
   "variables": {
     "versions": {
-      "default": "1.0.0",
+      "default": "1.0.1",
       "isPrerelease": false
     }
   },
