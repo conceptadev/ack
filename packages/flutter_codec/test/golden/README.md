@@ -5,6 +5,12 @@ produces, and `golden_test.dart` proves each one parses back. They are the
 human-reviewable record of the package's wire format — if an encoder changes
 shape, a fixture diff makes it obvious.
 
+`json_schema.json` separately pins the JSON Schema exported by all public
+codecs. It uses one compact schema per line so a diff identifies the changed
+codec without inflating the fixture with indentation for deeply composed
+schemas. `schema_golden_test.dart` also checks that every public `*Codec`
+declaration appears in that fixture.
+
 ## How to read a fixture file
 
 Each file under `fixtures/` is one **family** (mirroring `lib/src/`), and is a
@@ -86,6 +92,7 @@ is exactly `2 * math.pi` — constant arithmetic, not a libm call.
 
 ```sh
 UPDATE_GOLDENS=true flutter test test/golden/golden_test.dart
+UPDATE_GOLDENS=true flutter test test/golden/schema_golden_test.dart
 ```
 
 This rewrites every `fixtures/*.json` from the current encoders. Review the diff,
