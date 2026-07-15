@@ -174,8 +174,11 @@ AckType generation is intentionally strict:
 - `schema.parse(data)` throws on invalid input
 - `schema.safeParse(data)` returns `SchemaResult<T>`
 - `safeParse` turns invalid input and recoverable `Exception` values from
-  validation/refinement callbacks into contextual failures
-- programmer/runtime `Error` values are rethrown with their original stack trace
+  constraint/refinement callbacks into contextual failures
+- `Error` values from constraint/refinement callbacks are rethrown with their
+  original stack trace
+- codec/transform decoders and `safeParseAs` mappers turn thrown values,
+  including `Error` values, into `SchemaTransformError` failures
 - `SchemaResult<T>.getOrThrow()` returns the validated value or throws `AckException`
 - `.optional()` allows a field to be omitted
 - `.nullable()` allows a present field to hold `null`
