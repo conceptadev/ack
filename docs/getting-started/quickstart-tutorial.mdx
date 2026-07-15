@@ -26,11 +26,9 @@ See [Schema Types](../core-concepts/schemas.mdx) and [Validation Rules](../core-
 ## 2. Validate data
 
 Call `safeParse()` with the data you received — for example
-`jsonDecode(response.body)`. It returns a `SchemaResult` for invalid input and
-for recoverable `Exception` values thrown by constraint/refinement callbacks.
-`Error` values from those callbacks are rethrown with their original stack
-trace. Codec/transform decoders and `safeParseAs` mappers instead turn thrown
-values, including `Error` values, into `SchemaTransformError` failures.
+`jsonDecode(response.body)`. It returns a `SchemaResult`, so expected validation
+failures stay in normal control flow instead of throwing. For callback,
+transform, and codec failure semantics, see [Error Handling](../core-concepts/error-handling.mdx).
 
 ```dart
 final result = userSchema.safeParse({'name': 'Alice', 'age': 30});

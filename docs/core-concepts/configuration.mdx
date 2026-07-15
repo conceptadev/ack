@@ -8,17 +8,23 @@ Ack has no global configuration object. All behavior is configured at the schema
 
 Define behavior when you create your schemas.
 
-### Required fields
+### Optional and nullable values
 
-Fields in [`Ack.object`](./schemas.mdx#object) are required by default. Mark a field as optional with `.optional()`.
+Fields in [`Ack.object`](./schemas.mdx#object) are required and non-nullable by
+default. Use `.optional()` when a field may be omitted, `.nullable()` when a
+present field may be `null`, or both when either state is valid.
 
 ```dart
 Ack.object({
   'id': Ack.integer(),
-  'name': Ack.string(),
-  'email': Ack.string().email().optional() // Email is optional (can be omitted)
-}); // id and name are required by default
+  'nickname': Ack.string().optional(),
+  'middleName': Ack.string().nullable(),
+  'avatarUrl': Ack.string().url().optional().nullable(),
+});
 ```
+
+See [Optional vs nullable](./schemas.mdx#optional-vs-nullable) for the complete
+presence and nullability matrix.
 
 ### Additional properties
 
@@ -34,14 +40,49 @@ Ack.object({'id': Ack.integer()}, additionalProperties: false);
 Ack.object({'id': Ack.integer()}, additionalProperties: true);
 ```
 
-### Custom error messages
+Use strict objects for data you own and want to detect drift in. At external
+API boundaries, `additionalProperties: true` can make a schema resilient to
+new response fields while still validating every field your application uses.
 
-Built-in constraints provide default messages. To override them, use `.constrain()`.
-See also: [Custom Error Messages in Error Handling](./error-handling.mdx#custom-error-messages).
+### Default values
+
+Use `.withDefault(value)` when a `null` or missing object field should receive
+a runtime value during parsing. The default must satisfy the schema's runtime
+type and constraints.
 
 ```dart
-Ack.string().minLength(5); // Default: "Too short, min 5 characters"
-Ack.integer().min(18);     // Default: "Must be at least 18"
+final settingsSchema = Ack.object({
+  'theme': Ack.enumString(['light', 'dark']).withDefault('light'),
+  'pageSize': Ack.integer().min(1).max(100).withDefault(20),
+});
+```
+
+Defaults change the parsed result; `.optional()` only changes whether an object
+field is required.
+
+### Schema metadata
+
+Attach a description with `.describe()` when the schema is also used for JSON
+Schema export or adapter packages.
+
+```dart
+final userIdSchema = Ack.string()
+    .uuid()
+    .describe('Stable identifier for a user account');
+```
+
+### Custom error messages
+
+Built-in constraints provide default messages. APIs that accept `message:`,
+such as `.matches()`, can replace that message inline. Use `.constrain()` to
+provide a message for a reusable custom constraint. See [Custom error
+messages](./error-handling.mdx#custom-error-messages).
+
+```dart
+final usernameSchema = Ack.string().matches(
+  r'^[a-z0-9_]+$',
+  message: 'Use lowercase letters, numbers, and underscores only.',
+);
 ```
 
 ### Custom validation logic
@@ -51,3 +92,10 @@ Use `.constrain()` for reusable value-level checks and `.refine()` for cross-fie
 ## Code generation
 
 Annotate a top-level schema with `@AckType()` to generate a typed wrapper — see [TypeSafe Schemas](./typesafe-schemas.mdx) for setup and supported shapes.
+
+## Related guides
+
+- [Schema Types](./schemas.mdx) — factories, composition, and transformations
+- [Validation Rules](./validation.mdx) — built-in constraints
+- [Codecs](./codecs.mdx) — bidirectional boundary/runtime configuration
+- [JSON Schema Integration](../guides/json-schema-integration.mdx) — exported metadata and defaults

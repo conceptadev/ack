@@ -1,7 +1,8 @@
 # Contributing to Ack
 
 Thanks for helping improve Ack. Keep changes focused, tested, and easy to
-review.
+review. By participating, you agree to follow the
+[Code of Conduct](./CODE_OF_CONDUCT.md).
 
 ## Development setup
 
@@ -54,3 +55,9 @@ Use `!` or a `BREAKING CHANGE:` footer for breaking API changes.
 
 User-facing changes should update the relevant package `CHANGELOG.md`. Release
 publishing is handled by maintainers through `PUBLISHING.md`.
+
+## Getting help and reporting security issues
+
+Use [SUPPORT.md](./SUPPORT.md) for questions and public bug reports. Follow
+[SECURITY.md](./SECURITY.md) for vulnerabilities; do not disclose suspected
+security issues in a public issue.

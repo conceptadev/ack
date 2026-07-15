@@ -47,7 +47,7 @@ class _SignUpFormState extends State<SignUpForm> {
   final _usernameSchema = Ack.string()
     .minLength(3)
     .maxLength(20)
-    .matches(r'[a-zA-Z0-9_]+')
+    .matches(r'^[a-zA-Z0-9_]+$')
     .notEmpty();
 
   final _emailSchema = Ack.string()

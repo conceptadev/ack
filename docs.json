@@ -69,6 +69,19 @@
       ]
     },
     {
+      "group": "Adapter Authors",
+      "pages": [
+        {
+          "title": "Adapter Package Quickstart",
+          "href": "/guides/schema-converter-quickstart"
+        },
+        {
+          "title": "Creating Adapter Packages",
+          "href": "/guides/creating-schema-converter-packages"
+        }
+      ]
+    },
+    {
       "group": "Reference",
       "pages": [{ "title": "API Reference", "href": "/api-reference/" }]
     }

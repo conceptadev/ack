@@ -2,7 +2,10 @@
 title: API Reference
 ---
 
-Quick reference for the core Ack classes, methods, and annotations. For detailed explanations and examples, see the specific guides linked below.
+This page is a curated quick reference for the core Ack classes, methods, and
+annotations. Use the [generated API documentation](https://pub.dev/documentation/ack/latest/ack/)
+for every public declaration and exact signatures; use the linked guides here
+for explanations and examples.
 
 ## Core `Ack` Class
 
@@ -83,6 +86,8 @@ Primitive schemas (`StringSchema`, `IntegerSchema`, `DoubleSchema`, `NumberSchem
 ### Utility Methods
 
 - `Map<String, Object?> toJsonSchema()`: Returns a Draft-7 JSON Schema map via the canonical `AckSchemaModel` boundary.
+- `AckSchemaModel toSchemaModel()`: Returns the canonical, target-independent
+  boundary model for schema adapters, including export warnings.
 - `Map<String, Object?> toMap()`: Serializes the schema for debugging.
 
 See also [Schema Types](../core-concepts/schemas.mdx) for detailed usage examples.

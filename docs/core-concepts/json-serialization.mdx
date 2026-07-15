@@ -2,7 +2,10 @@
 title: JSON Serialization
 ---
 
-Ack schemas validate JSON data and let you work with the validated data directly, wrap it with generated types, or pass it to your own model layer.
+Ack validates decoded JSON at your application boundary. On the way back out,
+plain schemas produce JSON-native Dart values directly, while
+[codecs](./codecs.mdx) encode rich runtime values such as `DateTime` and `Uri`
+back to their wire representation.
 
 ## Validating JSON data
 
@@ -24,8 +27,8 @@ final userSchema = Ack.object({
 
 void processApiResponse(String jsonString) {
   // 1. Decode JSON string into a Dart object.
-  // Note: jsonDecode returns dynamic, so the structure is unknown initially.
-  dynamic jsonData; 
+  // jsonDecode returns an unknown structure until the schema validates it.
+  Object? jsonData;
   try {
     jsonData = jsonDecode(jsonString);
   } catch (e) {
@@ -98,8 +101,52 @@ if (result.isOk) {
 }
 ```
 
+## Encoding validated data
+
+For schemas whose runtime values are already JSON-native (`String`, `num`,
+`bool`, `List`, `Map`, and `null`), pass the validated value to `jsonEncode`:
+
+```dart
+final result = userSchema.safeParse({
+  'name': 'Alice',
+  'age': 30,
+  'email': 'alice@example.com',
+});
+
+if (result.isOk) {
+  final validData = result.getOrThrow()!;
+  final jsonString = jsonEncode(validData);
+  print(jsonString);
+}
+```
+
+When a schema decodes boundary values into richer Dart types, encode through
+the schema before calling `jsonEncode`. This applies each codec in the nested
+structure and restores the JSON-safe boundary shape:
+
+```dart
+final eventSchema = Ack.object({
+  'name': Ack.string(),
+  'startsAt': Ack.datetime(),
+});
+
+final event = eventSchema.parse({
+  'name': 'Launch',
+  'startsAt': '2026-01-15T14:00:00Z',
+});
+
+final boundaryData = eventSchema.encode(event);
+final jsonString = jsonEncode(boundaryData);
+```
+
+Use `safeEncode()` when you want a `SchemaResult` instead of an exception.
+See [Codecs](./codecs.mdx) for runtime invariants and custom bidirectional
+conversions.
+
 ## Key considerations
 
-- **`dart:convert`:** Use `jsonEncode`/`jsonDecode` for JSON string conversion. Ack handles validation only.
+- **`dart:convert`:** Use `jsonDecode` and `jsonEncode` for JSON text. Ack
+  validates values and encodes codec runtime values back to their boundary
+  representation.
 - **Type safety:** `jsonDecode` produces `dynamic`, but successful validation guarantees the structure and types of the resulting `Map<String, Object?>`.
 - **Model conversion:** After validation, how you convert the validated map into an app model is up to you. Ack keeps validation and wrapper generation separate from your model layer.

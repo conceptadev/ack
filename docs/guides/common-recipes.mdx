@@ -2,7 +2,9 @@
 title: Common Recipes
 ---
 
-Quick solutions to common validation scenarios. Each recipe is a complete, working example you can copy and adapt.
+Quick solutions to common validation scenarios. Each recipe shows a working
+schema pattern you can copy and adapt. Examples assume
+`package:ack/ack.dart` is imported unless the snippet shows other imports.
 
 ## Email and password validation
 
@@ -50,7 +52,7 @@ Validate nested data structures like addresses:
 final addressSchema = Ack.object({
   'street': Ack.string().notEmpty(),
   'city': Ack.string().notEmpty(),
-  'zipCode': Ack.string().matches(r'\d{5}(-\d{4})?'),
+  'zipCode': Ack.string().matches(r'^\d{5}(-\d{4})?$'),
   'country': Ack.string().notEmpty(),
 });
 
@@ -158,9 +160,18 @@ final registrationSchema = Ack.object({
 
 ## API response validation
 
-Validate external API responses before using the payload:
+Validate external API responses before using the payload. APIs commonly add
+fields over time, so this boundary schema validates the fields the application
+uses while allowing the rest of GitHub's response to pass through.
+
+Add the HTTP client first with `dart pub add http`.
 
 ```dart
+import 'dart:convert';
+
+import 'package:ack/ack.dart';
+import 'package:http/http.dart' as http;
+
 // GitHub user API response
 final githubUserSchema = Ack.object({
   'login': Ack.string(),
@@ -172,8 +183,8 @@ final githubUserSchema = Ack.object({
   'public_repos': Ack.integer(),
   'followers': Ack.integer(),
   'following': Ack.integer(),
-  'created_at': Ack.string(), // ISO datetime
-});
+  'created_at': Ack.string().datetime(),
+}, additionalProperties: true);
 
 // Usage in API call
 Future<void> fetchUser(String username) async {
@@ -181,11 +192,15 @@ Future<void> fetchUser(String username) async {
     Uri.parse('https://api.github.com/users/$username'),
   );
 
+  if (response.statusCode != 200) {
+    throw StateError('GitHub request failed: ${response.statusCode}');
+  }
+
   final json = jsonDecode(response.body);
   final result = githubUserSchema.safeParse(json);
 
   if (result.isOk) {
-    final user = result.getOrThrow();
+    final user = result.getOrThrow()!;
     print('User: ${user['login']}');
   } else {
     print('Invalid API response: ${result.getError()}');
