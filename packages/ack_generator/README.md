@@ -79,6 +79,9 @@ validate through the union's effective branch.
 - Inline anonymous object branches are rejected for typed generation. Extract
   them to a named top-level schema first.
 - Nullable top-level schemas do not emit extension types.
+- Nullable list elements are rejected: `Ack.list(item.nullable())` is not
+  supported. Make the list nullable with `Ack.list(item).nullable()` when the
+  list itself may be `null`.
 - `@AckType()` requires static schema resolution for nested object references.
 
 ## Build commands

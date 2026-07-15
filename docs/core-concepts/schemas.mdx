@@ -203,7 +203,10 @@ categorySchema = Ack.object({
 
 The lazy builder is resolved once and memoized. JSON Schema export renders the
 reference through Draft-7 `definitions` / `$ref`, so recursive children are
-referenced rather than inlined forever.
+referenced rather than inlined forever. `maxDepth` defaults to `100`, must be at
+least `1`, and returns a validation failure when parsing, runtime validation, or
+encoding exceeds the limit. Because the limit is runtime-only and cannot be
+represented by `$ref`, exported schema models warn that it was omitted.
 
 ### Any
 

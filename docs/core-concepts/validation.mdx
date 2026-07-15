@@ -97,7 +97,9 @@ Ack.string().time()
 ```
 
 ### `uri()`
-Requires a valid URI per RFC 3986.
+Requires a valid absolute URI with a scheme and host. This is the network-URI
+subset Ack accepts, rather than every relative or non-host URI permitted by RFC
+3986.
 ```dart
 Ack.string().uri()
 ```
