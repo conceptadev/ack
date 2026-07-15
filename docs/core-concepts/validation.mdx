@@ -369,7 +369,7 @@ You can chain multiple constraints. Ack evaluates them in the order you apply th
 final usernameSchema = Ack.string()
   .minLength(3)           // First: check min length
   .maxLength(20)          // Second: check max length
-  .matches(r'[a-z0-9_]+') // Third: check pattern (lowercase alphanumeric/underscore)
+  .matches(r'^[a-z0-9_]+$') // Third: require only lowercase letters, digits, or underscores
   .notEmpty();            // Redundant if minLength(>0) is used, but illustrates chaining
 
 final quantitySchema = Ack.integer()

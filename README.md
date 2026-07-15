@@ -27,6 +27,13 @@ This repository is a monorepo containing:
 - **[ack_json_schema_builder](./packages/ack_json_schema_builder)**: Converter to `json_schema_builder` schemas
 - **[example](./example)**: Example projects demonstrating usage of all packages
 
+## Community and support
+
+- Read [CONTRIBUTING.md](./CONTRIBUTING.md) before proposing a change.
+- Use [SUPPORT.md](./SUPPORT.md) for questions, bug reports, and feature requests.
+- Report vulnerabilities privately as described in [SECURITY.md](./SECURITY.md).
+- Participation is governed by the [Code of Conduct](./CODE_OF_CONDUCT.md).
+
 ## Quick start
 
 ### Core library (ack)

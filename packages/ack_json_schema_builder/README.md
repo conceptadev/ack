@@ -63,9 +63,12 @@ the `json_schema_builder` schema. If a downstream validator or consumer ignores
 a JSON Schema keyword, validate with ACK after parsing.
 
 ```dart
-final schema = Ack.date().min(DateTime.utc(2026));
+final schema = Ack.date().min(DateTime(2026));
 final jsonSchema = schema.toJsonSchemaBuilder(); // Includes format: date.
 ```
+
+`Ack.date()` uses local-midnight `DateTime` values at runtime. Use
+`DateTime.utc(...)` with `Ack.datetime()`, whose runtime invariant is UTC.
 
 ## Usage
 

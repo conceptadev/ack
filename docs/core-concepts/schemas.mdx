@@ -41,7 +41,7 @@ final nameSchema = Ack.string();
 final usernameSchema = Ack.string()
   .minLength(3)
   .maxLength(20)
-  .matches(r'[a-zA-Z0-9_]+');
+  .matches(r'^[a-zA-Z0-9_]+$');
 
 // Email validation
 final emailSchema = Ack.string().email();
@@ -136,7 +136,7 @@ final userSchema = Ack.object({
   'address': Ack.object({
     'street': Ack.string(),
     'city': Ack.string(),
-    'zipCode': Ack.string().matches(r'\d{5}'),
+    'zipCode': Ack.string().matches(r'^\d{5}$'),
   }),
 });
 ```
@@ -439,7 +439,7 @@ final userWithAgeSchema = Ack.object({
 
 // Type transformation
 final dateSchema = Ack.string()
-  .matches(r'\d{4}-\d{2}-\d{2}')
+  .matches(r'^\d{4}-\d{2}-\d{2}$')
   .transform<DateTime>((s) => DateTime.parse(s));
 ```
 

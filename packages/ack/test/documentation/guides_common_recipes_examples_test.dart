@@ -210,8 +210,8 @@ void main() {
         'public_repos': Ack.integer(),
         'followers': Ack.integer(),
         'following': Ack.integer(),
-        'created_at': Ack.string(),
-      });
+        'created_at': Ack.string().datetime(),
+      }, additionalProperties: true);
 
       final sampleResponse = jsonEncode({
         'login': 'octocat',
@@ -224,6 +224,7 @@ void main() {
         'followers': 100,
         'following': 10,
         'created_at': '2011-01-25T18:44:36Z',
+        'company': '@github',
       });
 
       final json = jsonDecode(sampleResponse);
@@ -231,6 +232,7 @@ void main() {
       expect(result.isOk, isTrue);
       final user = result.getOrThrow()!;
       expect(user['login'], equals('octocat'));
+      expect(user['company'], equals('@github'));
     });
   });
 }

@@ -65,6 +65,38 @@ void main() {
       expect(age, equals(30));
     });
 
+    test('validated JSON-native data can be encoded', () {
+      final result = buildUserSchema().safeParse({
+        'name': 'Alice',
+        'age': 30,
+        'email': 'alice@example.com',
+      });
+
+      final validData = result.getOrThrow()!;
+      final encoded = jsonEncode(validData);
+
+      expect(jsonDecode(encoded), equals(validData));
+    });
+
+    test('codec runtime values are encoded to their JSON boundary', () {
+      final eventSchema = Ack.object({
+        'name': Ack.string(),
+        'startsAt': Ack.datetime(),
+      });
+      final event = eventSchema.parse({
+        'name': 'Launch',
+        'startsAt': '2026-01-15T14:00:00Z',
+      });
+
+      final boundaryData = eventSchema.encode(event);
+      final encoded = jsonEncode(boundaryData);
+
+      expect(
+        jsonDecode(encoded),
+        equals({'name': 'Launch', 'startsAt': '2026-01-15T14:00:00.000Z'}),
+      );
+    });
+
     test('manual schema example mirrors generated schema usage', () {
       final generatedUserSchema = Ack.object({
         'name': Ack.string(),
