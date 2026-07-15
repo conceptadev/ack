@@ -25,7 +25,10 @@ See [Schema Types](../core-concepts/schemas.mdx) and [Validation Rules](../core-
 
 ## 2. Validate data
 
-Call `safeParse()` with the data you received — for example `jsonDecode(response.body)`. It returns a `SchemaResult` and never throws.
+Call `safeParse()` with the data you received — for example
+`jsonDecode(response.body)`. It returns a `SchemaResult` for invalid input and
+for recoverable `Exception` values thrown by validation callbacks.
+Programmer/runtime `Error` values are rethrown with their original stack trace.
 
 ```dart
 final result = userSchema.safeParse({'name': 'Alice', 'age': 30});

@@ -25,7 +25,7 @@ Always validate model output with the same ACK schema after generation. Firebase
 dependencies:
   ack: ^1.0.0
   ack_firebase_ai: ^1.0.0
-  firebase_ai: ^3.12.1
+  firebase_ai: ^3.12.2
 ```
 
 This package targets Firebase AI's map-based `responseJsonSchema` API for models that support JSON Schema structured output.

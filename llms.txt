@@ -173,8 +173,9 @@ AckType generation is intentionally strict:
 
 - `schema.parse(data)` throws on invalid input
 - `schema.safeParse(data)` returns `SchemaResult<T>`
-- `safeParse` does not throw; exceptions from validation/refinement callbacks
-  are returned as contextual validation failures
+- `safeParse` turns invalid input and recoverable `Exception` values from
+  validation/refinement callbacks into contextual failures
+- programmer/runtime `Error` values are rethrown with their original stack trace
 - `SchemaResult<T>.getOrThrow()` returns the validated value or throws `AckException`
 - `.optional()` allows a field to be omitted
 - `.nullable()` allows a present field to hold `null`
@@ -183,6 +184,8 @@ AckType generation is intentionally strict:
 - `schema.toJsonSchema()` renders `schema.toSchemaModel().toJsonSchema()`
 - adapter packages should render from `AckSchemaModel`, not by traversing `AckSchema` subclasses
 - `Ack.list(...)` does not support nullable item schemas; make the list itself nullable when needed
+- `Ack.lazy(...)` defaults `maxDepth` to `100` for recursive parsing, runtime
+  validation, and encoding; the runtime-only limit is omitted from exported schemas with a warning
 - `Ack.object`, `Ack.anyOf`, and enum factories snapshot their input collections;
   unions and enum value lists must be non-empty, and enum values must be unique
 - lengths and item counts must be non-negative; numeric bounds must be finite;
