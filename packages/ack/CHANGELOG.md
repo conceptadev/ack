@@ -1,5 +1,20 @@
 ## 1.1.0
 
+### Added
+
+* `AckSchema.standard` exposes the Standard Schema validation and JSON Schema
+  converter contracts, and `package:ack/ack.dart` re-exports the
+  `standard_schema` contract types.
+
+### Changed
+
+* Standard JSON Schema `input()` describes the boundary type, including valid
+  default/null behavior without leaking codec runtime constraints; `output()`
+  describes the runtime type returned by validation. Conversion throws when
+  either type is not soundly JSON-representable.
+* Standard Schema issue paths preserve list indexes as integer path segments,
+  including through defaults and codecs.
+
 ### Fixed
 
 * Keep `safeParse` non-throwing when refinements or constraints throw
@@ -16,8 +31,9 @@
 
 ### Behavior changes
 
-No public API changed (verified with `dart_apitool` against 1.0.1); the following
-now reject inputs that previously passed or misbehaved silently.
+Aside from the additive Standard Schema interoperability API, existing
+validation APIs remain source-compatible; the following now reject inputs that
+previously passed or misbehaved silently.
 
 * Validate numeric `multipleOf`, IPv6, and RFC 3339 date-time values strictly.
   Announced leap seconds are preserved by `Ack.string().datetime()` but rejected
@@ -65,20 +81,12 @@ now reject inputs that previously passed or misbehaved silently.
 * `NumberSchemaExtensions` adds fluent numeric constraints to `Ack.number()`:
   `.min`, `.max`, `.greaterThan`, `.lessThan`, `.positive`, `.negative`, and
   `.multipleOf`.
-* `AckSchema.standard` exposes the Standard Schema validation and JSON Schema
-  converter contracts, and `package:ack/ack.dart` re-exports the
-  `standard_schema` contract types.
 
 ### Changed
 
 * Project discriminated schemas through union-owned discriminator branches.
 * Preserve defaults, const values, extension keywords, transformed metadata,
   composition, and JSON Schema constraints through the schema model boundary.
-* Standard JSON Schema `output()` conversion now describes the value returned
-  by `standard.validate()` and throws when the runtime value is not faithfully
-  JSON-representable.
-* Standard Schema issue paths now preserve list indexes as integer path
-  segments even when lists are wrapped by defaults or codecs.
 
 ### Migration
 

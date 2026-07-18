@@ -6,15 +6,13 @@ final class AckSchemaModelWarning {
   /// A default value could not be represented in the exported JSON Schema.
   static const String defaultNotExportSafe = 'default_not_export_safe';
 
-  /// An [InstanceSchema] has a runtime-only JSON boundary that cannot be
-  /// rendered as JSON Schema. Matched when deciding whether a codec output is
-  /// representable as Standard JSON Schema.
+  /// A bare `Ack.instance<T>()` has no faithful JSON boundary.
   static const String instanceJsonBoundary = 'ack_instance_json_boundary';
 
-  /// An `Ack.any()` schema has no constrained JSON boundary.
+  /// An `Ack.any()` schema represents the full JSON-safe value domain.
   static const String anyJsonBoundary = 'ack_any_json_boundary';
 
-  /// A [LazySchema]'s runtime checks cannot be export-verified.
+  /// An `Ack.lazy(...)` schema's runtime checks cannot be export-verified.
   static const String lazyRuntimeChecksNotExportSafe =
       'lazy_runtime_checks_not_export_safe';
 

@@ -285,12 +285,12 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object>
 
   StandardResult<Runtime?> _validateStandard(
     Object? value, [
-    StandardValidateOptions? options,
+    StandardValidateOptions? _,
   ]) {
     return switch (safeParse(value)) {
       Ok(value: final value) => StandardSuccess<Runtime?>(value),
       Fail(error: final error) => StandardFailure<Runtime?>(
-        error.toStandardIssues(),
+        _standardIssuesFor(error).toList(growable: false),
       ),
     };
   }
@@ -299,7 +299,7 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object>
     StandardJsonSchemaOptions options,
   ) {
     _checkStandardJsonSchemaTarget(options);
-    return toJsonSchema();
+    return toStandardInputSchemaModel().toJsonSchema();
   }
 
   Map<String, Object?> _standardJsonSchemaOutput(
@@ -568,6 +568,40 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object>
       iterableEq.hash(_refinementsForEquality),
     );
   }
+}
+
+Iterable<StandardIssue> _standardIssuesFor(SchemaError error) sync* {
+  switch (error) {
+    case SchemaNestedError(errors: final errors) when errors.isNotEmpty:
+      for (final nested in errors) {
+        yield* _standardIssuesFor(nested);
+      }
+    case SchemaConstraintsError(:final constraints) when constraints.isNotEmpty:
+      for (final constraint in constraints) {
+        yield StandardIssue(
+          message: constraint.message,
+          path: _standardPath(error.context),
+        );
+      }
+    default:
+      yield StandardIssue(
+        message: error.message,
+        path: _standardPath(error.context),
+      );
+  }
+}
+
+List<Object> _standardPath(SchemaContext context) {
+  final reversed = <Object>[];
+  var cursor = context;
+
+  while (cursor.parent != null) {
+    final segment = cursor.pathKey;
+    if (segment != null && segment != '') reversed.add(segment);
+    cursor = cursor.parent!;
+  }
+
+  return reversed.reversed.toList(growable: false);
 }
 
 /// Builds a type-mismatch error without throwing when [actualValue] is an

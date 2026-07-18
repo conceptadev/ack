@@ -18,7 +18,8 @@ extension AckSchemaModelExtension<
   Runtime extends Object
 >
     on AckSchema<Boundary, Runtime> {
-  AckSchemaModel toSchemaModel() => toStandardInputSchemaModel();
+  AckSchemaModel toSchemaModel() =>
+      _SchemaModelBuilder(_SchemaModelSide.boundary).build(this);
 
   AckSchemaModel toStandardInputSchemaModel() =>
       _SchemaModelBuilder(_SchemaModelSide.input).build(this);
@@ -27,7 +28,9 @@ extension AckSchemaModelExtension<
       _SchemaModelBuilder(_SchemaModelSide.output).build(this);
 }
 
-enum _SchemaModelSide { input, output }
+enum _SchemaModelSide { boundary, input, output }
+
+typedef _ResolvedDefault = ({bool isValid, Object? value});
 
 final class _SchemaModelBuilder {
   _SchemaModelBuilder(this.side);
@@ -35,6 +38,8 @@ final class _SchemaModelBuilder {
   final _SchemaModelSide side;
   final _definitions = <String, AckSchemaModel?>{};
   final _targets = <String, Object>{};
+  final _resolvedDefaults =
+      Map<DefaultSchema<dynamic, dynamic>, _ResolvedDefault>.identity();
 
   Map<String, Object?> _mergeRootDefinitions(Object? existingDefinitions) {
     final lazyDefinitions = <String, Object?>{
@@ -89,12 +94,14 @@ final class _SchemaModelBuilder {
       // `DefaultSchema.constraints` is a passthrough to `inner.constraints`,
       // which `_build(schema.inner)` already applied. Re-running them here
       // would emit duplicate warnings (e.g. datetime range under a default).
-      var wrapped = schema is DefaultSchema
+      var wrapped =
+          schema is DefaultSchema ||
+              (side == _SchemaModelSide.input && schema is CodecSchema)
           ? layered
           : _applyConstraints(layered, schema);
 
       if (schema is DefaultSchema) {
-        final exportDefault = _defaultExportValueOrNull(schema, side: side);
+        final exportDefault = _defaultExportValueOrNull(schema);
         if (exportDefault != null) {
           wrapped = wrapped.withDefaultValue(exportDefault);
         } else {
@@ -149,11 +156,16 @@ final class _SchemaModelBuilder {
   }
 
   bool _wrapperNullableForSide(WrapperSchema schema, AckSchemaModel base) {
-    if (side == _SchemaModelSide.output && schema is DefaultSchema) {
-      return false;
+    if (side == _SchemaModelSide.boundary) {
+      return schema.isNullable || base.nullable;
     }
 
-    return schema.isNullable || base.nullable;
+    if (schema is DefaultSchema) {
+      return side == _SchemaModelSide.input &&
+          _resolvedDefaultFor(schema).isValid;
+    }
+
+    return schema.isNullable;
   }
 
   Map<String, Object?> _wrapperExtensionsForSide(
@@ -215,6 +227,13 @@ final class _SchemaModelBuilder {
   }
 
   AckSchemaModel _object(ObjectSchema schema) {
+    if (side != _SchemaModelSide.boundary && schema.additionalProperties) {
+      throw UnsupportedError(
+        'Ack cannot represent unvalidated additional property values as '
+        'Standard JSON Schema.',
+      );
+    }
+
     final properties = <String, AckSchemaModel>{};
     final required = <String>[];
     final ordering = <String>[];
@@ -225,7 +244,7 @@ final class _SchemaModelBuilder {
         entry.key,
         () => _build(entry.value),
       );
-      if (_isRequiredObjectProperty(entry.value, side)) {
+      if (_isRequiredObjectProperty(entry.value)) {
         required.add(entry.key);
       }
     }
@@ -251,9 +270,9 @@ final class _SchemaModelBuilder {
   }
 
   AckSchemaModel _instance(InstanceSchema schema) {
-    if (side == _SchemaModelSide.output) {
+    if (side != _SchemaModelSide.boundary) {
       throw UnsupportedError(
-        'Ack cannot represent Ack.instance<T>() runtime output as JSON Schema.',
+        'Ack cannot represent Ack.instance<T>() as Standard JSON Schema.',
       );
     }
 
@@ -393,6 +412,47 @@ final class _SchemaModelBuilder {
     ]);
   }
 
+  _ResolvedDefault _resolvedDefaultFor(DefaultSchema<dynamic, dynamic> schema) {
+    return _resolvedDefaults.putIfAbsent(schema, () {
+      final result = schema.resolveDefaultWithContext(
+        _defaultExportContext(schema),
+      );
+      return (isValid: result.isOk, value: result.getOrNull());
+    });
+  }
+
+  /// Best-effort export of a [DefaultSchema] default value.
+  ///
+  /// Input-side defaults are encoded through the wrapped schema. Output-side
+  /// defaults are runtime values and are exported directly when JSON-safe.
+  /// Returns `null` when no JSON-safe representation is reachable.
+  Object? _defaultExportValueOrNull(DefaultSchema<dynamic, dynamic> schema) {
+    final resolved = _resolvedDefaultFor(schema);
+    if (!resolved.isValid || resolved.value == null) return null;
+
+    if (side == _SchemaModelSide.output) {
+      return _jsonRoundTripOrNull(resolved.value);
+    }
+
+    final encoded = schema.inner.safeEncode(resolved.value);
+    if (encoded.isFail) return null;
+
+    return _jsonRoundTripOrNull(encoded.getOrNull());
+  }
+
+  bool _isRequiredObjectProperty(AckSchema<dynamic, dynamic> schema) {
+    if (schema is DefaultSchema) {
+      final resolved = _resolvedDefaultFor(schema);
+      if (side != _SchemaModelSide.output) {
+        return !schema.isOptional && !resolved.isValid;
+      }
+
+      return !resolved.isValid || resolved.value != null;
+    }
+
+    return !schema.isOptional;
+  }
+
   AckSchemaModel build(AckSchema<dynamic, dynamic> schema) {
     final root = _build(schema);
     if (_definitions.isEmpty) return root;
@@ -483,57 +543,6 @@ AckSchemaModel _applyDateTimeConstraint(
       },
     ),
   ]);
-}
-
-/// Best-effort export of a [DefaultSchema] default value.
-///
-/// Verifies a default can be exported on the selected schema-model side.
-///
-/// Input-side defaults are encoded through the wrapped schema. Output-side
-/// defaults are runtime values and are exported directly when JSON-safe.
-/// Returns `null` when no JSON-safe representation is reachable.
-Object? _defaultExportValueOrNull(
-  DefaultSchema<dynamic, dynamic> schema, {
-  required _SchemaModelSide side,
-}) {
-  final resolved = schema.resolveDefaultWithContext(
-    _defaultExportContext(schema),
-  );
-  if (resolved.isFail) return null;
-
-  final defaultValue = resolved.getOrNull();
-  if (defaultValue == null) return null;
-
-  if (side == _SchemaModelSide.output) {
-    return _jsonRoundTripOrNull(defaultValue);
-  }
-
-  final encoded = schema.inner.safeEncode(defaultValue);
-  if (encoded.isFail) return null;
-
-  return _jsonRoundTripOrNull(encoded.getOrNull());
-}
-
-bool _isRequiredObjectProperty(
-  AckSchema<dynamic, dynamic> schema,
-  _SchemaModelSide side,
-) {
-  if (schema is DefaultSchema) {
-    final defaultResult = schema.resolveDefaultWithContext(
-      _defaultExportContext(schema),
-    );
-    if (side == _SchemaModelSide.input) {
-      return !schema.isOptional && defaultResult.isFail;
-    }
-
-    if (defaultResult.isOk) {
-      return defaultResult.getOrNull() != null;
-    }
-
-    return true;
-  }
-
-  return !schema.isOptional;
 }
 
 /// Throwaway [SchemaContext] used only to drive

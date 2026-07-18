@@ -13,6 +13,7 @@ schema variables or getters with `@AckType()` and run `ack_generator`.
 3. `ack_generator`: generates extension types for annotated top-level schemas
 4. `ack_firebase_ai`: converts Ack schemas to Firebase AI structured-output schemas
 5. `ack_json_schema_builder`: converts Ack schemas to `json_schema_builder` schemas
+6. `standard_schema`: vendor-neutral Standard Schema validation and JSON Schema converter contracts
 
 ## Core runtime usage
 
@@ -45,6 +46,21 @@ back. `parse`/`safeParse` decode; `encode`/`safeEncode` encode.
   `schema.codec<R>(decode: ..., encode: ...)` on an existing schema.
 - `schema.transform<R>(fn)` is one-way (parse only); encoding it fails.
 - A codec exports the JSON Schema of its boundary (input) schema.
+
+## Standard Schema interoperability
+
+Every `AckSchema` implements the shared contracts from `standard_schema`, which
+`package:ack/ack.dart` re-exports:
+
+- `schema.standard.validate(value)` returns `StandardSuccess` or
+  `StandardFailure` and produces the same runtime value as `safeParse`.
+- `schema.standard.jsonSchema.input(options)` describes the boundary type;
+  `output(options)` describes the produced runtime type.
+- Ack currently supports `JsonSchemaTarget.draft07`. Conversion throws for an
+  unsupported target or a type that is not soundly JSON-representable.
+- `schema.toSchemaModel()` and `schema.toJsonSchema()` remain Ack's legacy
+  boundary/export APIs for adapters; they may preserve warning-backed
+  approximations that strict Standard JSON Schema conversion rejects.
 
 ## AckType generation
 

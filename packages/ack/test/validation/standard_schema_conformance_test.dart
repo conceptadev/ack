@@ -10,6 +10,21 @@ final class _Animal {
   final String kind;
 }
 
+final class _MinimumIntConstraint extends Constraint<int>
+    with Validator<int>, JsonSchemaSpec<int> {
+  const _MinimumIntConstraint()
+    : super(constraintKey: 'minimum_int', description: 'At least 1.');
+
+  @override
+  bool isValid(int value) => value >= 1;
+
+  @override
+  String buildMessage(int value) => 'Expected at least 1.';
+
+  @override
+  Map<String, Object?> toJsonSchema() => const {'minimum': 1};
+}
+
 const _draft7Options = StandardJsonSchemaOptions(
   target: JsonSchemaTarget.draft07,
 );
@@ -136,6 +151,109 @@ void main() {
       );
     });
 
+    test('models valid defaults as nullable Standard input only', () {
+      final schema = Ack.integer().withDefault(7);
+
+      expect(schema.standard.validate(null), isA<StandardSuccess<int?>>());
+      expect(schema.toJsonSchema(), {'type': 'integer', 'default': 7});
+      expect(schema.standard.jsonSchema.input(_draft7Options), {
+        'default': 7,
+        'anyOf': [
+          {'type': 'integer'},
+          {'type': 'null'},
+        ],
+      });
+    });
+
+    test('keeps invalid defaults out of the Standard input domain', () {
+      final schema = Ack.integer().min(10).withDefault(5);
+
+      expect(schema.standard.validate(null), isA<StandardFailure<int?>>());
+      expect(schema.standard.jsonSchema.input(_draft7Options), {
+        'type': 'integer',
+        'minimum': 10,
+      });
+    });
+
+    test('resolves each default once per Standard conversion', () {
+      var validations = 0;
+      final schema = Ack.object({
+        'count': Ack.string()
+            .transform<int>(int.parse)
+            .refine((value) {
+              validations++;
+              return true;
+            })
+            .withDefault(7),
+      });
+
+      schema.standard.jsonSchema.input(_draft7Options);
+
+      expect(validations, 1);
+    });
+
+    test('does not leak codec runtime constraints into input schemas', () {
+      final schema = _stringToIntCodec().withConstraint(
+        const _MinimumIntConstraint(),
+      );
+
+      expect(schema.standard.jsonSchema.input(_draft7Options), {
+        'type': 'string',
+        'x-transformed': true,
+      });
+      expect(schema.standard.jsonSchema.output(_draft7Options), {
+        'type': 'integer',
+        'minimum': 1,
+      });
+    });
+
+    test('uses codec null policy instead of nested schema nullability', () {
+      final schema = Ack.string()
+          .nullable()
+          .codec<int>(
+            decode: int.parse,
+            encode: (value) => value.toString(),
+            output: Ack.integer().nullable(),
+          )
+          .nullable(value: false);
+
+      expect(schema.standard.validate(null), isA<StandardFailure<int?>>());
+      expect(schema.standard.jsonSchema.input(_draft7Options), {
+        'type': 'string',
+        'x-transformed': true,
+      });
+      expect(schema.standard.jsonSchema.output(_draft7Options), {
+        'type': 'integer',
+      });
+    });
+
+    test('rejects bare instance Standard input schemas', () {
+      final schema = Ack.instance<_Animal>();
+
+      expect(
+        () => schema.standard.jsonSchema.input(_draft7Options),
+        throwsUnsupportedError,
+      );
+      expect(schema.toSchemaModel().warnings, isNotEmpty);
+    });
+
+    test('rejects passthrough object Standard JSON Schemas', () {
+      final schema = Ack.object(const {}, additionalProperties: true);
+      final result = schema.standard.validate({
+        'createdAt': DateTime.utc(2026),
+      });
+
+      expect(result, isA<StandardSuccess<JsonMap?>>());
+      expect(
+        () => schema.standard.jsonSchema.input(_draft7Options),
+        throwsUnsupportedError,
+      );
+      expect(
+        () => schema.standard.jsonSchema.output(_draft7Options),
+        throwsUnsupportedError,
+      );
+    });
+
     test('throws for enum runtime output schemas', () {
       final schema = Ack.enumValues(_Role.values);
 
@@ -216,7 +334,13 @@ void main() {
         expect(schema.standard.jsonSchema.input(_draft7Options), {
           'type': 'object',
           'properties': {
-            'count': {'type': 'integer', 'default': 7},
+            'count': {
+              'default': 7,
+              'anyOf': [
+                {'type': 'integer'},
+                {'type': 'null'},
+              ],
+            },
           },
           'additionalProperties': false,
         });

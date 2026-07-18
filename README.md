@@ -20,6 +20,8 @@ For AI agents: start at [`/llms.txt`](https://docs.page/btwld/ack/llms.txt).
 
 This repository is a monorepo containing:
 
+- **[standard_schema](./packages/standard_schema)**: Vendor-neutral Standard
+  Schema validation and JSON Schema converter contracts for Dart
 - **[ack](./packages/ack)**: Core validation library with a fluent schema-building API, codecs, and JSON Schema export
 - **[ack_annotations](./packages/ack_annotations)**: The `@AckType()` annotation that marks schemas for code generation
 - **[ack_generator](./packages/ack_generator)**: Code generator that turns `@AckType()` schemas into type-safe extension types
@@ -178,6 +180,25 @@ csv.encode(['a', 'b', 'c']); // 'a,b,c'
 
 Use `.transform<R>(...)` for one-way (parse-only) conversions. See the
 [Codecs guide](https://docs.page/btwld/ack/core-concepts/codecs).
+
+## Standard Schema interoperability
+
+Ack schemas implement the vendor-neutral contracts from
+[`standard_schema`](./packages/standard_schema), which `package:ack/ack.dart`
+re-exports. Use `schema.standard.validate(value)` for interoperable validation,
+or convert the accepted input and produced output separately:
+
+```dart
+final options = StandardJsonSchemaOptions(
+  target: JsonSchemaTarget.draft07,
+);
+
+final inputSchema = userSchema.standard.jsonSchema.input(options);
+final outputSchema = userSchema.standard.jsonSchema.output(options);
+```
+
+Conversion throws when the requested target or value type cannot be represented
+soundly as JSON Schema.
 
 ## Documentation
 

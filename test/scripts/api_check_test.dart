@@ -4,6 +4,35 @@ import 'package:test/test.dart';
 
 void main() {
   test(
+    'accepts the independently versioned standard_schema package',
+    () async {
+      final fakeBin = Directory.systemTemp.createTempSync('ack-api-check-');
+      final workingDirectory = Directory.systemTemp.createTempSync(
+        'ack-api-report-',
+      );
+      addTearDown(() => fakeBin.deleteSync(recursive: true));
+      addTearDown(() => workingDirectory.deleteSync(recursive: true));
+
+      _writeExecutable(fakeBin, 'dart', '#!/bin/sh\nexit 0\n');
+      final scriptPath = File('scripts/api_check.dart').absolute.path;
+
+      final result = await Process.run(
+        Platform.resolvedExecutable,
+        [scriptPath, 'standard_schema', '0.0.1-dev.0'],
+        workingDirectory: workingDirectory.path,
+        environment: {
+          ...Platform.environment,
+          'PATH': '${fakeBin.path}:/usr/bin:/bin',
+        },
+      );
+
+      expect(result.stderr, isNot(contains('Invalid package name')));
+      expect(result.stdout, contains('Checking standard_schema package'));
+    },
+    skip: Platform.isWindows ? 'Uses POSIX test executables.' : false,
+  );
+
+  test(
     'activation failures stop API checks with a non-zero exit code',
     () async {
       final fakeBin = Directory.systemTemp.createTempSync('ack-api-check-');

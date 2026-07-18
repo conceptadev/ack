@@ -48,6 +48,27 @@ if (result.isOk) {
 
 Use `.optional()` when a field may be omitted entirely. Chain `.nullable()` if a present field may hold `null`, or combine both for an optional-and-nullable value.
 
+## Standard Schema
+
+Every Ack schema implements the `standard_schema` validation and JSON Schema
+converter contracts, re-exported by `package:ack/ack.dart`:
+
+```dart
+final standardResult = userSchema.standard.validate({
+  'name': 'Jane Doe',
+  'email': 'jane@example.com',
+});
+final options = StandardJsonSchemaOptions(
+  target: JsonSchemaTarget.draft07,
+);
+final inputSchema = userSchema.standard.jsonSchema.input(options);
+final outputSchema = userSchema.standard.jsonSchema.output(options);
+```
+
+Input conversion describes the boundary type, while output conversion describes
+the produced runtime type. Conversion throws when a type is not soundly
+JSON-representable or the requested target is unsupported.
+
 ## Documentation
 
 - [Full documentation](https://docs.page/btwld/ack)
@@ -55,6 +76,8 @@ Use `.optional()` when a field may be omitted entirely. Chain `.nullable()` if a
 
 ## Related Packages
 
+- [standard_schema](https://pub.dev/packages/standard_schema) — Shared
+  Standard Schema validation and JSON Schema converter contracts
 - [ack_generator](https://pub.dev/packages/ack_generator) — Code generator for typed wrappers from `@AckType()` schemas
 - [ack_firebase_ai](https://pub.dev/packages/ack_firebase_ai) — Firebase AI (Gemini) schema converter
 - [ack_json_schema_builder](https://pub.dev/packages/ack_json_schema_builder) — JSON Schema converter
