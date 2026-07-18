@@ -97,5 +97,29 @@ void main() {
         'Passwords do not match',
       );
     });
+
+    test('safeParse converts refinement Exceptions to failures', () {
+      final schema = Ack.string().refine(
+        (_) => throw FormatException('refinement exploded'),
+      );
+
+      final result = schema.safeParse('value', debugName: 'explosiveField');
+
+      expect(result.isFail, isTrue);
+      final error = result.getError();
+      expect(error, isA<SchemaValidationError>());
+      expect(error.message, contains('Refinement threw'));
+      expect(error.name, 'explosiveField');
+      expect(error.value, 'value');
+      expect(error.cause, isA<FormatException>());
+      expect(error.stackTrace, isNotNull);
+    });
+
+    test('safeParse rethrows Error instances from refinements', () {
+      final thrown = StateError('refinement exploded');
+      final schema = Ack.string().refine((_) => throw thrown);
+
+      expect(() => schema.safeParse('value'), throwsA(same(thrown)));
+    });
   });
 }

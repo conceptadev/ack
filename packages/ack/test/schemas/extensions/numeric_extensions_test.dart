@@ -232,6 +232,34 @@ void main() {
           );
         },
       );
+
+      test('rejects negative and non-finite divisors', () {
+        expect(() => DoubleSchema().multipleOf(-0.5), throwsArgumentError);
+        expect(
+          () => DoubleSchema().multipleOf(double.infinity),
+          throwsArgumentError,
+        );
+        expect(
+          () => DoubleSchema().multipleOf(double.nan),
+          throwsArgumentError,
+        );
+      });
+
+      test('handles floating-point and tiny divisors proportionally', () {
+        final decimal = DoubleSchema().multipleOf(0.1);
+        expect(decimal.safeParse(0.6).isOk, isTrue);
+
+        final tiny = DoubleSchema().multipleOf(1e-12);
+        expect(tiny.safeParse(2e-12).isOk, isTrue);
+        expect(tiny.safeParse(1.5e-12).isFail, isTrue);
+      });
+
+      test('rejects large values that are only near a multiple', () {
+        final schema = DoubleSchema().multipleOf(1e12);
+
+        expect(schema.safeParse(2e12).isOk, isTrue);
+        expect(schema.safeParse(1e12 + 1).isFail, isTrue);
+      });
     });
   });
 

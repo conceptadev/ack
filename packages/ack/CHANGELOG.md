@@ -1,3 +1,48 @@
+## 1.1.0
+
+### Fixed
+
+* Keep `safeParse` non-throwing when refinements or constraints throw
+  recoverable `Exception`s, while preserving `Error` values such as
+  `StateError` so programming defects are not masked as validation failures.
+* Decode RFC 3339 lowercase `t`/`z` separators in `Ack.datetime()`, which its
+  own string validation already accepts (previously they failed at the decode
+  step with a misleading "Codec decode failed" message).
+* Bound direct, indirect, wrapper-mediated, and fluent-copy lazy-schema alias
+  recursion (previously unbounded and prone to stack overflow).
+* Snapshot factory collections so a caller mutating the passed list or map can no
+  longer corrupt a constructed schema.
+* Correct behavior-based schema and deep-collection equality.
+
+### Behavior changes
+
+No public API changed (verified with `dart_apitool` against 1.0.1); the following
+now reject inputs that previously passed or misbehaved silently.
+
+* Validate numeric `multipleOf`, IPv6, and RFC 3339 date-time values strictly.
+  Announced leap seconds are preserved by `Ack.string().datetime()` but rejected
+  by `Ack.datetime()`, where Dart cannot represent them. *(migration: some
+  previously-accepted strings and numbers now fail validation.)*
+* Reject invalid constraint configuration at construction — negative
+  lengths/item counts, non-finite numeric bounds, `min > max` ranges,
+  `multipleOf <= 0`, empty unions, empty or duplicate enum inputs, and unions
+  that can yield nullable list items — all throw `ArgumentError`. *(migration:
+  fix the schema definition; put nullability on the list via
+  `Ack.list(item).nullable()`.)*
+* `toJsonSchema()` merges conflicting duplicate keywords into `allOf` and emits
+  `min/maxItems` and `min/maxProperties` for exact counts. *(migration: refresh
+  snapshot or golden tests of exported schemas.)*
+* `parse()` throws `AckException` — instead of the raw callback error — when a
+  constraint or refinement throws.
+
+## 1.0.1
+
+* See [release notes](https://github.com/btwld/ack/releases/tag/v1.0.1) for details.
+
+## 1.0.0
+
+* See [release notes](https://github.com/btwld/ack/releases/tag/v1.0.0) for details.
+
 ## 1.0.0-beta.12
 
 ### Breaking Changes

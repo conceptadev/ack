@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 1.1.0 - 2026-07-12
+
+* Fix validation edge cases, schema export consistency, schema immutability,
+  generator diagnostics, and workspace/release tooling reliability.
+* Bound lazy recursion through wrappers and fluent copies, align RFC date-time
+  and IPv6 behavior, run root tooling tests in CI, prevent stale API reports,
+  and avoid partial changelog updates when validation fails.
+* **Behavior changes** (no API break): fail-fast schema construction, stricter
+  `multipleOf`/IPv6/date-time validation, `toJsonSchema()` keyword merging, and
+  generator rejection of nullable list elements. See the `ack` and
+  `ack_generator` changelogs for per-package details and migration notes.
+
+## 1.0.0 - 2026-06-26
+
+* See [release notes](https://github.com/btwld/ack/releases/tag/v1.0.0) for details.
+
 ## 2026-03-02
 
 ### Changes
@@ -547,4 +563,3 @@ Packages with other changes:
 #### `ack` - `v0.2.0`
 
  - Bump "ack" to 0.2.0 with improved SchemaModel API and enhanced string validation
-

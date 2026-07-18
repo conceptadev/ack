@@ -12,27 +12,34 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
     with
         FluentSchema<Boundary, Runtime, CodecSchema<Boundary, Runtime>>,
         WrapperSchema<Boundary, Runtime, CodecSchema<Boundary, Runtime>> {
+  /// The boundary input schema. Internal codec plumbing; not part of the
+  /// public API surface.
+  @internal
   final AckSchema<Boundary, Object> inputSchema;
 
   /// The output schema applied to the runtime value after decoding and before
-  /// encoding.
+  /// encoding. Internal codec plumbing; not part of the public API surface.
+  @internal
   final AckSchema<dynamic, Runtime> outputSchema;
 
   final Runtime Function(Object value) _decoder;
   final Object Function(Runtime value)? _encoder;
+  final Object _decoderIdentity;
 
   CodecSchema._({
     required this.inputSchema,
     required this.outputSchema,
     required Runtime Function(Object value) decoder,
     required Object Function(Runtime value)? encoder,
+    required Object decoderIdentity,
     super.isNullable,
     super.isOptional,
     super.description,
     super.constraints,
     super.refinements,
   }) : _decoder = decoder,
-       _encoder = encoder;
+       _encoder = encoder,
+       _decoderIdentity = decoderIdentity;
 
   /// Creates a codec while preserving the input schema's runtime type.
   static CodecSchema<Boundary, Runtime> create<
@@ -55,6 +62,7 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
       outputSchema: outputSchema,
       decoder: (value) => decoder(value as InputRuntime),
       encoder: encoder,
+      decoderIdentity: decoder,
       isNullable: isNullable,
       isOptional: isOptional,
       description: description,
@@ -156,6 +164,7 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
       outputSchema: outputSchema,
       decoder: _decoder,
       encoder: _encoder,
+      decoderIdentity: _decoderIdentity,
       isNullable: isNullable,
       isOptional: isOptional,
       description: description,
@@ -177,6 +186,7 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
       outputSchema: outputSchema,
       decoder: _decoder,
       encoder: _encoder,
+      decoderIdentity: _decoderIdentity,
       isNullable: isNullable ?? this.isNullable,
       isOptional: isOptional ?? this.isOptional,
       description: description ?? this.description,
@@ -192,7 +202,9 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
 
     return baseFieldsEqual(other) &&
         inputSchema == other.inputSchema &&
-        outputSchema == other.outputSchema;
+        outputSchema == other.outputSchema &&
+        _decoderIdentity == other._decoderIdentity &&
+        _encoder == other._encoder;
   }
 
   @override
@@ -202,6 +214,11 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
   SchemaType get schemaType => inputSchema.schemaType;
 
   @override
-  int get hashCode =>
-      Object.hash(baseFieldsHashCode, inputSchema, outputSchema);
+  int get hashCode => Object.hash(
+    baseFieldsHashCode,
+    inputSchema,
+    outputSchema,
+    _decoderIdentity,
+    _encoder,
+  );
 }

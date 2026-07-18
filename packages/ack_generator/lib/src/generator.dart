@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:ack_annotations/ack_annotations.dart';
 import 'package:analyzer/dart/element/element2.dart';
 import 'package:build/build.dart';
@@ -29,7 +27,7 @@ class AckSchemaGenerator extends Generator {
 
     for (final element in library.allElements) {
       if (element is ClassElement2 && _hasAckTypeAnnotation(element)) {
-        throw InvalidGenerationSourceError(
+        throw InvalidGenerationSource(
           '@AckType can only be applied to top-level schema variables or getters, not classes.',
           element: element,
           todo:
@@ -43,7 +41,7 @@ class AckSchemaGenerator extends Generator {
       } else if (element is GetterElement && _hasAckTypeAnnotation(element)) {
         final isTopLevel = element.enclosingElement2 is LibraryElement2;
         if (!isTopLevel) {
-          throw InvalidGenerationSourceError(
+          throw InvalidGenerationSource(
             '@AckType can only be applied to top-level schema variables or getters.',
             element: element,
             todo:
@@ -60,7 +58,7 @@ class AckSchemaGenerator extends Generator {
     for (final classElement in library.classes) {
       for (final getter in classElement.getters) {
         if (_hasAckTypeAnnotation(getter)) {
-          throw InvalidGenerationSourceError(
+          throw InvalidGenerationSource(
             '@AckType can only be applied to top-level schema variables or getters.',
             element: getter,
             todo:
@@ -92,7 +90,7 @@ class AckSchemaGenerator extends Generator {
           modelInfos.add(modelInfo);
         }
       } catch (e) {
-        throw InvalidGenerationSourceError(
+        throw InvalidGenerationSource(
           'Failed to analyze schema variable "${variable.name3}": $e',
           element: variable,
           todo:
@@ -111,7 +109,7 @@ class AckSchemaGenerator extends Generator {
           modelInfos.add(modelInfo);
         }
       } catch (e) {
-        throw InvalidGenerationSourceError(
+        throw InvalidGenerationSource(
           'Failed to analyze schema getter "${getter.name3}": $e',
           element: getter,
           todo:
@@ -160,18 +158,9 @@ class AckSchemaGenerator extends Generator {
 
     final validation = CodeValidator.validate(formattedCode);
     if (validation.isFailure) {
-      var debugInfo = '';
-      final debugEnabled =
-          Platform.environment['ACK_GENERATOR_DEBUG']?.toLowerCase() == 'true';
-      if (debugEnabled) {
-        final outputPath = buildStep.inputId.changeExtension('.g.dart.debug');
-        final file = File(outputPath.path);
-        file.writeAsStringSync(formattedCode);
-        debugInfo = '\nDebug output written to: ${outputPath.path}';
-      }
-
-      throw InvalidGenerationSourceError(
-        'Generated code validation failed: ${validation.errorMessage}$debugInfo',
+      throw InvalidGenerationSource(
+        'Generated code validation failed: ${validation.errorMessage}\n'
+        'Generated output:\n$formattedCode',
         todo: 'Fix the code generation logic to produce valid Dart syntax.',
       );
     }
@@ -194,7 +183,7 @@ class AckSchemaGenerator extends Generator {
               annotatedVariables,
               annotatedGetters,
             ) ??
-            (throw InvalidGenerationSourceError(
+            (throw InvalidGenerationSource(
               'Could not find schema declaration "${model.schemaClassName}"',
               todo:
                   'Ensure the schema variable or getter exists and is annotated with @AckType.',
@@ -206,7 +195,7 @@ class AckSchemaGenerator extends Generator {
       sortedModels = typeBuilder.topologicalSort(models);
     } catch (e) {
       final element = typedElements.first;
-      throw InvalidGenerationSourceError(
+      throw InvalidGenerationSource(
         'Extension type dependency resolution failed: $e',
         element: element,
         todo:
@@ -223,7 +212,7 @@ class AckSchemaGenerator extends Generator {
         annotatedGetters,
       );
       if (element == null) {
-        throw InvalidGenerationSourceError(
+        throw InvalidGenerationSource(
           'Could not find schema declaration "${model.schemaClassName}"',
           todo:
               'Ensure the schema variable or getter exists and is annotated with @AckType.',
@@ -248,7 +237,7 @@ class AckSchemaGenerator extends Generator {
           final emittedSubtypeSchemaNames = <String>{};
           for (final subtypeSchemaName in subtypeNames.values) {
             if (!emittedSubtypeSchemaNames.add(subtypeSchemaName)) {
-              throw InvalidGenerationSourceError(
+              throw InvalidGenerationSource(
                 'Discriminated base "${model.schemaClassName}" maps multiple discriminator values to subtype "$subtypeSchemaName".',
                 element: element,
                 todo:
@@ -258,7 +247,7 @@ class AckSchemaGenerator extends Generator {
 
             final subtypeModel = sortedModels.firstWhere(
               (candidate) => candidate.schemaClassName == subtypeSchemaName,
-              orElse: () => throw InvalidGenerationSourceError(
+              orElse: () => throw InvalidGenerationSource(
                 'Subtype "$subtypeSchemaName" was not found while generating "${model.schemaClassName}".',
                 element: element,
               ),
@@ -290,7 +279,7 @@ class AckSchemaGenerator extends Generator {
           generatedTypeModels.add(model);
         }
       } catch (e) {
-        throw InvalidGenerationSourceError(
+        throw InvalidGenerationSource(
           'Extension type generation failed for ${element.name3}: $e',
           element: element,
           todo:
@@ -331,7 +320,7 @@ class AckSchemaGenerator extends Generator {
         final branchIndex = modelIndexBySchemaClassName[branchSchemaClassName];
 
         if (branchIndex == null) {
-          throw InvalidGenerationSourceError(
+          throw InvalidGenerationSource(
             'Could not resolve discriminated branch "$branchSchemaClassName" for base "${baseModel.schemaClassName}".',
             todo:
                 'Ensure every Ack.discriminated(...) branch references an @AckType schema declared in the same library.',
@@ -345,7 +334,7 @@ class AckSchemaGenerator extends Generator {
             branchOwnerByCanonicalIdentity[canonicalBranchIdentity];
         if (existingOwner != null &&
             existingOwner != baseModel.schemaClassName) {
-          throw InvalidGenerationSourceError(
+          throw InvalidGenerationSource(
             'Branch schema "$branchSchemaClassName" is mapped to multiple discriminated bases: "$existingOwner" and "${baseModel.schemaClassName}".',
             todo:
                 'A branch schema can only belong to one Ack.discriminated(...) base.',

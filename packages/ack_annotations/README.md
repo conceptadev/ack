@@ -7,11 +7,11 @@
 
 ```yaml
 dependencies:
-  ack: ^1.0.0-beta.12
-  ack_annotations: ^1.0.0-beta.12
+  ack: ^1.0.0
+  ack_annotations: ^1.0.0
 
 dev_dependencies:
-  ack_generator: ^1.0.0-beta.12
+  ack_generator: ^1.0.0
   build_runner: ^2.4.0
 ```
 
@@ -38,7 +38,7 @@ plus `parse()` and `safeParse()` helpers.
 Generate the wrapper with:
 
 ```bash
-dart run build_runner build --delete-conflicting-outputs
+dart run build_runner build
 ```
 
 ## Custom names

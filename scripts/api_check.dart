@@ -3,7 +3,10 @@
 import 'dart:convert';
 import 'dart:io';
 
-const ackPackages = ['ack', 'ack_generator'];
+import 'src/workspace_packages.dart';
+
+final ackPackages = publishableAckPackages;
+const dartApiToolVersion = '0.23.0';
 
 Future<void> main(List<String> args) async {
   // Parse arguments
@@ -48,23 +51,42 @@ Future<void> main(List<String> args) async {
   print('🚀 API Compatibility Check vs $version');
 
   // Activate dart_apitool
-  await runCommand('dart', ['pub', 'global', 'activate', 'dart_apitool']);
+  final activated = await runCommand('dart', [
+    'pub',
+    'global',
+    'activate',
+    'dart_apitool',
+    dartApiToolVersion,
+  ]);
+  if (!activated) {
+    stderr.writeln('❌ Unable to activate dart_apitool.');
+    exitCode = 1;
+    return;
+  }
 
   // Check packages
   final packagesToCheck = packageName != null ? [packageName] : ackPackages;
   final reports = <String>[];
+  var hasFailures = false;
 
   for (final pkg in packagesToCheck) {
-    await checkPackage(pkg, cleanVersion, version, reports);
+    if (!await checkPackage(pkg, cleanVersion, version, reports)) {
+      hasFailures = true;
+    }
   }
 
   // Print summary
   print('');
-  print('🎯 API compatibility check completed!');
+  print(
+    hasFailures
+        ? '❌ API compatibility check found changes or errors.'
+        : '🎯 API compatibility check completed!',
+  );
   print('📂 Reports saved in project root:');
   for (final report in reports) {
     print('   • $report');
   }
+  if (hasFailures) exitCode = 1;
 }
 
 Future<String> getLatestVersion(String packageName) async {
@@ -75,19 +97,26 @@ Future<String> getLatestVersion(String packageName) async {
     ]);
 
     if (result.exitCode == 0) {
-      final json = jsonDecode(result.stdout);
-      return json['latest']['version'];
+      final decoded = jsonDecode(result.stdout);
+      if (decoded is Map) {
+        final latest = decoded['latest'];
+        if (latest is Map) {
+          final latestVersion = latest['version'];
+          if (latestVersion is String) return latestVersion;
+        }
+      }
     }
   } catch (e) {
-    print(
-      '⚠️  Could not fetch latest version for $packageName, please specify version manually',
-    );
+    stderr.writeln('Could not fetch the latest $packageName version: $e');
   }
 
+  stderr.writeln(
+    'Could not fetch the latest version for $packageName; specify one explicitly.',
+  );
   exit(1);
 }
 
-Future<void> checkPackage(
+Future<bool> checkPackage(
   String packageName,
   String cleanVersion,
   String displayVersion,
@@ -96,35 +125,70 @@ Future<void> checkPackage(
   print('📦 Checking $packageName package...');
 
   final reportFile = 'api-compat-$packageName-vs-$displayVersion.md';
-  reports.add(reportFile);
+  final report = File(reportFile);
+  try {
+    if (report.existsSync()) report.deleteSync();
+  } on FileSystemException catch (error) {
+    stderr.writeln('❌ $packageName: Could not replace $reportFile: $error');
+    return false;
+  }
 
-  final result = await Process.run('dart-apitool', [
-    'diff',
-    '--old',
-    'pub://$packageName/$cleanVersion',
-    '--new',
-    './packages/$packageName',
-    '--report-format',
-    'markdown',
-    '--report-file-path',
-    reportFile,
-    '--ignore-prerelease',
-  ]);
+  final ProcessResult result;
+  try {
+    result = await Process.run('dart', [
+      'pub',
+      'global',
+      'run',
+      'dart_apitool:main',
+      'diff',
+      '--old',
+      'pub://$packageName/$cleanVersion',
+      '--new',
+      './packages/$packageName',
+      '--report-format',
+      'markdown',
+      '--report-file-path',
+      reportFile,
+      '--ignore-prerelease',
+    ]);
+  } on ProcessException catch (error) {
+    stderr.writeln('❌ $packageName: Could not run dart_apitool: $error');
+    return false;
+  }
 
   if (result.exitCode == 0) {
     print('✅ $packageName: API check completed');
   } else {
-    print('⚠️  $packageName: API changes detected');
+    stderr.writeln('❌ $packageName: API changes detected or check failed');
+    _writeProcessStderr(result);
   }
 
-  print('📄 Report saved: $reportFile');
+  final reportExists = report.existsSync();
+  if (reportExists) {
+    reports.add(reportFile);
+    print('📄 Report saved: $reportFile');
+  } else if (result.exitCode == 0) {
+    stderr.writeln('❌ $packageName: dart_apitool did not create $reportFile');
+  }
+  return result.exitCode == 0 && reportExists;
 }
 
-Future<void> runCommand(String command, List<String> args) async {
-  final result = await Process.run(command, args);
-  if (result.exitCode != 0) {
-    print('Error running $command ${args.join(' ')}');
-    print(result.stderr);
+Future<bool> runCommand(String command, List<String> args) async {
+  try {
+    final result = await Process.run(command, args);
+    if (result.exitCode == 0) return true;
+
+    stderr.writeln('Error running $command ${args.join(' ')}');
+    _writeProcessStderr(result);
+  } on ProcessException catch (error) {
+    stderr.writeln('Error running $command ${args.join(' ')}: $error');
+  }
+  return false;
+}
+
+void _writeProcessStderr(ProcessResult result) {
+  if ((result.stderr as String).isNotEmpty) {
+    stderr.writeln(result.stderr);
   }
 }
 
@@ -152,6 +216,6 @@ void printUsage() {
   );
   print('');
   print('Melos usage:');
-  print('  melos api-check ack v0.2.0');
-  print('  melos api-check v0.2.0');
+  print('  dart run melos run api-check -- ack v0.2.0');
+  print('  dart run melos run api-check -- v0.2.0');
 }

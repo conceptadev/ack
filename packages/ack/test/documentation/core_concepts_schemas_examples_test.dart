@@ -32,6 +32,7 @@ void main() {
             .matches(r'^[a-zA-Z0-9_]+$');
         expect(usernameSchema.safeParse('user_123').isOk, isTrue);
         expect(usernameSchema.safeParse('u').isFail, isTrue);
+        expect(usernameSchema.safeParse('user_123!').isFail, isTrue);
 
         final emailSchema = Ack.string().email();
         expect(emailSchema.safeParse('valid@example.com').isOk, isTrue);
@@ -122,6 +123,17 @@ void main() {
         });
 
         expect(result.isOk, isTrue);
+        expect(
+          userSchema.safeParse({
+            'name': 'Jane',
+            'address': {
+              'street': '123 Main St',
+              'city': 'Springfield',
+              'zipCode': '12345-extra',
+            },
+          }).isFail,
+          isTrue,
+        );
         final data = result.getOrThrow()!;
         final address = data['address'] as Map<String, Object?>;
         expect(address['city'], equals('Springfield'));
@@ -424,6 +436,7 @@ void main() {
         final parsedDate =
             dateSchema.safeParse('2024-01-01').getOrThrow() as DateTime;
         expect(parsedDate.year, equals(2024));
+        expect(dateSchema.safeParse('date:2024-01-01').isFail, isTrue);
       });
     });
   });

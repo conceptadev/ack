@@ -4,8 +4,8 @@ import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 /// Integration test that verifies the example folder builds correctly
-/// and has no analyze errors. This acts as a golden test to ensure
-/// the generated code remains valid and analyzer-clean.
+/// and has no analyze errors. The retained output set and structural checks
+/// keep generated code stable and analyzer-clean.
 void main() {
   group('Example Folder Build Integration', () {
     const expectedGeneratedFiles = [
@@ -56,7 +56,6 @@ void main() {
           'run',
           'build_runner',
           'build',
-          '--delete-conflicting-outputs',
         ], workingDirectory: exampleDir.path);
 
         expect(
@@ -85,11 +84,6 @@ void main() {
           expectedGeneratedFiles,
           reason: 'The retained AckType example output set should stay stable',
         );
-
-        print('✅ Generated ${generatedFiles.length} files:');
-        for (final file in generatedFiles) {
-          print('   - ${p.relative(file.path, from: exampleDir.path)}');
-        }
       },
       timeout: const Timeout(Duration(minutes: 2)),
     );
@@ -108,8 +102,6 @@ void main() {
             'STDOUT: ${analyzeResult.stdout}\n'
             'STDERR: ${analyzeResult.stderr}',
       );
-
-      print('✅ Example folder passed dart analyze with no issues');
     });
 
     test('generated files should match expected schema patterns', () async {
@@ -170,8 +162,6 @@ void main() {
           contains("part '$fileName'"),
           reason: 'Main file $mainFileName should include part directive',
         );
-
-        print('✅ $fileName matches expected patterns');
       }
 
       final discriminatedFile = File(
@@ -262,8 +252,6 @@ void main() {
             'STDOUT: ${pubGetResult.stdout}\n'
             'STDERR: ${pubGetResult.stderr}',
       );
-
-      print('✅ Example folder dependencies resolved successfully');
     });
   });
 }

@@ -38,11 +38,11 @@ extension type UserType(Map<String, Object?> _data)
 
 ```yaml
 dependencies:
-  ack: ^1.0.0-beta.12
-  ack_annotations: ^1.0.0-beta.12
+  ack: ^1.0.0
+  ack_annotations: ^1.0.0
 
 dev_dependencies:
-  ack_generator: ^1.0.0-beta.12
+  ack_generator: ^1.0.0
   build_runner: ^2.4.0
 ```
 
@@ -79,12 +79,15 @@ validate through the union's effective branch.
 - Inline anonymous object branches are rejected for typed generation. Extract
   them to a named top-level schema first.
 - Nullable top-level schemas do not emit extension types.
+- Nullable list elements are rejected: `Ack.list(item.nullable())` is not
+  supported. Make the list nullable with `Ack.list(item).nullable()` when the
+  list itself may be `null`.
 - `@AckType()` requires static schema resolution for nested object references.
 
 ## Build commands
 
 ```bash
-dart run build_runner build --delete-conflicting-outputs
+dart run build_runner build
 dart run build_runner watch
 ```
 

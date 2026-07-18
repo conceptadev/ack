@@ -283,9 +283,6 @@ void main() {
         String formatUserFriendlyError(SchemaError error) {
           final message = error.message.toLowerCase();
 
-          // Debug: print the actual message to understand its format
-          // print('Debug: Error message = "$message"');
-
           // Convert technical messages to user-friendly ones
           if (message.contains('email') && message.contains('valid')) {
             return 'Please enter a valid email address (e.g., user@example.com)';

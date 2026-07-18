@@ -6,8 +6,9 @@
 
 ## Repository layout
 - `packages/ack`: core runtime validation library.
-- `packages/ack_annotations`: source annotations (`@AckModel`, `@AckType`).
-- `packages/ack_generator`: build_runner generator + golden tests.
+- `packages/ack_annotations`: source annotation for `@AckType()` schema
+  generation.
+- `packages/ack_generator`: build_runner generator + unit/integration tests.
 - `packages/ack_firebase_ai`: Firebase AI schema adapter.
 - `packages/ack_json_schema_builder`: JSON Schema adapter.
 - `example`: sample usage.
@@ -15,20 +16,20 @@
 ## Environment and setup
 - Required SDKs: Dart `>=3.8.0 <4.0.0`, Flutter `>=3.16.0` (see `/pubspec.yaml`).
 - Use from repo root:
-  1. `dart pub global activate melos`
-  2. `melos bootstrap`
-- Optional one-shot setup script: `./setup.sh` (installs Dart/Melos/Node tools where possible).
+  1. `dart pub get`
+  2. `dart run melos bootstrap`
+- Optional one-shot setup script: `./setup.sh` (validates the Flutter SDK, bootstraps the workspace, and installs Node tools when npm is available).
 
 ## Commands you should run
-- Full CI-equivalent local check: `melos run test --no-select`
+- Full CI-equivalent local check: `dart run melos run test --no-select`
   - Runs strict analyze (`dart analyze . --fatal-infos`) and package tests.
 - Useful targeted commands:
-  - `melos run analyze`
-  - `melos run test:dart`
-  - `melos run test:flutter`
-  - `melos run build` (when generator-related code changes)
-  - `melos run test:gen` / `melos run update-golden:all` (for generator golden updates)
-  - `melos run validate-jsonschema` (for JSON Schema conformance tooling)
+  - `dart run melos run analyze`
+  - `dart run melos run test:dart`
+  - `dart run melos run test:flutter`
+  - `dart run melos run build` (when generator-related code changes)
+  - `dart run melos run test:gen` (for generator changes)
+  - `dart run melos run validate-jsonschema` (for JSON Schema conformance tooling)
 
 ## Change-scope guidance
 - Keep changes minimal and package-scoped; do not refactor unrelated files.
@@ -38,12 +39,12 @@
 ## CI and release notes
 - CI is defined in `/.github/workflows/ci.yml` and delegates to `btwld/dart-actions/.github/workflows/ci.yml@main` with DCM enabled.
 - Conventional Commits are expected for commit messages.
-- Publishing/versioning flows are documented in `/PUBLISHING.md` (`melos version`, `melos publish`).
+- Publishing/versioning flows are documented in `/PUBLISHING.md` (`dart run melos version`, `dart run melos publish`).
 
 ## Errors encountered during onboarding and workarounds
 1. **Error:** `melos: command not found` when running checks in a fresh environment.  
-   **Workaround:** install Melos (`dart pub global activate melos`) and/or invoke via `dart run melos ...` after Dart is available.
+   **Workaround:** resolve root dependencies with `dart pub get`, then invoke the workspace-local executable via `dart run melos ...`.
 2. **Error:** `dart: command not found` in bare sandbox environments.  
-   **Workaround:** install Dart SDK first (or run `./setup.sh`), then bootstrap with Melos.
+   **Workaround:** install Flutter (which includes Dart), then run `./setup.sh`.
 3. **Observed CI state:** workflow run may show `conclusion: action_required` with no jobs for PR contexts awaiting approval/permissions.  
    **Workaround:** have a maintainer approve/enable the run, then re-run CI.

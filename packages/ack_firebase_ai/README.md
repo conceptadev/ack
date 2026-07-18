@@ -23,9 +23,9 @@ Always validate model output with the same ACK schema after generation. Firebase
 
 ```yaml
 dependencies:
-  ack: ^1.0.0-beta.12
-  ack_firebase_ai: ^1.0.0-beta.12
-  firebase_ai: ^3.12.1
+  ack: ^1.0.0
+  ack_firebase_ai: ^1.0.0
+  firebase_ai: ^3.12.2
 ```
 
 This package targets Firebase AI's map-based `responseJsonSchema` API for models that support JSON Schema structured output.
@@ -192,5 +192,5 @@ dart run tool/generate_firebase_ai_response_json_schema_fixtures.dart
 From the workspace root, the same generator is available through Melos:
 
 ```bash
-melos run firebase-ai-fixtures
+dart run melos run firebase-ai-fixtures
 ```

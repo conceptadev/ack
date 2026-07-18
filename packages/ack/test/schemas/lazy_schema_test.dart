@@ -212,7 +212,7 @@ void main() {
     expect(child.warnings, hasLength(1));
     expect(child.warnings.single.code, 'lazy_runtime_checks_not_export_safe');
     expect(child.warnings.single.context, {
-      'constraintCount': 0,
+      'constraintCount': 1,
       'refinementCount': 1,
     });
   });
@@ -314,6 +314,156 @@ void main() {
     // on top of that, inflating this count. Locks in the fixed call profile.
     expect(calls, 15);
   });
+
+  group('maxDepth', () {
+    test('allows input at the cap and fails one level deeper', () {
+      const maxDepth = 3;
+      late final ObjectSchema categorySchema;
+      final child = Ack.lazy<JsonMap, JsonMap>(
+        'Category',
+        () => categorySchema,
+        maxDepth: maxDepth,
+      ).nullable().optional();
+      categorySchema = Ack.object({'name': Ack.string(), 'child': child});
+
+      final atLimit = _nestedCategoryJson(maxDepth);
+      final tooDeep = _nestedCategoryJson(maxDepth + 1);
+
+      expect(categorySchema.safeParse(atLimit).isOk, isTrue);
+      expect(categorySchema.safeParse(tooDeep).isFail, isTrue);
+      expect(categorySchema.safeEncode(atLimit).isOk, isTrue);
+      expect(categorySchema.safeEncode(tooDeep).isFail, isTrue);
+    });
+
+    test('defaults maxDepth to LazySchema.defaultMaxDepth', () {
+      final target = Ack.object({'name': Ack.string()});
+      final lazy = Ack.lazy<JsonMap, JsonMap>('Category', () => target);
+
+      expect(lazy.maxDepth, LazySchema.defaultMaxDepth);
+    });
+
+    test('throws for maxDepth values below 1', () {
+      final target = Ack.object({'name': Ack.string()});
+
+      expect(
+        () => Ack.lazy<JsonMap, JsonMap>('Category', () => target, maxDepth: 0),
+        throwsA(isA<ArgumentError>()),
+      );
+      expect(
+        () =>
+            Ack.lazy<JsonMap, JsonMap>('Category', () => target, maxDepth: -1),
+        throwsA(isA<ArgumentError>()),
+      );
+    });
+
+    test('preserves maxDepth through fluent copies', () {
+      final target = Ack.object({'name': Ack.string()});
+      final lazy = Ack.lazy<JsonMap, JsonMap>(
+        'Category',
+        () => target,
+        maxDepth: 2,
+      );
+
+      expect(lazy.maxDepth, 2);
+      expect(lazy.nullable().optional().maxDepth, 2);
+    });
+
+    test('includes maxDepth in equality and hashCode', () {
+      final target = Ack.object({'name': Ack.string()});
+      AckSchema<JsonMap, JsonMap> builder() => target;
+
+      final uncapped = Ack.lazy<JsonMap, JsonMap>('Category', builder);
+      final capped = Ack.lazy<JsonMap, JsonMap>(
+        'Category',
+        builder,
+        maxDepth: 2,
+      );
+      final matchingCap = Ack.lazy<JsonMap, JsonMap>(
+        'Category',
+        builder,
+        maxDepth: 2,
+      );
+
+      expect(capped, matchingCap);
+      expect(capped.hashCode, matchingCap.hashCode);
+      expect(capped, isNot(uncapped));
+    });
+
+    test('terminates direct and indirect lazy aliases', () {
+      late final LazySchema<String, String> direct;
+      direct = Ack.lazy<String, String>('Direct', () => direct, maxDepth: 1);
+
+      late final LazySchema<String, String> first;
+      late final LazySchema<String, String> second;
+      first = Ack.lazy<String, String>('First', () => second, maxDepth: 1);
+      second = Ack.lazy<String, String>('Second', () => first, maxDepth: 1);
+
+      for (final result in [direct.safeParse('x'), first.safeParse('x')]) {
+        expect(result.isFail, isTrue);
+        final error = result.getError();
+        expect(error, isA<SchemaConstraintsError>());
+        expect(error.message, contains('Maximum recursion depth'));
+      }
+    });
+
+    test('terminates lazy aliases hidden behind wrappers', () {
+      late final LazySchema<String, String> defaultWrapped;
+      defaultWrapped = Ack.lazy<String, String>(
+        'DefaultWrapped',
+        () => defaultWrapped.withDefault('fallback'),
+        maxDepth: 1,
+      );
+
+      late final LazySchema<String, String> codecWrapped;
+      codecWrapped = Ack.lazy<String, String>(
+        'CodecWrapped',
+        () => codecWrapped.codec<String>(
+          decode: (value) => value,
+          encode: (value) => value,
+        ),
+        maxDepth: 1,
+      );
+
+      for (final schema in [defaultWrapped, codecWrapped]) {
+        for (final result in [
+          schema.safeParse('value'),
+          schema.safeEncode('value'),
+        ]) {
+          expect(result.isFail, isTrue);
+          final error = result.getError();
+          expect(error, isA<SchemaConstraintsError>());
+          expect(error.message, contains('Maximum recursion depth'));
+        }
+      }
+    });
+
+    test('terminates lazy aliases hidden behind fluent copies', () {
+      late final LazySchema<String, String> optionalAlias;
+      optionalAlias = Ack.lazy<String, String>(
+        'OptionalAlias',
+        () => optionalAlias.optional(),
+        maxDepth: 1,
+      );
+
+      for (final result in [
+        optionalAlias.safeParse('value'),
+        optionalAlias.safeEncode('value'),
+      ]) {
+        expect(result.isFail, isTrue);
+        final error = result.getError();
+        expect(error, isA<SchemaConstraintsError>());
+        expect(error.message, contains('Maximum recursion depth'));
+      }
+    });
+  });
+}
+
+JsonMap _nestedCategoryJson(int childDepth) {
+  JsonMap node = {'name': 'node-$childDepth'};
+  for (var depth = childDepth - 1; depth >= 0; depth--) {
+    node = {'name': 'node-$depth', 'child': node};
+  }
+  return node;
 }
 
 final class _TestJsonSchemaKeywordConstraint<T extends Object>

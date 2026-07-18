@@ -34,16 +34,17 @@ bool deepEquals(Object? a, Object? b) {
   // Handle Sets (order-independent comparison)
   if (a is Set && b is Set) {
     if (a.length != b.length) return false;
-    // For each element in a, check if b contains an equal element
+    final unmatched = b.toList();
     for (final itemA in a) {
-      var found = false;
-      for (final itemB in b) {
-        if (deepEquals(itemA, itemB)) {
-          found = true;
+      var matchIndex = -1;
+      for (var i = 0; i < unmatched.length; i++) {
+        if (deepEquals(itemA, unmatched[i])) {
+          matchIndex = i;
           break;
         }
       }
-      if (!found) return false;
+      if (matchIndex == -1) return false;
+      unmatched.removeAt(matchIndex);
     }
 
     return true;

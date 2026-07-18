@@ -1,4 +1,6 @@
-# Schema Converter Package - Quick Start Template
+---
+title: Adapter Package Quickstart
+---
 
 **Use this for rapid prototyping of new schema converter packages**
 
@@ -111,6 +113,9 @@ class <Target>SchemaConverter {
       AckOneOfSchemaModel() => _convertOneOf(schema),
       AckAllOfSchemaModel() => _convertAllOf(schema),
       AckNullSchemaModel() => {'type': 'null'},
+      AckRefSchemaModel(refName: final name) => {
+        r'$ref': '#/definitions/$name',
+      },
     };
   }
 
@@ -383,4 +388,4 @@ dart format .
 
 ## Reference
 
-See [Creating Schema Converter Packages](./creating-schema-converter-packages.md) for detailed guidance.
+See [Creating Schema Converter Packages](./creating-schema-converter-packages.mdx) for detailed guidance.

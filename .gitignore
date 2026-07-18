@@ -38,15 +38,14 @@ packages/ack/coverage
 
 # Coverage
 coverage/*
-!coverage/lcov.info
 packages/*/coverage/*
-!packages/*/coverage/lcov.info
 
 # Keep .claude directory
 .claude/*
 !.claude/skills/
 CLAUDE.md
 .idea
+*.iml
 
 # Node.js dependencies for tools
 tools/node_modules/

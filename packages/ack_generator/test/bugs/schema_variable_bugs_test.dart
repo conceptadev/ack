@@ -225,7 +225,7 @@ final schemaBSchema = Ack.list(schemaASchema);
 
         expect(
           () => analyzer.analyzeSchemaVariable(schemaVar),
-          throwsA(isA<InvalidGenerationSourceError>()),
+          throwsA(isA<InvalidGenerationSource>()),
         );
       });
     });
@@ -256,7 +256,7 @@ final usersSchema = Ack.list(Ack.object({
 
         expect(
           () => analyzer.analyzeSchemaVariable(schemaVar),
-          throwsA(isA<InvalidGenerationSourceError>()),
+          throwsA(isA<InvalidGenerationSource>()),
         );
       });
     });
@@ -289,7 +289,7 @@ final usersSchema = Ack.list(schemaFactory());
 
           expect(
             () => analyzer.analyzeSchemaVariable(schemaVar),
-            throwsA(isA<InvalidGenerationSourceError>()),
+            throwsA(isA<InvalidGenerationSource>()),
           );
         });
       },
@@ -358,7 +358,7 @@ final schemaBSchema = schemaASchema;
           throwsA(
             predicate(
               (error) =>
-                  error is InvalidGenerationSourceError &&
+                  error is InvalidGenerationSource &&
                   error.toString().contains('Circular schema reference'),
             ),
           ),
@@ -540,7 +540,7 @@ final deepSchema = Ack.object({
             throwsA(
               predicate(
                 (error) =>
-                    error is InvalidGenerationSourceError &&
+                    error is InvalidGenerationSource &&
                     error.toString().contains('exceeded max depth of 20'),
               ),
             ),
@@ -704,7 +704,7 @@ final testSchema = Ack.object({
 
           expect(
             () => analyzer.analyzeSchemaVariable(schemaVar),
-            throwsA(isA<InvalidGenerationSourceError>()),
+            throwsA(isA<InvalidGenerationSource>()),
           );
         });
       },
@@ -741,7 +741,7 @@ final testSchema = Ack.object({
 
           expect(
             () => analyzer.analyzeSchemaVariable(schemaVar),
-            throwsA(isA<InvalidGenerationSourceError>()),
+            throwsA(isA<InvalidGenerationSource>()),
           );
         });
       },
@@ -776,7 +776,7 @@ final testSchema = Ack.object({
         final analyzer = SchemaAstAnalyzer();
         expect(
           () => analyzer.analyzeSchemaVariable(schemaVar),
-          throwsA(isA<InvalidGenerationSourceError>()),
+          throwsA(isA<InvalidGenerationSource>()),
         );
       });
     });
@@ -808,7 +808,7 @@ final testSchema = Ack.object({
         final analyzer = SchemaAstAnalyzer();
         expect(
           () => analyzer.analyzeSchemaVariable(schemaVar),
-          throwsA(isA<InvalidGenerationSourceError>()),
+          throwsA(isA<InvalidGenerationSource>()),
         );
       });
     });
@@ -985,7 +985,7 @@ final keywordSchema = Ack.object({
 
           expect(
             () => analyzer.analyzeSchemaVariable(schemaVar),
-            throwsA(isA<InvalidGenerationSourceError>()),
+            throwsA(isA<InvalidGenerationSource>()),
             reason: 'Expected "$keyword" to be rejected as reserved keyword.',
           );
         });

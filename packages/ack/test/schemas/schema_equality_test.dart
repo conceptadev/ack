@@ -197,6 +197,25 @@ void main() {
         expect(a, equals(b));
         expect(a.hashCode, equals(b.hashCode));
       });
+
+      test('equivalent built-in transformers are equal', () {
+        expect(Ack.string().trim(), equals(Ack.string().trim()));
+        expect(Ack.string().toLowerCase(), equals(Ack.string().toLowerCase()));
+        expect(Ack.string().toUpperCase(), equals(Ack.string().toUpperCase()));
+      });
+    });
+
+    group('Built-in CodecSchema', () {
+      test('equivalent factory schemas are equal', () {
+        expect(Ack.date(), equals(Ack.date()));
+        expect(Ack.datetime(), equals(Ack.datetime()));
+        expect(Ack.uri(), equals(Ack.uri()));
+        expect(Ack.duration(), equals(Ack.duration()));
+        expect(
+          Ack.enumCodec(TestColor.values),
+          equals(Ack.enumCodec(TestColor.values)),
+        );
+      });
     });
 
     group('Cross-type inequality', () {
