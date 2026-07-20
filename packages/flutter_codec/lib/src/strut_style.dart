@@ -23,18 +23,34 @@ import 'primitives/font_weight.dart' show fontWeightCodec;
 ///
 /// [StrutStyle.debugLabel] is excluded — it's debug metadata, ignored by
 /// [StrutStyle] equality.
-final strutStyleCodec = Ack.object({
-  'fontFamily': Ack.string().nullable().optional(),
-  'fontFamilyFallback': Ack.list(Ack.string()).nullable().optional(),
-  'package': Ack.string().nullable().optional(),
-  'fontSize': Ack.number().positive().nullable().optional(),
-  'height': Ack.number().nullable().optional(),
-  'leadingDistribution': textLeadingDistributionCodec.nullable().optional(),
-  'leading': Ack.number().min(0).nullable().optional(),
-  'fontWeight': fontWeightCodec.nullable().optional(),
-  'fontStyle': fontStyleCodec.nullable().optional(),
-  'forceStrutHeight': Ack.boolean().nullable().optional(),
-}).codec<StrutStyle>(decode: _decodeStrutStyle, encode: _encodeStrutStyle);
+final strutStyleCodec =
+    Ack.object({
+          'fontFamily': Ack.string().nullable().optional(),
+          'fontFamilyFallback': Ack.list(Ack.string()).nullable().optional(),
+          'package': Ack.string().nullable().optional(),
+          'fontSize': Ack.number().positive().nullable().optional(),
+          'height': Ack.number().nullable().optional(),
+          'leadingDistribution': textLeadingDistributionCodec
+              .nullable()
+              .optional(),
+          'leading': Ack.number().min(0).nullable().optional(),
+          'fontWeight': fontWeightCodec.nullable().optional(),
+          'fontStyle': fontStyleCodec.nullable().optional(),
+          'forceStrutHeight': Ack.boolean().nullable().optional(),
+        })
+        .refine(
+          (data) =>
+              data['package'] == null ||
+              data['fontFamily'] != null ||
+              data['fontFamilyFallback'] != null,
+          message:
+              'StrutStyle package requires fontFamily or '
+              'fontFamilyFallback.',
+        )
+        .codec<StrutStyle>(
+          decode: _decodeStrutStyle,
+          encode: _encodeStrutStyle,
+        );
 
 StrutStyle _decodeStrutStyle(JsonMap data) {
   return StrutStyle(

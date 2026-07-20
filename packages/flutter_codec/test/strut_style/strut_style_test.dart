@@ -98,6 +98,18 @@ void main() {
   });
 
   group('strutStyleCodec rejects invalid input', () {
+    test('rejects package without a font family', () {
+      final result = strutStyleCodec.safeParse({'package': 'my_pkg'});
+
+      expect(result.isFail, isTrue);
+      expect(
+        result.getError().toString(),
+        contains(
+          'StrutStyle package requires fontFamily or fontFamilyFallback.',
+        ),
+      );
+    });
+
     test('rejects a non-positive fontSize', () {
       expect(strutStyleCodec.safeParse({'fontSize': 0}).isFail, isTrue);
       expect(strutStyleCodec.safeParse({'fontSize': -1}).isFail, isTrue);

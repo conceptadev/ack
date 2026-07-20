@@ -98,6 +98,18 @@ void main() {
 
       expect(result.isFail, isTrue);
     });
+
+    test('explains why Text.rich cannot be encoded', () {
+      final result = textWidgetCodec.safeEncode(
+        const Text.rich(TextSpan(text: 'hello')),
+      );
+
+      expect(result.isFail, isTrue);
+      expect(
+        result.getError().toString(),
+        contains('Text.rich inline span trees are not supported'),
+      );
+    });
   });
 
   group('widgetCodec', () {

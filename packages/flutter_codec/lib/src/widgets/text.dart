@@ -61,6 +61,13 @@ Text _decodeText(JsonMap data) {
 }
 
 JsonMap _encodeText(Text value) {
+  if (value.textSpan != null) {
+    throw UnsupportedError(
+      'Text.rich inline span trees are not supported by textWidgetCodec. '
+      'Use Text with plain data instead.',
+    );
+  }
+
   // Flutter exposes no stable public state for a [TextScaler] implementation,
   // so it has no portable JSON shape. Fail loudly when one is set instead of
   // dropping it and decoding back an unscaled [Text].
