@@ -5,14 +5,16 @@ pub.dev.
 
 ## Overview
 
-The repository has two release tracks:
+The Ack package family (`ack`, `ack_annotations`, `ack_generator`,
+`ack_firebase_ai`, and `ack_json_schema_builder`) is versioned together and
+released from `v*` tags.
 
-- The Ack package family (`ack`, `ack_annotations`, `ack_generator`,
-  `ack_firebase_ai`, and `ack_json_schema_builder`) is versioned together and
-  released from `v*` tags.
-- `standard_schema` is versioned independently and released from
-  `standard_schema-v*` tags. Publish a required `standard_schema` version
-  before publishing an Ack release that depends on it.
+The `standard_schema` contract package that `ack` depends on is **not** released
+from this repository. It lives in
+[conceptadev/standard-schema-dart](https://github.com/conceptadev/standard-schema-dart)
+and is consumed from pub.dev. Publish any required `standard_schema` version
+there first, then update the constraint in `packages/ack/pubspec.yaml` before
+releasing Ack.
 
 GitHub Releases and tag workflows provide:
 
@@ -30,8 +32,7 @@ Before creating a release:
 2. Verify that all tests pass by running `dart run melos run test` (include `dart run melos run validate-jsonschema` and `dart run melos run test:gen` for full coverage)
 3. Check that the documentation is up to date across the repo and docs site
 4. Decide on versions following [Semantic Versioning](https://semver.org/).
-   Apply one version consistently to the Ack package family; version
-   `standard_schema` independently.
+   Apply one version consistently to the Ack package family.
 5. Ensure package CHANGELOG entries are finalized before tagging. If you want a link-only entry for a version, you can run `dart scripts/update_release_changelog.dart <version> [tag]` after `dart run melos version`.
 
 ### 2. Create an Ack GitHub Release
@@ -74,14 +75,9 @@ This release introduces [brief description of major changes].
 
 7. Click "Publish release"
 
-For `standard_schema`, use the same process with a tag such as
-`standard_schema-v0.0.1`. Its version and changelog are independent of
-the Ack package family.
-
 ### 3. Automated Steps
 
-When a `v*` or `standard_schema-v*` tag is pushed, the corresponding GitHub
-Actions workflow will automatically:
+When a `v*` tag is pushed, the release workflow will automatically:
 
 1. Run package tests (Dart/Flutter, depending on package type)
 2. Run `dart pub publish --dry-run` for each package
@@ -117,17 +113,12 @@ git push --follow-tags
 If you need to publish packages manually:
 
 ```bash
-# Dry-run the independently versioned contract package first.
-(cd packages/standard_schema && dart pub publish --dry-run) || exit 1
-
 # Dry-run the synchronized Ack package family.
 for pkg in ack ack_annotations ack_generator ack_json_schema_builder ack_firebase_ai; do
   (cd packages/$pkg && dart pub publish --dry-run) || exit 1
 done
 
-# Actual publish (no dry-run). Publish standard_schema before a dependent Ack
-# release; use Melos package selection or publish from each package directory.
-(cd packages/standard_schema && dart pub publish)
+# Actual publish (no dry-run).
 dart run melos publish --no-dry-run --yes --scope="ack*"
 ```
 
@@ -152,8 +143,8 @@ If manual publishing fails:
 
 ## Version Numbering
 
-Every published package follows [Semantic Versioning](https://semver.org/).
-The Ack package family shares a version; `standard_schema` does not:
+Every published package follows [Semantic Versioning](https://semver.org/), and
+the Ack package family shares a single version:
 
 - **Major version (x.0.0)**: Incompatible API changes
 - **Minor version (0.x.0)**: Backwards-compatible functionality additions

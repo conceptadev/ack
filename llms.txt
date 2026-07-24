@@ -13,7 +13,10 @@ schema variables or getters with `@AckType()` and run `ack_generator`.
 3. `ack_generator`: generates extension types for annotated top-level schemas
 4. `ack_firebase_ai`: converts Ack schemas to Firebase AI structured-output schemas
 5. `ack_json_schema_builder`: converts Ack schemas to `json_schema_builder` schemas
-6. `standard_schema`: vendor-neutral Standard Schema validation and JSON Schema converter contracts
+
+`ack` also depends on `standard_schema`, the vendor-neutral Standard Schema
+validation and JSON Schema converter contracts, published from its own
+repository at https://github.com/conceptadev/standard-schema-dart.
 
 ## Core runtime usage
 

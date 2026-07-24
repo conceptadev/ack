@@ -20,14 +20,17 @@ For AI agents: start at [`/llms.txt`](https://docs.page/btwld/ack/llms.txt).
 
 This repository is a monorepo containing:
 
-- **[standard_schema](./packages/standard_schema)**: Vendor-neutral Standard
-  Schema validation and JSON Schema converter contracts for Dart
 - **[ack](./packages/ack)**: Core validation library with a fluent schema-building API, codecs, and JSON Schema export
 - **[ack_annotations](./packages/ack_annotations)**: The `@AckType()` annotation that marks schemas for code generation
 - **[ack_generator](./packages/ack_generator)**: Code generator that turns `@AckType()` schemas into type-safe extension types
 - **[ack_firebase_ai](./packages/ack_firebase_ai)**: Firebase AI (Gemini) schema converter for structured-output generation
 - **[ack_json_schema_builder](./packages/ack_json_schema_builder)**: Converter to `json_schema_builder` schemas
 - **[example](./example)**: Example projects demonstrating usage of all packages
+
+Ack also depends on
+[`standard_schema`](https://pub.dev/packages/standard_schema), the
+vendor-neutral Standard Schema contracts for Dart. It is maintained separately
+in [conceptadev/standard-schema-dart](https://github.com/conceptadev/standard-schema-dart).
 
 ## Community and support
 
@@ -184,9 +187,10 @@ Use `.transform<R>(...)` for one-way (parse-only) conversions. See the
 ## Standard Schema interoperability
 
 Ack schemas implement the vendor-neutral contracts from
-[`standard_schema`](./packages/standard_schema), which `package:ack/ack.dart`
-re-exports. Use `schema.standard.validate(value)` for interoperable validation,
-or convert the accepted input and produced output separately:
+[`standard_schema`](https://pub.dev/packages/standard_schema), which
+`package:ack/ack.dart` re-exports. Use `schema.standard.validate(value)` for
+interoperable validation, or convert the accepted input and produced output
+separately:
 
 ```dart
 final options = StandardJsonSchemaOptions(

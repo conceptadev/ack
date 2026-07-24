@@ -4,7 +4,7 @@ import 'package:test/test.dart';
 
 void main() {
   test(
-    'accepts the independently versioned standard_schema package',
+    'accepts an explicitly named publishable package',
     () async {
       final fakeBin = Directory.systemTemp.createTempSync('ack-api-check-');
       final workingDirectory = Directory.systemTemp.createTempSync(
@@ -18,7 +18,7 @@ void main() {
 
       final result = await Process.run(
         Platform.resolvedExecutable,
-        [scriptPath, 'standard_schema', '0.0.1-dev.0'],
+        [scriptPath, 'ack_json_schema_builder', '0.0.1-dev.0'],
         workingDirectory: workingDirectory.path,
         environment: {
           ...Platform.environment,
@@ -27,7 +27,10 @@ void main() {
       );
 
       expect(result.stderr, isNot(contains('Invalid package name')));
-      expect(result.stdout, contains('Checking standard_schema package'));
+      expect(
+        result.stdout,
+        contains('Checking ack_json_schema_builder package'),
+      );
     },
     skip: Platform.isWindows ? 'Uses POSIX test executables.' : false,
   );

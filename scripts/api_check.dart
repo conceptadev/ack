@@ -5,7 +5,6 @@ import 'dart:io';
 
 import 'src/workspace_packages.dart';
 
-const availablePackages = publishablePackages;
 const dartApiToolVersion = '0.23.0';
 
 Future<void> main(List<String> args) async {
@@ -17,9 +16,9 @@ Future<void> main(List<String> args) async {
     // Check if first argument is a version (starts with v or is a number)
     final firstArg = args[0];
     if (firstArg.startsWith('v') || RegExp(r'^\d+\.\d+').hasMatch(firstArg)) {
-      // A shared version applies to the synchronized Ack package family.
+      // A shared version applies to the synchronized package family.
       version = firstArg;
-    } else if (availablePackages.contains(firstArg)) {
+    } else if (publishablePackages.contains(firstArg)) {
       // First argument is a package name
       packageName = firstArg;
       if (args.length > 1) {
@@ -27,7 +26,7 @@ Future<void> main(List<String> args) async {
       }
     } else {
       print(
-        '❌ Invalid package name. Available packages: ${availablePackages.join(', ')}',
+        '❌ Invalid package name. Available packages: ${publishablePackages.join(', ')}',
       );
       printUsage();
       exit(1);
@@ -39,7 +38,9 @@ Future<void> main(List<String> args) async {
     if (packageName != null) {
       version = await getLatestVersion(packageName);
     } else {
-      print('❌ Please specify a version when checking the Ack package family');
+      print(
+        '❌ Please specify a version when checking the whole package family',
+      );
       printUsage();
       exit(1);
     }
@@ -67,7 +68,7 @@ Future<void> main(List<String> args) async {
   // Check packages
   final packagesToCheck = packageName != null
       ? [packageName]
-      : publishableAckPackages;
+      : publishablePackages;
   final reports = <String>[];
   var hasFailures = false;
 
@@ -199,8 +200,8 @@ void printUsage() {
   print('Usage: dart scripts/api_check.dart [PACKAGE] [VERSION]');
   print('');
   print('Arguments:');
-  print('  PACKAGE  Package to check (${availablePackages.join('|')})');
-  print('           If not provided, checks the Ack release-family packages');
+  print('  PACKAGE  Package to check (${publishablePackages.join('|')})');
+  print('           If not provided, checks every release-family package');
   print('  VERSION  Version to compare against (e.g., v0.2.0 or 0.2.0)');
   print(
     '           If not provided with single package, uses latest from pub.dev',
@@ -214,7 +215,7 @@ void printUsage() {
     '  dart scripts/api_check.dart ack v0.2.0            # Check ack against v0.2.0',
   );
   print(
-    '  dart scripts/api_check.dart v0.2.0                # Check the Ack family against v0.2.0',
+    '  dart scripts/api_check.dart v0.2.0                # Check the family against v0.2.0',
   );
   print('');
   print('Melos usage:');

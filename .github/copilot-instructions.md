@@ -11,9 +11,11 @@
 - `packages/ack_generator`: build_runner generator + unit/integration tests.
 - `packages/ack_firebase_ai`: Firebase AI schema adapter.
 - `packages/ack_json_schema_builder`: JSON Schema adapter.
-- `packages/standard_schema`: shared Standard Schema validation and JSON
-  Schema converter contracts.
 - `example`: sample usage.
+
+`ack` depends on the hosted `standard_schema` package for shared Standard
+Schema validation and JSON Schema converter contracts. It is developed in
+`conceptadev/standard-schema-dart`, not in this repository.
 
 ## Environment and setup
 - Required SDKs: Dart `>=3.8.0 <4.0.0`, Flutter `>=3.16.0` (see `/pubspec.yaml`).

@@ -33,7 +33,7 @@ void main(List<String> args) {
       : 'v$version';
 
   final releaseUrl = 'https://github.com/btwld/ack/releases/tag/$tag';
-  final changelogPaths = publishableAckPackages
+  final changelogPaths = publishablePackages
       .map((p) => 'packages/$p/CHANGELOG.md')
       .toList();
   var hasErrors = false;
