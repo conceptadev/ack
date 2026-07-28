@@ -45,6 +45,10 @@ void main() {
 > then use the [complete adapter authoring guide](./creating-schema-converter-packages.mdx)
 > for architecture and testing guidance.
 
+> **Exporting for a library that doesn't depend on Ack?** Use the vendor-neutral
+> [Standard Schema](./standard-schema.mdx) contract instead, so the consumer can
+> accept schemas from any participating validator.
+
 ## Adapter model
 
 Use `toSchemaModel()` for a reusable, target-independent view of an Ack schema:

@@ -65,6 +65,7 @@
           "title": "JSON Schema Integration",
           "href": "/guides/json-schema-integration"
         },
+        { "title": "Standard Schema", "href": "/guides/standard-schema" },
         { "title": "Configuration", "href": "/core-concepts/configuration" }
       ]
     },

@@ -1,0 +1,157 @@
+---
+title: Standard Schema
+---
+
+[Standard Schema](https://github.com/standard-schema/standard-schema) is a vendor-neutral contract that lets a library accept *any* schema without depending on a specific validator. Ack implements it, so a form builder, an API framework, or an AI tool can accept your Ack schemas through an interface it shares with every other participating library.
+
+Ack depends on [`standard_schema`](https://pub.dev/packages/standard_schema), a community-maintained Dart port of the specification. `package:ack/ack.dart` re-exports the contract types, so you do not need a direct dependency to *use* them.
+
+## The `standard` property
+
+Every `AckSchema` exposes a `standard` property carrying the vendor name, the validator, and the JSON Schema converter:
+
+```dart
+import 'package:ack/ack.dart';
+
+final userSchema = Ack.object({
+  'name': Ack.string().minLength(2),
+  'tags': Ack.list(Ack.string()),
+});
+
+void main() {
+  print(userSchema.standard.vendor); // ack
+  print(userSchema.standard.version); // 1
+}
+```
+
+## Validating
+
+`standard.validate(value)` returns a `StandardResult`, which is either `StandardSuccess` or `StandardFailure`. It produces the same runtime value as [`safeParse`](../core-concepts/error-handling.mdx).
+
+The spec allows validators to be asynchronous, so the return type is `FutureOr<StandardResult<T>>`. Ack always resolves synchronously, but you must still `await` the call (or handle the future) to satisfy the contract's type:
+
+```dart
+final result = await userSchema.standard.validate({
+  'name': 'L',
+  'tags': ['a', 1],
+});
+
+switch (result) {
+  case StandardSuccess(:final value):
+    print('valid: $value');
+  case StandardFailure(:final issues):
+    for (final issue in issues) {
+      print('${issue.path}: ${issue.message}');
+    }
+}
+```
+
+That prints:
+
+```text
+[name]: Too short. Minimum 2 characters, got 1.
+[tags, 1]: Expected string, got integer
+```
+
+Issue paths preserve list indexes as integers, so a consumer can address the exact offending element.
+
+> **Use patterns, not `is` checks:** match on `StandardSuccess(...)` /
+> `StandardFailure(...)` rather than `result is StandardSuccess`. A bare type
+> test without type arguments does not promote `StandardResult<T>`, so the
+> `value` and `issues` fields stay inaccessible.
+
+## Utilities
+
+The optional `getDotPath` and `SchemaError` helpers live in a separate library, mirroring upstream's separate `@standard-schema/utils` package:
+
+```dart
+import 'package:standard_schema/utils.dart' as standard;
+
+// getDotPath(issue) renders [tags, 1] as 'tags.1'
+print(standard.getDotPath(issue));
+
+// SchemaError wraps issues as a throwable, exposing the first issue's message.
+throw standard.SchemaError(issues);
+```
+
+Add `standard_schema` to your `pubspec.yaml` to import this library directly.
+
+> **Import this library with a prefix:** it exports a `SchemaError` type, and
+> `package:ack/ack.dart` exports a different, unrelated `SchemaError`.
+> Importing both unprefixed and then referencing the name is a compile-time
+> ambiguity error.
+
+## Exporting JSON Schema
+
+`standard.jsonSchema` splits conversion into two sides, because a validator may transform its input: `input` describes the value accepted at the boundary, and `output` describes the value produced at runtime.
+
+```dart
+const options = StandardJsonSchemaOptions(
+  target: JsonSchemaTarget.draft07,
+);
+
+final inputSchema = userSchema.standard.jsonSchema.input(options);
+final outputSchema = userSchema.standard.jsonSchema.output(options);
+```
+
+For a schema that does not transform, both sides are identical:
+
+```dart
+Ack.integer().nullable().standard.jsonSchema.input(options);
+// {"anyOf":[{"type":"integer"},{"type":"null"}]}
+```
+
+### Limits
+
+Two cases throw `UnsupportedError` rather than emitting a misleading schema:
+
+**Unsupported targets.** Ack supports `JsonSchemaTarget.draft07` only. Requesting `draft202012` or `openapi30` throws:
+
+```text
+Ack only supports Standard JSON Schema target draft-07; got draft-2020-12.
+```
+
+**The output side of a transforming schema.** A [codec](../core-concepts/codecs.mdx) or `transform` produces an arbitrary Dart runtime type that has no sound JSON representation, so only the input side converts:
+
+```dart
+final schema = Ack.string().codec<int>(
+  decode: int.parse,
+  encode: (value) => value.toString(),
+);
+
+schema.standard.jsonSchema.input(options);
+// {"type":"string","x-transformed":true}
+
+schema.standard.jsonSchema.output(options);
+// throws UnsupportedError:
+// Ack cannot represent Ack.instance<T>() as Standard JSON Schema.
+```
+
+Send `input` to anything that produces or validates JSON — an LLM tool definition, an API request validator, a form builder. Use `output` only when you need to describe the runtime value and the schema does not transform.
+
+## Accepting any schema
+
+The point of the contract is that your own code need not mention Ack. Accept the interface instead, and every participating library works:
+
+```dart
+String describe(StandardSchemaV1<Object?, Object?> schema) =>
+    'schema from ${schema.standard.vendor}';
+
+describe(userSchema); // 'schema from ack'
+```
+
+The available interfaces are:
+
+| Interface | Provides |
+| --- | --- |
+| `StandardSchemaV1<Input, Output>` | `standard.validate` |
+| `StandardJsonSchemaV1<Input, Output>` | `standard.jsonSchema` |
+| `StandardSchemaWithJsonSchemaV1<Input, Output>` | both |
+
+`AckSchema` implements `StandardSchemaWithJsonSchemaV1`, so it satisfies all three. Accept the narrowest one your code actually needs: a widget catalog that only generates JSON Schema for a model should ask for `StandardJsonSchemaV1`, leaving it compatible with libraries that implement only that half of the contract.
+
+## Related
+
+- [JSON Schema Integration](./json-schema-integration.mdx) — Ack's own `toJsonSchema()` export
+- [Codecs](../core-concepts/codecs.mdx) — why input and output differ
+- [`standard_schema` on pub.dev](https://pub.dev/packages/standard_schema)

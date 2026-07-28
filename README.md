@@ -202,7 +202,8 @@ final outputSchema = userSchema.standard.jsonSchema.output(options);
 ```
 
 Conversion throws when the requested target or value type cannot be represented
-soundly as JSON Schema.
+soundly as JSON Schema. See the
+[Standard Schema guide](https://docs.page/btwld/ack/guides/standard-schema).
 
 ## Documentation
 
