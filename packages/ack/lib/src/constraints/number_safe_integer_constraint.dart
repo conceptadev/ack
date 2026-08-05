@@ -14,7 +14,8 @@ class NumberSafeIntegerConstraint extends Constraint<int> with Validator<int> {
       );
 
   @override
-  bool isValid(int value) => value.abs() <= maxSafeInteger;
+  bool isValid(int value) =>
+      value >= -maxSafeInteger && value <= maxSafeInteger;
 
   @override
   String buildMessage(int value) =>

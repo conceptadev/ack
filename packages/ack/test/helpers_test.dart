@@ -137,6 +137,51 @@ void main() {
     });
   });
 
+  group('deepEquals', () {
+    test('compares JSON numbers by value across Dart numeric types', () {
+      expect(deepEquals(1, 1.0), isTrue);
+      expect(deepEquals(1.0, 1), isTrue);
+      expect(deepEquals(1, 1.5), isFalse);
+    });
+
+    test('compares numeric values recursively in lists and maps', () {
+      final integers = {
+        'values': [
+          1,
+          2,
+          {'count': 3},
+        ],
+      };
+      final doubles = {
+        'values': [
+          1.0,
+          2.0,
+          {'count': 3.0},
+        ],
+      };
+
+      expect(deepEquals(integers, doubles), isTrue);
+      expect(deepEquals(doubles, integers), isTrue);
+    });
+
+    test('preserves collection category and list order semantics', () {
+      expect(deepEquals([1, 2], [2.0, 1.0]), isFalse);
+      expect(deepEquals([1], {1.0}), isFalse);
+      expect(deepEquals([1], Iterable<int>.generate(1, (index) => 1)), isFalse);
+    });
+
+    test('compares sets and other iterables within their categories', () {
+      expect(deepEquals({1, 2}, {2.0, 1.0}), isTrue);
+      expect(
+        deepEquals(
+          Iterable<int>.generate(2, (index) => index + 1),
+          Iterable<double>.generate(2, (index) => index + 1.0),
+        ),
+        isTrue,
+      );
+    });
+  });
+
   group('IterableExtensions', () {
     group('duplicates', () {
       test('should return duplicate elements', () {

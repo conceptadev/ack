@@ -409,6 +409,13 @@ void main() {
           'Value must be between -$maxSafeInteger and $maxSafeInteger, but was ${maxSafeInteger + 1}.',
         );
       });
+
+      test('should reject the native minimum integer without abs overflow', () {
+        final schema = IntegerSchema().safe();
+        final nativeMinimum = int.parse('-9223372036854775808');
+
+        expect(schema.safeParse(nativeMinimum).isFail, isTrue);
+      });
     });
   });
 }

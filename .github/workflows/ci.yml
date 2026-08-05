@@ -14,3 +14,10 @@ jobs:
     with:
       flutter-version: "stable"
       run-dcm: true
+      melos-commands: |
+        cd packages/ack
+        dart test --platform chrome \
+          test/schemas/numeric_platform_parity_test.dart \
+          test/schemas/extensions/numeric_extensions_test.dart \
+          test/schemas/extensions/list_schema_extensions_test.dart \
+          test/helpers_test.dart

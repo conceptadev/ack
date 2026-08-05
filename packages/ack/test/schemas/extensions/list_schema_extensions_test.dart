@@ -171,19 +171,41 @@ void main() {
         expect(duplicateResult.isOk, isFalse);
       });
 
-      // Numeric type equality semantics: int and double are different types
-      // even if they represent the same numeric value. This aligns with
-      // deepEquals which checks runtimeType, not Dart's == operator.
-      test('should treat int and double as different types (1 vs 1.0)', () {
+      test('should treat equal int and double values as duplicates', () {
         final schema = Ack.list(Ack.any()).unique();
-
-        // 1 (int) and 1.0 (double) are different types, so both should be allowed
         final result = schema.safeParse([1, 1.0]);
+
         expect(
           result.isOk,
-          isTrue,
-          reason: 'int and double are different types',
+          isFalse,
+          reason: 'JSON numbers are equal by mathematical value',
         );
+      });
+
+      test('should detect equal numeric values in nested structures', () {
+        final schema = Ack.list(Ack.any()).unique();
+        final result = schema.safeParse([
+          {
+            'count': 1,
+            'values': [2, 3],
+          },
+          {
+            'values': [2.0, 3.0],
+            'count': 1.0,
+          },
+        ]);
+
+        expect(result.isOk, isFalse);
+      });
+
+      test('should preserve list order when comparing numeric values', () {
+        final schema = Ack.list(Ack.any()).unique();
+        final result = schema.safeParse([
+          [1, 2],
+          [2.0, 1.0],
+        ]);
+
+        expect(result.isOk, isTrue);
       });
 
       test('should detect duplicate integers', () {

@@ -49,8 +49,6 @@ List<T>? _findDuplicates<T>(List<T> value) {
   if (value.isEmpty) return null;
 
   // Always use hash-based deep equality for consistency with deepEquals.
-  // The primitive path was removed because it used == (which treats 1 == 1.0
-  // as true) while deepEquals treats different runtimeTypes as not equal.
   final groupsByHash = <int, List<_DuplicateGroup<T>>>{};
   final groupsInOrder = <_DuplicateGroup<T>>[];
 
@@ -89,12 +87,16 @@ List<T>? _findDuplicates<T>(List<T> value) {
 int _deepHashCode(Object? value) {
   if (value == null) return Object.hash(null, null);
 
+  // Equal JSON numbers must share a bucket even when one is represented as an
+  // int and the other as a double. Equal Dart numbers have equal hash codes.
+  if (value is num) return Object.hash(num, value);
+
   if (value is! Iterable && value is! Map) {
     return Object.hash(value.runtimeType, value);
   }
 
   if (value is List) {
-    var hash = Object.hash(value.runtimeType, value.length);
+    var hash = Object.hash(List, value.length);
     for (final item in value) {
       hash = Object.hash(hash, _deepHashCode(item));
     }
@@ -111,7 +113,7 @@ int _deepHashCode(Object? value) {
       combined ^= h ^ (h >>> 16);
     }
 
-    return Object.hash(value.runtimeType, value.length, combined);
+    return Object.hash(Set, value.length, combined);
   }
 
   if (value is Map) {
@@ -124,11 +126,11 @@ int _deepHashCode(Object? value) {
       combined ^= entryHash ^ (entryHash >>> 16);
     }
 
-    return Object.hash(value.runtimeType, value.length, combined);
+    return Object.hash(Map, value.length, combined);
   }
 
   if (value is Iterable) {
-    var hash = Object.hash(value.runtimeType, 0);
+    var hash = Object.hash(Iterable, 0);
     for (final item in value) {
       hash = Object.hash(hash, _deepHashCode(item));
     }

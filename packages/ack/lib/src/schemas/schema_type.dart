@@ -3,8 +3,8 @@ part of 'schema.dart';
 /// Schema type enumeration covering JSON primitives and schema-specific
 /// categories.
 ///
-/// ACK primitives are strict. Use codecs or transforms when boundary data
-/// needs to be converted into a different runtime shape.
+/// Numeric inference follows JSON Schema semantics: any finite number with a
+/// zero fractional part is an `integer`, regardless of its Dart representation.
 enum SchemaType {
   string('string'),
   integer('integer'),
@@ -38,7 +38,8 @@ enum SchemaType {
     Enum() => SchemaType.enum_,
     String() => SchemaType.string,
     bool() => SchemaType.boolean,
-    int() => SchemaType.integer,
+    num value when value.isFinite && value.remainder(1) == 0 =>
+      SchemaType.integer,
     num() => SchemaType.number,
     _ => null,
   };

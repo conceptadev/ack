@@ -116,7 +116,7 @@ void main() {
         test('should validate basic double', () {
           final schema = Ack.double();
           expect(schema.safeParse(3.14).isOk, isTrue);
-          expect(schema.safeParse(42).isOk, isFalse);
+          expect(schema.safeParse(42).isOk, isTrue);
         });
 
         test('rejects non-finite doubles by default', () {
