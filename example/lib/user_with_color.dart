@@ -4,6 +4,7 @@ import 'package:ack_annotations/ack_annotations.dart';
 import 'pet.dart';
 
 part 'user_with_color.ack.dart';
+part 'user_with_color.g.dart';
 
 class Color {
   final int value;

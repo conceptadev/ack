@@ -129,6 +129,7 @@ import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'user.ack.dart';
+part 'user.g.dart';
 
 @AckType()
 final userSchema = Ack.object({

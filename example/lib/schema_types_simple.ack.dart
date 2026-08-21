@@ -8,6 +8,7 @@ part of 'schema_types_simple.dart';
 // **************************************************************************
 
 /// Immutable model generated from `userSchema`.
+@AckType.jsonSerializable
 final class User {
   User({required this.name, required this.age, required this.active});
 
@@ -37,15 +38,22 @@ final class User {
 
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
 
-  static User _fromAckRuntime(Map<String, Object?> value) {
-    return User(
-      name: value['name'] as String,
-      age: value['age'] as int,
-      active: value['active'] as bool,
-    );
-  }
+  static User _fromAckRuntime(Map<String, Object?> value) =>
+      _$UserFromJson(Map<String, dynamic>.from(value));
 
-  Map<String, Object?> _toAckRuntime() {
-    return <String, Object?>{'name': name, 'age': age, 'active': active};
-  }
+  Map<String, Object?> _toAckRuntime() => <String, Object?>{
+    ..._$UserToJson(this),
+  };
+
+  static String _ackFromRuntimeName(Object? value) => value as String;
+
+  static Object? _ackToRuntimeName(String value) => value;
+
+  static int _ackFromRuntimeAge(Object? value) => value as int;
+
+  static Object? _ackToRuntimeAge(int value) => value;
+
+  static bool _ackFromRuntimeActive(Object? value) => value as bool;
+
+  static Object? _ackToRuntimeActive(bool value) => value;
 }

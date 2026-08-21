@@ -8,6 +8,7 @@ part of 'user_with_color.dart';
 // **************************************************************************
 
 /// Immutable value model generated from `colorSchema`.
+@AckType.jsonSerializable
 final class ColorModel {
   ColorModel(this.value);
 
@@ -34,12 +35,18 @@ final class ColorModel {
 
   SchemaResult<String> safeToJson() => $ack.safeEncode(this);
 
-  static ColorModel _fromAckRuntime(Color value) => ColorModel(value);
+  static ColorModel _fromAckRuntime(Color value) =>
+      _$ColorModelFromJson(<String, dynamic>{'value': value});
 
-  Color _toAckRuntime() => value;
+  Color _toAckRuntime() => _$ColorModelToJson(this)['value'] as Color;
+
+  static Color _ackFromRuntimeValue(Object? value) => value as Color;
+
+  static Object? _ackToRuntimeValue(Color value) => value;
 }
 
 /// Immutable model generated from `profileSchema`.
+@AckType.jsonSerializable
 final class Profile {
   Profile({required this.bio, this.website});
 
@@ -68,22 +75,24 @@ final class Profile {
 
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
 
-  static Profile _fromAckRuntime(Map<String, Object?> value) {
-    return Profile(
-      bio: value['bio'] as String,
-      website: value['website'] as Uri?,
-    );
-  }
+  static Profile _fromAckRuntime(Map<String, Object?> value) =>
+      _$ProfileFromJson(Map<String, dynamic>.from(value));
 
-  Map<String, Object?> _toAckRuntime() {
-    return <String, Object?>{
-      'bio': bio,
-      if (website != null) 'website': website!,
-    };
-  }
+  Map<String, Object?> _toAckRuntime() => <String, Object?>{
+    ..._$ProfileToJson(this),
+  };
+
+  static String _ackFromRuntimeBio(Object? value) => value as String;
+
+  static Object? _ackToRuntimeBio(String value) => value;
+
+  static Uri? _ackFromRuntimeWebsite(Object? value) => value as Uri?;
+
+  static Object? _ackToRuntimeWebsite(Uri? value) => value;
 }
 
 /// Immutable model generated from `userWithColorSchema`.
+@AckType.jsonSerializable
 final class UserWithColor {
   UserWithColor({
     required this.firstName,
@@ -133,41 +142,58 @@ final class UserWithColor {
 
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
 
-  static UserWithColor _fromAckRuntime(Map<String, Object?> value) {
-    return UserWithColor(
-      firstName: value['firstName'] as String,
-      lastName: value['lastName'] as String,
-      age: value['age'] as int,
-      profile: Profile.$ack.fromRuntime(
-        value['profile'] as Map<String, Object?>,
-      ),
-      color: ColorModel.$ack.fromRuntime(value['color'] as Color),
-      favoriteColor: switch (value['favoriteColor']) {
+  static UserWithColor _fromAckRuntime(Map<String, Object?> value) =>
+      _$UserWithColorFromJson(Map<String, dynamic>.from(value));
+
+  Map<String, Object?> _toAckRuntime() => <String, Object?>{
+    ..._$UserWithColorToJson(this),
+  };
+
+  static String _ackFromRuntimeFirstName(Object? value) => value as String;
+
+  static Object? _ackToRuntimeFirstName(String value) => value;
+
+  static String _ackFromRuntimeLastName(Object? value) => value as String;
+
+  static Object? _ackToRuntimeLastName(String value) => value;
+
+  static int _ackFromRuntimeAge(Object? value) => value as int;
+
+  static Object? _ackToRuntimeAge(int value) => value;
+
+  static Profile _ackFromRuntimeProfile(Object? value) =>
+      Profile.$ack.fromRuntime(value as Map<String, Object?>);
+
+  static Object? _ackToRuntimeProfile(Profile value) =>
+      Profile.$ack.toRuntime(value);
+
+  static ColorModel _ackFromRuntimeColor(Object? value) =>
+      ColorModel.$ack.fromRuntime(value as Color);
+
+  static Object? _ackToRuntimeColor(ColorModel value) =>
+      ColorModel.$ack.toRuntime(value);
+
+  static ColorModel? _ackFromRuntimeFavoriteColor(Object? value) =>
+      switch (value) {
         null => null,
         final fieldValue => ColorModel.$ack.fromRuntime(fieldValue as Color),
-      },
-      pet: Pet.$ack.fromRuntime(value['pet'] as Map<String, Object?>),
-      pets: List<Pet>.unmodifiable(
-        (value['pets'] as List).map(
-          (item) => Pet.$ack.fromRuntime(item as Map<String, Object?>),
-        ),
-      ),
-    );
-  }
+      };
 
-  Map<String, Object?> _toAckRuntime() {
-    return <String, Object?>{
-      'firstName': firstName,
-      'lastName': lastName,
-      'age': age,
-      'profile': Profile.$ack.toRuntime(profile),
-      'color': ColorModel.$ack.toRuntime(color),
-      if (favoriteColor != null)
-        'favoriteColor': ColorModel.$ack.toRuntime(favoriteColor!),
-      'pet': Pet.$ack.toRuntime(pet),
-      'pets': pets
-          .map((item) => Pet.$ack.toRuntime(item))
-          .toList(growable: false),
-    };
-  }
+  static Object? _ackToRuntimeFavoriteColor(ColorModel? value) =>
+      switch (value) {
+        null => null,
+        final fieldValue => ColorModel.$ack.toRuntime(fieldValue),
+      };
+
+  static Pet _ackFromRuntimePet(Object? value) =>
+      Pet.$ack.fromRuntime(value as Map<String, Object?>);
+
+  static Object? _ackToRuntimePet(Pet value) => Pet.$ack.toRuntime(value);
+
+  static List<Pet> _ackFromRuntimePets(Object? value) => (value as List)
+      .map((item) => Pet.$ack.fromRuntime(item as Map<String, Object?>))
+      .toList();
+
+  static Object? _ackToRuntimePets(List<Pet> value) =>
+      value.map((item) => Pet.$ack.toRuntime(item)).toList(growable: false);
 }

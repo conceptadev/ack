@@ -77,7 +77,7 @@ if (result.isOk) {
 
   // Option 2: Pass the validated map into your own model layer
   // - Constructor: User(name: validData['name'], age: validData['age'])
-  // - json_serializable: User.fromJson(Map<String, dynamic>.from(validData))
+  // - AckType model: User.parse(validData)
   // - freezed: User.fromJson(Map<String, dynamic>.from(validData))
   // - dart_mappable: UserMapper.fromMap(validData)
   // - Manual factory: User.fromMap(validData)
@@ -86,7 +86,7 @@ if (result.isOk) {
 
 ## Parsing JSON into generated models
 
-Once a schema is annotated with `@AckType()` (see [TypeSafe Schemas](./typesafe-schemas.mdx) for setup), parse JSON into a generated immutable model:
+Once a schema is annotated with `@AckType()` (see [TypeSafe Schemas](./typesafe-schemas.mdx) for setup), parse JSON into a generated immutable model. Public `fromJson` / `toJson` still cross the source Ack schema; `json_serializable` only maps the already-validated runtime value onto stored fields.
 
 ```dart
 import 'dart:convert';
@@ -149,4 +149,4 @@ conversions.
   validates values and encodes codec runtime values back to their boundary
   representation.
 - **Type safety:** `jsonDecode` produces `dynamic`, but successful validation guarantees the structure and types of the resulting `Map<String, Object?>`.
-- **Model conversion:** After validation, how you convert the validated map into an app model is up to you. Ack keeps validation and wrapper generation separate from your model layer.
+- **Model conversion:** After validation, how you convert the validated map into an app model is up to you. `@AckType()` models still parse and encode through the source schema; `json_serializable` only maps that runtime value onto stored fields.

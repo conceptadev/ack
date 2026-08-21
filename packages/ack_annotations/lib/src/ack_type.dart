@@ -1,5 +1,7 @@
 import 'package:meta/meta_meta.dart';
 
+import 'ack_generated_json.dart';
+
 /// Marks a top-level Ack schema for immutable model-class generation.
 ///
 /// Apply `@AckType()` to a top-level schema variable or getter:
@@ -12,10 +14,10 @@ import 'package:meta/meta_meta.dart';
 /// });
 /// ```
 ///
-/// The declaring library must include its dedicated generated part, for
-/// example `part 'user.ack.dart';`. `ack_generator` emits a real Dart class
-/// with stored typed fields plus `parse`, `safeParse`, `fromJson`, `toJson`,
-/// `safeToJson`, and a public static `$ack` adapter.
+/// The declaring library must include both generated parts, for example
+/// `part 'user.ack.dart';` and `part 'user.g.dart';`. `ack_generator` emits
+/// the model class, public parse/JSON API, and runtime bridges in the Ack
+/// part. Structural field mapping is generated into the combined JSON part.
 /// Ack remains responsible for validation and codec-aware serialization.
 ///
 /// Supported targets:
@@ -31,6 +33,12 @@ import 'package:meta/meta_meta.dart';
 /// - Local variables
 @Target({TargetKind.topLevelVariable, TargetKind.getter})
 class AckType {
+  /// Internal marker used on generated model classes.
+  ///
+  /// Typed as [Object] so generated code only needs a constant annotation
+  /// expression. The generator inspects the actual [AckGeneratedJson] type.
+  static const Object jsonSerializable = AckGeneratedJson();
+
   /// Optional exact name for the generated model class.
   ///
   /// If omitted, the class name is derived from the schema declaration:

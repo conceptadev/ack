@@ -2,6 +2,7 @@ import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'pet.ack.dart';
+part 'pet.g.dart';
 
 /// Pet schemas: discriminated by 'type'
 @AckType()

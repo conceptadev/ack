@@ -4,7 +4,10 @@
 
 * Define `@AckType()` as immutable model-class generation. Custom names are
   exact, generated class names no longer add `Type`, and annotated libraries
-  declare a dedicated `.ack.dart` part.
+  declare both `.ack.dart` and `.g.dart` parts.
+* Add the generator-support `AckType.jsonSerializable` marker and raise the
+  minimum SDK to Dart 3.9 so the nested `JsonSerializable` configuration can
+  live in this package. The public barrel still exports only `@AckType()`.
 
 ## 1.1.0
 

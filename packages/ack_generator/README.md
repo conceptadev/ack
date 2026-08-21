@@ -10,6 +10,7 @@ import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'user_schema.ack.dart';
+part 'user_schema.g.dart';
 
 @AckType()
 final userSchema = Ack.object({
@@ -68,17 +69,18 @@ values aren't parsed twice.
 
 ## JSON serialization
 
-Ack writes a dedicated `.ack.dart` part before `json_serializable`. A library
-using both generators declares both parts:
+Every annotated library declares both parts:
 
 ```dart
 part 'account.ack.dart';
 part 'account.g.dart';
 ```
 
-Generated Ack models provide the conventional `fromJson` and `toJson` methods
-that `json_serializable` uses for custom nested types, in the same library or
-across imports.
+Ack owns schema validation, defaults, codecs, union dispatch, and the public
+`parse` / `fromJson` / `toJson` methods. `json_serializable` generates the
+structural `_$ClassFromJson` / `_$ClassToJson` helpers into the combined JSON
+part. Ack-only apps do not add `json_annotation` or `json_serializable`;
+`ack_generator` activates that second phase itself.
 
 ## Supported declarations
 

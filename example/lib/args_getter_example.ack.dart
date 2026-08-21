@@ -8,6 +8,7 @@ part of 'args_getter_example.dart';
 // **************************************************************************
 
 /// Immutable model generated from `userConfigSchema`.
+@AckType.jsonSerializable
 final class UserConfig {
   UserConfig({
     required this.username,
@@ -44,29 +45,40 @@ final class UserConfig {
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
 
   static UserConfig _fromAckRuntime(Map<String, Object?> value) {
-    return UserConfig(
-      username: value['username'] as String,
-      email: value['email'] as String,
-      additionalProperties: _ackImmutableCopyMap(
-        Map<String, Object?>.fromEntries(
-          value.entries.where(
-            (entry) => !const <String>{'username', 'email'}.contains(entry.key),
-          ),
-        ),
+    const declared = <String>{'username', 'email'};
+    return _$UserConfigFromJson(<String, dynamic>{
+      ...value,
+      'additionalProperties': Map<String, Object?>.fromEntries(
+        value.entries.where((entry) => !declared.contains(entry.key)),
       ),
-    );
+    });
   }
 
   Map<String, Object?> _toAckRuntime() {
-    return <String, Object?>{
-      ...additionalProperties,
-      'username': username,
-      'email': email,
-    };
+    final result = <String, Object?>{..._$UserConfigToJson(this)};
+    result.remove('additionalProperties');
+    return <String, Object?>{...additionalProperties, ...result};
   }
+
+  static String _ackFromRuntimeUsername(Object? value) => value as String;
+
+  static Object? _ackToRuntimeUsername(String value) => value;
+
+  static String _ackFromRuntimeEmail(Object? value) => value as String;
+
+  static Object? _ackToRuntimeEmail(String value) => value;
+
+  static Map<String, Object?>? _ackFromRuntimeAdditionalProperties(
+    Object? value,
+  ) => value as Map<String, Object?>?;
+
+  static Object? _ackToRuntimeAdditionalProperties(
+    Map<String, Object?> value,
+  ) => value;
 }
 
 /// Immutable model generated from `apiRequestSchema`.
+@AckType.jsonSerializable
 final class ApiRequest {
   ApiRequest({
     required this.method,
@@ -103,29 +115,40 @@ final class ApiRequest {
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
 
   static ApiRequest _fromAckRuntime(Map<String, Object?> value) {
-    return ApiRequest(
-      method: value['method'] as String,
-      url: value['url'] as String,
-      additionalProperties: _ackImmutableCopyMap(
-        Map<String, Object?>.fromEntries(
-          value.entries.where(
-            (entry) => !const <String>{'method', 'url'}.contains(entry.key),
-          ),
-        ),
+    const declared = <String>{'method', 'url'};
+    return _$ApiRequestFromJson(<String, dynamic>{
+      ...value,
+      'additionalProperties': Map<String, Object?>.fromEntries(
+        value.entries.where((entry) => !declared.contains(entry.key)),
       ),
-    );
+    });
   }
 
   Map<String, Object?> _toAckRuntime() {
-    return <String, Object?>{
-      ...additionalProperties,
-      'method': method,
-      'url': url,
-    };
+    final result = <String, Object?>{..._$ApiRequestToJson(this)};
+    result.remove('additionalProperties');
+    return <String, Object?>{...additionalProperties, ...result};
   }
+
+  static String _ackFromRuntimeMethod(Object? value) => value as String;
+
+  static Object? _ackToRuntimeMethod(String value) => value;
+
+  static String _ackFromRuntimeUrl(Object? value) => value as String;
+
+  static Object? _ackToRuntimeUrl(String value) => value;
+
+  static Map<String, Object?>? _ackFromRuntimeAdditionalProperties(
+    Object? value,
+  ) => value as Map<String, Object?>?;
+
+  static Object? _ackToRuntimeAdditionalProperties(
+    Map<String, Object?> value,
+  ) => value;
 }
 
 /// Immutable model generated from `featureFlagsSchema`.
+@AckType.jsonSerializable
 final class FeatureFlags {
   FeatureFlags({
     required this.appVersion,
@@ -162,32 +185,40 @@ final class FeatureFlags {
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
 
   static FeatureFlags _fromAckRuntime(Map<String, Object?> value) {
-    return FeatureFlags(
-      appVersion: value['appVersion'] as String,
-      environment: value['environment'] as String,
-      additionalProperties: _ackImmutableCopyMap(
-        Map<String, Object?>.fromEntries(
-          value.entries.where(
-            (entry) => !const <String>{
-              'appVersion',
-              'environment',
-            }.contains(entry.key),
-          ),
-        ),
+    const declared = <String>{'appVersion', 'environment'};
+    return _$FeatureFlagsFromJson(<String, dynamic>{
+      ...value,
+      'additionalProperties': Map<String, Object?>.fromEntries(
+        value.entries.where((entry) => !declared.contains(entry.key)),
       ),
-    );
+    });
   }
 
   Map<String, Object?> _toAckRuntime() {
-    return <String, Object?>{
-      ...additionalProperties,
-      'appVersion': appVersion,
-      'environment': environment,
-    };
+    final result = <String, Object?>{..._$FeatureFlagsToJson(this)};
+    result.remove('additionalProperties');
+    return <String, Object?>{...additionalProperties, ...result};
   }
+
+  static String _ackFromRuntimeAppVersion(Object? value) => value as String;
+
+  static Object? _ackToRuntimeAppVersion(String value) => value;
+
+  static String _ackFromRuntimeEnvironment(Object? value) => value as String;
+
+  static Object? _ackToRuntimeEnvironment(String value) => value;
+
+  static Map<String, Object?>? _ackFromRuntimeAdditionalProperties(
+    Object? value,
+  ) => value as Map<String, Object?>?;
+
+  static Object? _ackToRuntimeAdditionalProperties(
+    Map<String, Object?> value,
+  ) => value;
 }
 
 /// Immutable model generated from `dynamicDataSchema`.
+@AckType.jsonSerializable
 final class DynamicData {
   DynamicData({Map<String, Object?> additionalProperties = const {}})
     : additionalProperties = _ackImmutableCopyMap(additionalProperties);
@@ -217,12 +248,28 @@ final class DynamicData {
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
 
   static DynamicData _fromAckRuntime(Map<String, Object?> value) {
-    return DynamicData(additionalProperties: _ackImmutableCopyMap(value));
+    const declared = <String>{};
+    return _$DynamicDataFromJson(<String, dynamic>{
+      ...value,
+      'additionalProperties': Map<String, Object?>.fromEntries(
+        value.entries.where((entry) => !declared.contains(entry.key)),
+      ),
+    });
   }
 
   Map<String, Object?> _toAckRuntime() {
-    return <String, Object?>{...additionalProperties};
+    final result = <String, Object?>{..._$DynamicDataToJson(this)};
+    result.remove('additionalProperties');
+    return <String, Object?>{...additionalProperties, ...result};
   }
+
+  static Map<String, Object?>? _ackFromRuntimeAdditionalProperties(
+    Object? value,
+  ) => value as Map<String, Object?>?;
+
+  static Object? _ackToRuntimeAdditionalProperties(
+    Map<String, Object?> value,
+  ) => value;
 }
 
 Object? _ackImmutableCopyValue(Object? value) => switch (value) {

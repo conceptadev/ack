@@ -31,6 +31,7 @@ import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'schema.ack.dart';
+part 'schema.g.dart';
 
 @AckType()
 final userSchema = Ack.object({'name': Ack.string()});
@@ -52,7 +53,7 @@ final userSchema = Ack.object({'name': Ack.string()});
     await _build('final value = 1;', outputs: const {});
   });
 
-  test('reports the exact required part directive', () async {
+  test('reports the exact required part directives', () async {
     var sawError = false;
     await _build(
       '''
@@ -65,7 +66,58 @@ final userSchema = Ack.string();
       outputs: const {},
       onLog: (log) {
         if (log.level.name == 'SEVERE' &&
-            log.message.contains("part 'schema.ack.dart';")) {
+            log.message.contains("part 'schema.ack.dart';") &&
+            log.message.contains("part 'schema.g.dart';")) {
+          sawError = true;
+        }
+      },
+    );
+    expect(sawError, isTrue);
+  });
+
+  test(
+    'rejects a missing JSON part even when the Ack part is present',
+    () async {
+      var sawError = false;
+      await _build(
+        '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+part 'schema.ack.dart';
+
+@AckType()
+final userSchema = Ack.string();
+''',
+        outputs: const {},
+        onLog: (log) {
+          if (log.level.name == 'SEVERE' &&
+              log.message.contains("part 'schema.g.dart';")) {
+            sawError = true;
+          }
+        },
+      );
+      expect(sawError, isTrue);
+    },
+  );
+
+  test('rejects a JSON part that does not match the basename', () async {
+    var sawError = false;
+    await _build(
+      '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+part 'schema.ack.dart';
+part 'other.g.dart';
+
+@AckType()
+final userSchema = Ack.string();
+''',
+      outputs: const {},
+      onLog: (log) {
+        if (log.level.name == 'SEVERE' &&
+            log.message.contains("part 'schema.g.dart';")) {
           sawError = true;
         }
       },

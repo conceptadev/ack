@@ -11,6 +11,9 @@ import 'builders/model_emitter.dart';
 /// Generates immutable model classes for top-level schemas annotated with
 /// `@AckType`.
 final class AckSchemaGenerator extends Generator {
+  static const _ackAnnotationsUri =
+      'package:ack_annotations/ack_annotations.dart';
+
   @override
   Future<String> generate(LibraryReader library, BuildStep buildStep) async {
     final annotated = <Element>[];
@@ -48,11 +51,12 @@ final class AckSchemaGenerator extends Generator {
     }
 
     if (annotated.isEmpty) return '';
-    await _requireAckPartDirective(buildStep, annotated.first);
+    await _requirePartDirectives(buildStep, annotated.first);
 
     final graph = await SchemaModelGraphBuilder(library).build(annotated);
     final specs = AckModelEmitter(
-      ackPrefix: _ackImportPrefix(library),
+      ackPrefix: _importPrefix(library, 'package:ack/ack.dart'),
+      ackTypePrefix: _importPrefix(library, _ackAnnotationsUri),
     ).emit(graph);
     return Library((b) => b.body.addAll(specs))
         .accept(
@@ -68,30 +72,35 @@ final class AckSchemaGenerator extends Generator {
   bool _hasAckType(Element element) =>
       TypeChecker.typeNamed(AckType).hasAnnotationOfExact(element);
 
-  Future<void> _requireAckPartDirective(
+  Future<void> _requirePartDirectives(
     BuildStep buildStep,
     Element annotatedElement,
   ) async {
     final inputName = buildStep.inputId.pathSegments.last;
     final baseName = inputName.substring(0, inputName.length - '.dart'.length);
-    final expectedPart = '$baseName.ack.dart';
+    final expectedAckPart = '$baseName.ack.dart';
+    final expectedJsonPart = '$baseName.g.dart';
     final unit = await buildStep.resolver.compilationUnitFor(buildStep.inputId);
-    final hasExpectedPart = unit.directives.whereType<PartDirective>().any(
-      (directive) => directive.uri.stringValue == expectedPart,
-    );
-    if (hasExpectedPart) return;
+    final parts = {
+      for (final directive in unit.directives.whereType<PartDirective>())
+        if (directive.uri.stringValue case final uri?) uri,
+    };
+    if (parts.contains(expectedAckPart) && parts.contains(expectedJsonPart)) {
+      return;
+    }
     throw InvalidGenerationSource(
-      "Ack model generation requires `part '$expectedPart';` in this library.",
+      "Ack model generation requires `part '$expectedAckPart';` and "
+      "`part '$expectedJsonPart';` in this library.",
       element: annotatedElement,
-      todo: "Add `part '$expectedPart';` next to the library's directives.",
+      todo:
+          "Add `part '$expectedAckPart';` and `part '$expectedJsonPart';` "
+          "next to the library's directives.",
     );
   }
 
-  String? _ackImportPrefix(LibraryReader library) {
+  String? _importPrefix(LibraryReader library, String uri) {
     for (final import in library.element.firstFragment.libraryImports) {
-      if (import.importedLibrary?.uri.toString() != 'package:ack/ack.dart') {
-        continue;
-      }
+      if (import.importedLibrary?.uri.toString() != uri) continue;
       return import.prefix?.element.name;
     }
     return null;

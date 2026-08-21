@@ -5,9 +5,11 @@ repository: https://github.com/btwld/ack
 resolution: workspace
 
 environment:
-  sdk: '>=3.8.0 <4.0.0'
+  sdk: '>=3.9.0 <4.0.0'
 
 dependencies:
+  json_annotation: ^4.12.0
   meta: ^1.15.0
 
 dev_dependencies:
+  test: ^1.25.15

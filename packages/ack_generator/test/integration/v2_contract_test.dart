@@ -26,6 +26,7 @@ import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'schema.ack.dart';
+part 'schema.g.dart';
 ''';
 
 void main() {
@@ -45,6 +46,7 @@ final userSchema = Ack.object({
         'test_pkg|lib/schema.ack.dart': decodedMatches(
           allOf([
             contains('final class User'),
+            contains('@AckType.jsonSerializable'),
             contains('factory User.parse(Object? input)'),
             contains('factory User.fromJson(Map<String, dynamic> json)'),
             contains(r'static final $ack = AckModelAdapter'),
@@ -57,8 +59,14 @@ final userSchema = Ack.object({
             contains('this.nickname'),
             contains('required this.middleName'),
             contains('required this.role'),
-            contains("if (nickname != null) 'nickname': nickname"),
-            contains("'middleName': middleName"),
+            contains(r'_$UserFromJson'),
+            contains(r'_$UserToJson'),
+            contains('_ackFromRuntimeName'),
+            contains('_ackToRuntimeName'),
+            contains('if (middleName == null)'),
+            contains("result['middleName'] = null"),
+            isNot(contains("if (nickname != null) 'nickname': nickname")),
+            isNot(contains("value['name']")),
           ]),
         ),
       },
@@ -76,9 +84,14 @@ final occurredAtSchema = Ack.datetime();
         'test_pkg|lib/schema.ack.dart': decodedMatches(
           allOf([
             contains('final DateTime value;'),
+            contains('@AckType.jsonSerializable'),
             contains('factory OccurredAt.fromJson(String json)'),
             contains('String toJson()'),
             contains('SchemaResult<String> safeToJson()'),
+            contains(
+              r"_$OccurredAtFromJson(<String, dynamic>{'value': value})",
+            ),
+            contains(r"_$OccurredAtToJson(this)['value'] as DateTime"),
           ]),
         ),
       },

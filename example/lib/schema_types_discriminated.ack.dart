@@ -44,6 +44,7 @@ sealed class Pet {
 }
 
 /// Discriminated model branch generated from `catSchema`.
+@AckType.jsonSerializable
 final class Cat extends Pet {
   Cat({required this.lives});
 
@@ -68,17 +69,22 @@ final class Cat extends Pet {
   @override
   String get kind => 'cat';
 
-  static Cat _fromAckRuntime(Map<String, Object?> value) {
-    return Cat(lives: value['lives'] as int);
-  }
+  static Cat _fromAckRuntime(Map<String, Object?> value) =>
+      _$CatFromJson(Map<String, dynamic>.from(value));
 
   @override
-  Map<String, Object?> _toAckRuntime() {
-    return <String, Object?>{'kind': 'cat', 'lives': lives};
-  }
+  Map<String, Object?> _toAckRuntime() => <String, Object?>{
+    'kind': 'cat',
+    ..._$CatToJson(this),
+  };
+
+  static int _ackFromRuntimeLives(Object? value) => value as int;
+
+  static Object? _ackToRuntimeLives(int value) => value;
 }
 
 /// Discriminated model branch generated from `dogSchema`.
+@AckType.jsonSerializable
 final class Dog extends Pet {
   Dog({
     required this.bark,
@@ -110,26 +116,33 @@ final class Dog extends Pet {
   String get kind => 'dog';
 
   static Dog _fromAckRuntime(Map<String, Object?> value) {
-    return Dog(
-      bark: value['bark'] as bool,
-      additionalProperties: _ackImmutableCopyMap(
-        Map<String, Object?>.fromEntries(
-          value.entries.where(
-            (entry) => !const <String>{'kind', 'bark'}.contains(entry.key),
-          ),
-        ),
+    const declared = <String>{'kind', 'bark'};
+    return _$DogFromJson(<String, dynamic>{
+      ...value,
+      'additionalProperties': Map<String, Object?>.fromEntries(
+        value.entries.where((entry) => !declared.contains(entry.key)),
       ),
-    );
+    });
   }
 
   @override
   Map<String, Object?> _toAckRuntime() {
-    return <String, Object?>{
-      ...additionalProperties,
-      'kind': 'dog',
-      'bark': bark,
-    };
+    final result = <String, Object?>{..._$DogToJson(this)};
+    result.remove('additionalProperties');
+    return <String, Object?>{...additionalProperties, 'kind': 'dog', ...result};
   }
+
+  static bool _ackFromRuntimeBark(Object? value) => value as bool;
+
+  static Object? _ackToRuntimeBark(bool value) => value;
+
+  static Map<String, Object?>? _ackFromRuntimeAdditionalProperties(
+    Object? value,
+  ) => value as Map<String, Object?>?;
+
+  static Object? _ackToRuntimeAdditionalProperties(
+    Map<String, Object?> value,
+  ) => value;
 }
 
 Object? _ackImmutableCopyValue(Object? value) => switch (value) {

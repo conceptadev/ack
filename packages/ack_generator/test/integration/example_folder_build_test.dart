@@ -7,13 +7,15 @@ void _copyDirectory(Directory source, Directory destination) {
   destination.createSync(recursive: true);
   for (final entity in source.listSync()) {
     final name = p.basename(entity.path);
-    if (name == '.dart_tool' || name == 'build' || name.endsWith('.g.dart')) {
+    if (name == '.dart_tool' || name == 'build') {
       continue;
     }
     final target = p.join(destination.path, name);
     if (entity is Directory) {
       _copyDirectory(entity, Directory(target));
-    } else if (entity is File && !name.endsWith('.ack.dart')) {
+    } else if (entity is File &&
+        !name.endsWith('.ack.dart') &&
+        !name.endsWith('.g.dart')) {
       entity.copySync(target);
     }
   }
@@ -37,7 +39,11 @@ Map<String, String> _generatedContents(Directory directory) => {
       in directory
           .listSync(recursive: true)
           .whereType<File>()
-          .where((file) => file.path.endsWith('.ack.dart')))
+          .where(
+            (file) =>
+                file.path.endsWith('.ack.dart') ||
+                file.path.endsWith('.g.dart'),
+          ))
     p.relative(file.path, from: directory.path): file.readAsStringSync(),
 };
 
@@ -104,19 +110,33 @@ dependency_overrides:
         final first = _generatedContents(temporaryExample);
         expect(first.keys, {
           'lib/args_getter_example.ack.dart',
+          'lib/args_getter_example.g.dart',
           'lib/pet.ack.dart',
+          'lib/pet.g.dart',
           'lib/schema_types_discriminated.ack.dart',
+          'lib/schema_types_discriminated.g.dart',
           'lib/schema_types_edge_cases.ack.dart',
+          'lib/schema_types_edge_cases.g.dart',
           'lib/schema_types_primitives.ack.dart',
+          'lib/schema_types_primitives.g.dart',
           'lib/schema_types_simple.ack.dart',
+          'lib/schema_types_simple.g.dart',
           'lib/schema_types_transforms.ack.dart',
+          'lib/schema_types_transforms.g.dart',
           'lib/user_with_color.ack.dart',
+          'lib/user_with_color.g.dart',
         });
-        for (final content in first.values) {
-          expect(content, contains('class '));
-          expect(content, isNot(contains('extension type')));
-          expect(content, isNot(contains('fromMap')));
-          expect(content, isNot(contains('toMap')));
+        for (final entry in first.entries) {
+          if (entry.key.endsWith('.ack.dart')) {
+            expect(entry.value, contains('class '));
+            expect(entry.value, contains('jsonSerializable'));
+            expect(entry.value, isNot(contains('extension type')));
+            expect(entry.value, isNot(contains('fromMap')));
+            expect(entry.value, isNot(contains('toMap')));
+          } else {
+            expect(entry.value, contains('JsonSerializableGenerator'));
+            expect(entry.value, contains('_ackFromRuntime'));
+          }
         }
 
         _expectSuccess(

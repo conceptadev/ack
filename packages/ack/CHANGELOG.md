@@ -3,7 +3,9 @@
 ### Added
 
 * Add `AckModelAdapter` as the non-nullable runtime bridge used by generated
-  immutable Ack models.
+  immutable Ack models. The adapter keeps schema parse/encode around model
+  mapping so public JSON methods stay schema-backed while structural field
+  mapping can be generated separately.
 
 ## 1.1.0
 

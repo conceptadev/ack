@@ -53,6 +53,7 @@ import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'user.ack.dart';
+part 'user.g.dart';
 
 @AckType()
 final userSchema = Ack.object({
@@ -75,4 +76,5 @@ Import `package:ack/ack.dart` and you're ready — the [Quickstart Tutorial](./q
 
 ## Requirements
 
-- Dart SDK: `>=3.8.0 <4.0.0`
+- Dart SDK: `>=3.8.0 <4.0.0` for core `ack`
+- Dart SDK: `>=3.9.0 <4.0.0` when using `ack_annotations` / `ack_generator`

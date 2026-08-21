@@ -17,8 +17,10 @@
 
 ### Changed
 
-* Generate dedicated `.ack.dart` source parts before `json_serializable`, which
-  keeps Ack declarations resolvable by later builders.
+* Generate dedicated `.ack.dart` source parts and an internal JSON phase that
+  delegates structural mapping to `json_serializable`. Annotated libraries
+  declare both `.ack.dart` and `.g.dart`. Ack still owns schema validation,
+  codecs, defaults, and public parse/JSON methods.
 * Reject parse-only transforms and schema shapes without a static model form.
 * Support named recursion, cross-file references, custom codecs, additional
   properties, and sealed discriminated model hierarchies.

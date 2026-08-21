@@ -8,6 +8,7 @@ part of 'schema_types_transforms.dart';
 // **************************************************************************
 
 /// Immutable value model generated from `colorSchema`.
+@AckType.jsonSerializable
 final class ColorModel {
   ColorModel(this.value);
 
@@ -34,12 +35,18 @@ final class ColorModel {
 
   SchemaResult<String> safeToJson() => $ack.safeEncode(this);
 
-  static ColorModel _fromAckRuntime(Color value) => ColorModel(value);
+  static ColorModel _fromAckRuntime(Color value) =>
+      _$ColorModelFromJson(<String, dynamic>{'value': value});
 
-  Color _toAckRuntime() => value;
+  Color _toAckRuntime() => _$ColorModelToJson(this)['value'] as Color;
+
+  static Color _ackFromRuntimeValue(Object? value) => value as Color;
+
+  static Object? _ackToRuntimeValue(Color value) => value;
 }
 
 /// Immutable model generated from `profileSchema`.
+@AckType.jsonSerializable
 final class Profile {
   Profile({
     required this.homepage,
@@ -102,45 +109,65 @@ final class Profile {
 
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
 
-  static Profile _fromAckRuntime(Map<String, Object?> value) {
-    return Profile(
-      homepage: value['homepage'] as Uri,
-      birthday: value['birthday'] as DateTime,
-      lastLogin: value['lastLogin'] as DateTime,
-      timeout: value['timeout'] as Duration,
-      links: List<Uri>.unmodifiable(
-        (value['links'] as List).map((item) => item as Uri),
-      ),
-      favoriteColor: value['favoriteColor'] as Color,
-      slug: value['slug'] as String,
-      accent: ColorModel.$ack.fromRuntime(value['accent'] as Color),
-      colors: List<ColorModel>.unmodifiable(
-        (value['colors'] as List).map(
-          (item) => ColorModel.$ack.fromRuntime(item as Color),
-        ),
-      ),
-      customColors: List<Color>.unmodifiable(
-        (value['customColors'] as List).map((item) => item as Color),
-      ),
-      tagList: value['tagList'] as TagList,
-    );
-  }
+  static Profile _fromAckRuntime(Map<String, Object?> value) =>
+      _$ProfileFromJson(Map<String, dynamic>.from(value));
 
-  Map<String, Object?> _toAckRuntime() {
-    return <String, Object?>{
-      'homepage': homepage,
-      'birthday': birthday,
-      'lastLogin': lastLogin,
-      'timeout': timeout,
-      'links': links.map((item) => item).toList(growable: false),
-      'favoriteColor': favoriteColor,
-      'slug': slug,
-      'accent': ColorModel.$ack.toRuntime(accent),
-      'colors': colors
-          .map((item) => ColorModel.$ack.toRuntime(item))
-          .toList(growable: false),
-      'customColors': customColors.map((item) => item).toList(growable: false),
-      'tagList': tagList,
-    };
-  }
+  Map<String, Object?> _toAckRuntime() => <String, Object?>{
+    ..._$ProfileToJson(this),
+  };
+
+  static Uri _ackFromRuntimeHomepage(Object? value) => value as Uri;
+
+  static Object? _ackToRuntimeHomepage(Uri value) => value;
+
+  static DateTime _ackFromRuntimeBirthday(Object? value) => value as DateTime;
+
+  static Object? _ackToRuntimeBirthday(DateTime value) => value;
+
+  static DateTime _ackFromRuntimeLastLogin(Object? value) => value as DateTime;
+
+  static Object? _ackToRuntimeLastLogin(DateTime value) => value;
+
+  static Duration _ackFromRuntimeTimeout(Object? value) => value as Duration;
+
+  static Object? _ackToRuntimeTimeout(Duration value) => value;
+
+  static List<Uri> _ackFromRuntimeLinks(Object? value) =>
+      (value as List).map((item) => item as Uri).toList();
+
+  static Object? _ackToRuntimeLinks(List<Uri> value) =>
+      value.map((item) => item).toList(growable: false);
+
+  static Color _ackFromRuntimeFavoriteColor(Object? value) => value as Color;
+
+  static Object? _ackToRuntimeFavoriteColor(Color value) => value;
+
+  static String _ackFromRuntimeSlug(Object? value) => value as String;
+
+  static Object? _ackToRuntimeSlug(String value) => value;
+
+  static ColorModel _ackFromRuntimeAccent(Object? value) =>
+      ColorModel.$ack.fromRuntime(value as Color);
+
+  static Object? _ackToRuntimeAccent(ColorModel value) =>
+      ColorModel.$ack.toRuntime(value);
+
+  static List<ColorModel> _ackFromRuntimeColors(Object? value) =>
+      (value as List)
+          .map((item) => ColorModel.$ack.fromRuntime(item as Color))
+          .toList();
+
+  static Object? _ackToRuntimeColors(List<ColorModel> value) => value
+      .map((item) => ColorModel.$ack.toRuntime(item))
+      .toList(growable: false);
+
+  static List<Color> _ackFromRuntimeCustomColors(Object? value) =>
+      (value as List).map((item) => item as Color).toList();
+
+  static Object? _ackToRuntimeCustomColors(List<Color> value) =>
+      value.map((item) => item).toList(growable: false);
+
+  static TagList _ackFromRuntimeTagList(Object? value) => value as TagList;
+
+  static Object? _ackToRuntimeTagList(TagList value) => value;
 }

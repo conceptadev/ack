@@ -58,6 +58,7 @@ import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'models.ack.dart';
+part 'models.g.dart';
 
 final class Box {
   const Box(this.values);
@@ -123,6 +124,41 @@ final petSchema = Ack.discriminated(
 
 @AckType(name: 'MemberType')
 final memberSchema = Ack.string();
+
+@AckType()
+final emptySchema = Ack.object({});
+
+@AckType()
+final scoresSchema = Ack.list(Ack.integer());
+
+final class Counted {
+  Counted(this.value);
+  final String value;
+  static var decodes = 0;
+  static var encodes = 0;
+  static Counted decode(String value) {
+    decodes += 1;
+    return Counted(value);
+  }
+  static String encode(Counted value) {
+    encodes += 1;
+    return value.value;
+  }
+}
+
+@AckType(name: 'CountedModel')
+final countedSchema = Ack.object({
+  'item': Ack.string().codec<Counted>(
+    decode: Counted.decode,
+    encode: Counted.encode,
+  ),
+  'items': Ack.list(
+    Ack.string().codec<Counted>(
+      decode: Counted.decode,
+      encode: Counted.encode,
+    ),
+  ),
+});
 ''',
         );
         File(p.join(temporary.path, 'lib', 'address.dart')).writeAsStringSync(
@@ -131,6 +167,7 @@ import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'address.ack.dart';
+part 'address.g.dart';
 
 @AckType()
 final addressSchema = Ack.object({'city': Ack.string()});
@@ -148,6 +185,7 @@ import 'address.dart' as direct;
 import 'exports.dart' as exported;
 
 part 'person.ack.dart';
+part 'person.g.dart';
 
 @AckType()
 final personSchema = Ack.object({
@@ -244,6 +282,28 @@ void main() {
     final user = UserRecord.parse({'name': 'Ada'});
     expect(user.value.name, 'Ada');
     expect(user.toJson(), {'name': 'Ada'});
+
+    expect(Empty.parse({}).toJson(), isEmpty);
+    final scores = Scores.parse([1, 2]);
+    expect(scores.value, [1, 2]);
+    expect(scores.toJson(), [1, 2]);
+    expect(() => scores.value.add(3), throwsUnsupportedError);
+
+    Counted.decodes = 0;
+    Counted.encodes = 0;
+    final counted = CountedModel.parse({
+      'item': 'a',
+      'items': ['b', 'c'],
+    });
+    expect(Counted.decodes, 3);
+    expect(counted.item.value, 'a');
+    expect(counted.items.map((item) => item.value), ['b', 'c']);
+    expect(counted.toJson(), {
+      'item': 'a',
+      'items': ['b', 'c'],
+    });
+    expect(Counted.encodes, 3);
+    expect(Counted.decodes, 3);
   });
 }
 ''');
@@ -253,11 +313,54 @@ void main() {
           await _run(temporary, ['run', 'build_runner', 'build']),
           'build_runner build',
         );
+
+        final generated = {
+          for (final file
+              in temporary
+                  .listSync(recursive: true)
+                  .whereType<File>()
+                  .where(
+                    (file) =>
+                        file.path.endsWith('.ack.dart') ||
+                        file.path.endsWith('.g.dart'),
+                  ))
+            p.relative(file.path, from: temporary.path): file
+                .readAsStringSync(),
+        };
+        expect(
+          generated.keys,
+          containsAll(['lib/models.ack.dart', 'lib/models.g.dart']),
+        );
+        expect(generated['lib/models.g.dart'], contains(r'_$ExtrasFromJson'));
+        expect(
+          generated['lib/models.g.dart'],
+          contains('Extras._ackFromRuntimeName'),
+        );
+        expect(generated['lib/models.ack.dart'], contains(r'_$ExtrasFromJson'));
+
         _expectSuccess(
           await _run(temporary, ['analyze', '--fatal-infos']),
           'dart analyze --fatal-infos',
         );
         _expectSuccess(await _run(temporary, ['test']), 'dart test');
+        _expectSuccess(
+          await _run(temporary, ['run', 'build_runner', 'build']),
+          'second build_runner build',
+        );
+        final rebuilt = {
+          for (final file
+              in temporary
+                  .listSync(recursive: true)
+                  .whereType<File>()
+                  .where(
+                    (file) =>
+                        file.path.endsWith('.ack.dart') ||
+                        file.path.endsWith('.g.dart'),
+                  ))
+            p.relative(file.path, from: temporary.path): file
+                .readAsStringSync(),
+        };
+        expect(rebuilt, generated);
       } finally {
         temporary.deleteSync(recursive: true);
       }

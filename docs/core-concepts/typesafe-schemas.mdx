@@ -13,6 +13,7 @@ import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'user_schema.ack.dart';
+part 'user_schema.g.dart';
 
 @AckType()
 final addressSchema = Ack.object({
@@ -120,23 +121,24 @@ payloads include the discriminator. A branch may omit that field or declare a
 compatible literal; the generated branch exposes a constant discriminator and
 encodes it safely.
 
-## Using json_serializable
+## Generated JSON mapping
 
-Ack owns `.ack.dart`; `json_serializable` continues to own `.g.dart`. Declare
-both when a library uses both generators:
+Ack owns schema validation and the public model API. `json_serializable`
+generates the structural `_$ClassFromJson` / `_$ClassToJson` helpers. Declare
+both parts on every annotated library:
 
 ```dart
 part 'account.ack.dart';
 part 'account.g.dart';
 ```
 
-Ack runs first, so `json_serializable` can resolve generated models in the same
-library. The generated `fromJson` and `toJson` methods also work when an Ack
-model is imported from another library.
+Ack-only consumers do not add `json_annotation` or `json_serializable`. If a
+library also has hand-written `@JsonSerializable` classes, those fragments
+combine into the same `.g.dart` without duplicating Ack helpers.
 
 ## Build checklist
 
 1. Add `ack` and `ack_annotations` to dependencies.
 2. Add `ack_generator` and `build_runner` to dev dependencies.
-3. Add `part '<file>.ack.dart';` to each annotated library.
+3. Add `part '<file>.ack.dart';` and `part '<file>.g.dart';` to each annotated library.
 4. Run `dart run build_runner build`.

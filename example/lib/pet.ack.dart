@@ -44,6 +44,7 @@ sealed class Pet {
 }
 
 /// Discriminated model branch generated from `catSchema`.
+@AckType.jsonSerializable
 final class Cat extends Pet {
   Cat({required this.lives});
 
@@ -68,17 +69,22 @@ final class Cat extends Pet {
   @override
   String get type => 'cat';
 
-  static Cat _fromAckRuntime(Map<String, Object?> value) {
-    return Cat(lives: value['lives'] as int);
-  }
+  static Cat _fromAckRuntime(Map<String, Object?> value) =>
+      _$CatFromJson(Map<String, dynamic>.from(value));
 
   @override
-  Map<String, Object?> _toAckRuntime() {
-    return <String, Object?>{'type': 'cat', 'lives': lives};
-  }
+  Map<String, Object?> _toAckRuntime() => <String, Object?>{
+    'type': 'cat',
+    ..._$CatToJson(this),
+  };
+
+  static int _ackFromRuntimeLives(Object? value) => value as int;
+
+  static Object? _ackToRuntimeLives(int value) => value;
 }
 
 /// Discriminated model branch generated from `dogSchema`.
+@AckType.jsonSerializable
 final class Dog extends Pet {
   Dog({required this.breed});
 
@@ -103,12 +109,16 @@ final class Dog extends Pet {
   @override
   String get type => 'dog';
 
-  static Dog _fromAckRuntime(Map<String, Object?> value) {
-    return Dog(breed: value['breed'] as String);
-  }
+  static Dog _fromAckRuntime(Map<String, Object?> value) =>
+      _$DogFromJson(Map<String, dynamic>.from(value));
 
   @override
-  Map<String, Object?> _toAckRuntime() {
-    return <String, Object?>{'type': 'dog', 'breed': breed};
-  }
+  Map<String, Object?> _toAckRuntime() => <String, Object?>{
+    'type': 'dog',
+    ..._$DogToJson(this),
+  };
+
+  static String _ackFromRuntimeBreed(Object? value) => value as String;
+
+  static Object? _ackToRuntimeBreed(String value) => value;
 }

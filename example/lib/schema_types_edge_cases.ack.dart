@@ -8,6 +8,7 @@ part of 'schema_types_edge_cases.dart';
 // **************************************************************************
 
 /// Immutable model generated from `productSchema`.
+@AckType.jsonSerializable
 final class Product {
   Product({
     required this.name,
@@ -47,32 +48,38 @@ final class Product {
 
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
 
-  static Product _fromAckRuntime(Map<String, Object?> value) {
-    return Product(
-      name: value['name'] as String,
-      tags: List<String>.unmodifiable(
-        (value['tags'] as List).map((item) => item as String),
-      ),
-      scores: List<int>.unmodifiable(
-        (value['scores'] as List).map((item) => item as int),
-      ),
-      flags: List<bool>.unmodifiable(
-        (value['flags'] as List).map((item) => item as bool),
-      ),
-    );
-  }
+  static Product _fromAckRuntime(Map<String, Object?> value) =>
+      _$ProductFromJson(Map<String, dynamic>.from(value));
 
-  Map<String, Object?> _toAckRuntime() {
-    return <String, Object?>{
-      'name': name,
-      'tags': tags.map((item) => item).toList(growable: false),
-      'scores': scores.map((item) => item).toList(growable: false),
-      'flags': flags.map((item) => item).toList(growable: false),
-    };
-  }
+  Map<String, Object?> _toAckRuntime() => <String, Object?>{
+    ..._$ProductToJson(this),
+  };
+
+  static String _ackFromRuntimeName(Object? value) => value as String;
+
+  static Object? _ackToRuntimeName(String value) => value;
+
+  static List<String> _ackFromRuntimeTags(Object? value) =>
+      (value as List).map((item) => item as String).toList();
+
+  static Object? _ackToRuntimeTags(List<String> value) =>
+      value.map((item) => item).toList(growable: false);
+
+  static List<int> _ackFromRuntimeScores(Object? value) =>
+      (value as List).map((item) => item as int).toList();
+
+  static Object? _ackToRuntimeScores(List<int> value) =>
+      value.map((item) => item).toList(growable: false);
+
+  static List<bool> _ackFromRuntimeFlags(Object? value) =>
+      (value as List).map((item) => item as bool).toList();
+
+  static Object? _ackToRuntimeFlags(List<bool> value) =>
+      value.map((item) => item).toList(growable: false);
 }
 
 /// Immutable model generated from `gridSchema`.
+@AckType.jsonSerializable
 final class Grid {
   Grid({required this.name, required List<List<int>> matrix})
     : matrix = List<List<int>>.unmodifiable(
@@ -103,29 +110,28 @@ final class Grid {
 
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
 
-  static Grid _fromAckRuntime(Map<String, Object?> value) {
-    return Grid(
-      name: value['name'] as String,
-      matrix: List<List<int>>.unmodifiable(
-        (value['matrix'] as List).map(
-          (item) =>
-              List<int>.unmodifiable((item as List).map((item) => item as int)),
-        ),
-      ),
-    );
-  }
+  static Grid _fromAckRuntime(Map<String, Object?> value) =>
+      _$GridFromJson(Map<String, dynamic>.from(value));
 
-  Map<String, Object?> _toAckRuntime() {
-    return <String, Object?>{
-      'name': name,
-      'matrix': matrix
-          .map((item) => item.map((item) => item).toList(growable: false))
-          .toList(growable: false),
-    };
-  }
+  Map<String, Object?> _toAckRuntime() => <String, Object?>{
+    ..._$GridToJson(this),
+  };
+
+  static String _ackFromRuntimeName(Object? value) => value as String;
+
+  static Object? _ackToRuntimeName(String value) => value;
+
+  static List<List<int>> _ackFromRuntimeMatrix(Object? value) => (value as List)
+      .map((item) => (item as List).map((item) => item as int).toList())
+      .toList();
+
+  static Object? _ackToRuntimeMatrix(List<List<int>> value) => value
+      .map((item) => item.map((item) => item).toList(growable: false))
+      .toList(growable: false);
 }
 
 /// Immutable model generated from `addressSchema`.
+@AckType.jsonSerializable
 final class Address {
   Address({
     required this.street,
@@ -163,26 +169,32 @@ final class Address {
 
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
 
-  static Address _fromAckRuntime(Map<String, Object?> value) {
-    return Address(
-      street: value['street'] as String,
-      city: value['city'] as String,
-      zipCode: value['zipCode'] as String,
-      country: value['country'] as String,
-    );
-  }
+  static Address _fromAckRuntime(Map<String, Object?> value) =>
+      _$AddressFromJson(Map<String, dynamic>.from(value));
 
-  Map<String, Object?> _toAckRuntime() {
-    return <String, Object?>{
-      'street': street,
-      'city': city,
-      'zipCode': zipCode,
-      'country': country,
-    };
-  }
+  Map<String, Object?> _toAckRuntime() => <String, Object?>{
+    ..._$AddressToJson(this),
+  };
+
+  static String _ackFromRuntimeStreet(Object? value) => value as String;
+
+  static Object? _ackToRuntimeStreet(String value) => value;
+
+  static String _ackFromRuntimeCity(Object? value) => value as String;
+
+  static Object? _ackToRuntimeCity(String value) => value;
+
+  static String _ackFromRuntimeZipCode(Object? value) => value as String;
+
+  static Object? _ackToRuntimeZipCode(String value) => value;
+
+  static String _ackFromRuntimeCountry(Object? value) => value as String;
+
+  static Object? _ackToRuntimeCountry(String value) => value;
 }
 
 /// Immutable model generated from `personSchema`.
+@AckType.jsonSerializable
 final class Person {
   Person({
     required this.name,
@@ -219,28 +231,34 @@ final class Person {
 
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
 
-  static Person _fromAckRuntime(Map<String, Object?> value) {
-    return Person(
-      name: value['name'] as String,
-      email: value['email'] as String,
-      address: Address.$ack.fromRuntime(
-        value['address'] as Map<String, Object?>,
-      ),
-      age: value['age'] as int,
-    );
-  }
+  static Person _fromAckRuntime(Map<String, Object?> value) =>
+      _$PersonFromJson(Map<String, dynamic>.from(value));
 
-  Map<String, Object?> _toAckRuntime() {
-    return <String, Object?>{
-      'name': name,
-      'email': email,
-      'address': Address.$ack.toRuntime(address),
-      'age': age,
-    };
-  }
+  Map<String, Object?> _toAckRuntime() => <String, Object?>{
+    ..._$PersonToJson(this),
+  };
+
+  static String _ackFromRuntimeName(Object? value) => value as String;
+
+  static Object? _ackToRuntimeName(String value) => value;
+
+  static String _ackFromRuntimeEmail(Object? value) => value as String;
+
+  static Object? _ackToRuntimeEmail(String value) => value;
+
+  static Address _ackFromRuntimeAddress(Object? value) =>
+      Address.$ack.fromRuntime(value as Map<String, Object?>);
+
+  static Object? _ackToRuntimeAddress(Address value) =>
+      Address.$ack.toRuntime(value);
+
+  static int _ackFromRuntimeAge(Object? value) => value as int;
+
+  static Object? _ackToRuntimeAge(int value) => value;
 }
 
 /// Immutable model generated from `employeeSchema`.
+@AckType.jsonSerializable
 final class Employee {
   Employee({
     required this.name,
@@ -278,30 +296,36 @@ final class Employee {
 
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
 
-  static Employee _fromAckRuntime(Map<String, Object?> value) {
-    return Employee(
-      name: value['name'] as String,
-      employeeId: value['employeeId'] as String,
-      homeAddress: Address.$ack.fromRuntime(
-        value['homeAddress'] as Map<String, Object?>,
-      ),
-      workAddress: Address.$ack.fromRuntime(
-        value['workAddress'] as Map<String, Object?>,
-      ),
-    );
-  }
+  static Employee _fromAckRuntime(Map<String, Object?> value) =>
+      _$EmployeeFromJson(Map<String, dynamic>.from(value));
 
-  Map<String, Object?> _toAckRuntime() {
-    return <String, Object?>{
-      'name': name,
-      'employeeId': employeeId,
-      'homeAddress': Address.$ack.toRuntime(homeAddress),
-      'workAddress': Address.$ack.toRuntime(workAddress),
-    };
-  }
+  Map<String, Object?> _toAckRuntime() => <String, Object?>{
+    ..._$EmployeeToJson(this),
+  };
+
+  static String _ackFromRuntimeName(Object? value) => value as String;
+
+  static Object? _ackToRuntimeName(String value) => value;
+
+  static String _ackFromRuntimeEmployeeId(Object? value) => value as String;
+
+  static Object? _ackToRuntimeEmployeeId(String value) => value;
+
+  static Address _ackFromRuntimeHomeAddress(Object? value) =>
+      Address.$ack.fromRuntime(value as Map<String, Object?>);
+
+  static Object? _ackToRuntimeHomeAddress(Address value) =>
+      Address.$ack.toRuntime(value);
+
+  static Address _ackFromRuntimeWorkAddress(Object? value) =>
+      Address.$ack.fromRuntime(value as Map<String, Object?>);
+
+  static Object? _ackToRuntimeWorkAddress(Address value) =>
+      Address.$ack.toRuntime(value);
 }
 
 /// Immutable model generated from `modifierSchema`.
+@AckType.jsonSerializable
 final class Modifier {
   Modifier({
     required this.requiredField,
@@ -342,28 +366,44 @@ final class Modifier {
 
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
 
-  static Modifier _fromAckRuntime(Map<String, Object?> value) {
-    return Modifier(
-      requiredField: value['requiredField'] as String,
-      optionalField: value['optionalField'] as String?,
-      nullableField: value['nullableField'] as String?,
-      optionalNullable: value['optionalNullable'] as String?,
-      nullableOptional: value['nullableOptional'] as String?,
-    );
-  }
+  static Modifier _fromAckRuntime(Map<String, Object?> value) =>
+      _$ModifierFromJson(Map<String, dynamic>.from(value));
 
   Map<String, Object?> _toAckRuntime() {
-    return <String, Object?>{
-      'requiredField': requiredField,
-      if (optionalField != null) 'optionalField': optionalField!,
-      'nullableField': nullableField,
-      if (optionalNullable != null) 'optionalNullable': optionalNullable!,
-      if (nullableOptional != null) 'nullableOptional': nullableOptional!,
-    };
+    final result = <String, Object?>{..._$ModifierToJson(this)};
+    if (nullableField == null) {
+      result['nullableField'] = null;
+    }
+    return <String, Object?>{...result};
   }
+
+  static String _ackFromRuntimeRequiredField(Object? value) => value as String;
+
+  static Object? _ackToRuntimeRequiredField(String value) => value;
+
+  static String? _ackFromRuntimeOptionalField(Object? value) =>
+      value as String?;
+
+  static Object? _ackToRuntimeOptionalField(String? value) => value;
+
+  static String? _ackFromRuntimeNullableField(Object? value) =>
+      value as String?;
+
+  static Object? _ackToRuntimeNullableField(String? value) => value;
+
+  static String? _ackFromRuntimeOptionalNullable(Object? value) =>
+      value as String?;
+
+  static Object? _ackToRuntimeOptionalNullable(String? value) => value;
+
+  static String? _ackFromRuntimeNullableOptional(Object? value) =>
+      value as String?;
+
+  static Object? _ackToRuntimeNullableOptional(String? value) => value;
 }
 
 /// Immutable model generated from `taggedItemSchema`.
+@AckType.jsonSerializable
 final class TaggedItem {
   TaggedItem({
     required this.name,
@@ -415,45 +455,58 @@ final class TaggedItem {
 
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
 
-  static TaggedItem _fromAckRuntime(Map<String, Object?> value) {
-    return TaggedItem(
-      name: value['name'] as String,
-      requiredTags: List<String>.unmodifiable(
-        (value['requiredTags'] as List).map((item) => item as String),
-      ),
-      optionalTags: switch (value['optionalTags']) {
-        null => null,
-        final fieldValue => List<String>.unmodifiable(
-          (fieldValue as List).map((item) => item as String),
-        ),
-      },
-      nullableTags: switch (value['nullableTags']) {
-        null => null,
-        final fieldValue => List<String>.unmodifiable(
-          (fieldValue as List).map((item) => item as String),
-        ),
-      },
-    );
-  }
+  static TaggedItem _fromAckRuntime(Map<String, Object?> value) =>
+      _$TaggedItemFromJson(Map<String, dynamic>.from(value));
 
   Map<String, Object?> _toAckRuntime() {
-    return <String, Object?>{
-      'name': name,
-      'requiredTags': requiredTags.map((item) => item).toList(growable: false),
-      if (optionalTags != null)
-        'optionalTags': optionalTags!
-            .map((item) => item)
-            .toList(growable: false),
-      'nullableTags': switch (nullableTags) {
+    final result = <String, Object?>{..._$TaggedItemToJson(this)};
+    if (nullableTags == null) {
+      result['nullableTags'] = null;
+    }
+    return <String, Object?>{...result};
+  }
+
+  static String _ackFromRuntimeName(Object? value) => value as String;
+
+  static Object? _ackToRuntimeName(String value) => value;
+
+  static List<String> _ackFromRuntimeRequiredTags(Object? value) =>
+      (value as List).map((item) => item as String).toList();
+
+  static Object? _ackToRuntimeRequiredTags(List<String> value) =>
+      value.map((item) => item).toList(growable: false);
+
+  static List<String>? _ackFromRuntimeOptionalTags(Object? value) =>
+      switch (value) {
+        null => null,
+        final fieldValue =>
+          (fieldValue as List).map((item) => item as String).toList(),
+      };
+
+  static Object? _ackToRuntimeOptionalTags(List<String>? value) =>
+      switch (value) {
         null => null,
         final fieldValue =>
           fieldValue.map((item) => item).toList(growable: false),
-      },
-    };
-  }
+      };
+
+  static List<String>? _ackFromRuntimeNullableTags(Object? value) =>
+      switch (value) {
+        null => null,
+        final fieldValue =>
+          (fieldValue as List).map((item) => item as String).toList(),
+      };
+
+  static Object? _ackToRuntimeNullableTags(List<String>? value) =>
+      switch (value) {
+        null => null,
+        final fieldValue =>
+          fieldValue.map((item) => item).toList(growable: false),
+      };
 }
 
 /// Immutable model generated from `contactListSchema`.
+@AckType.jsonSerializable
 final class ContactList {
   ContactList({required this.name, required List<Address> addresses})
     : addresses = List<Address>.unmodifiable(addresses.map((item) => item));
@@ -483,28 +536,28 @@ final class ContactList {
 
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
 
-  static ContactList _fromAckRuntime(Map<String, Object?> value) {
-    return ContactList(
-      name: value['name'] as String,
-      addresses: List<Address>.unmodifiable(
-        (value['addresses'] as List).map(
-          (item) => Address.$ack.fromRuntime(item as Map<String, Object?>),
-        ),
-      ),
-    );
-  }
+  static ContactList _fromAckRuntime(Map<String, Object?> value) =>
+      _$ContactListFromJson(Map<String, dynamic>.from(value));
 
-  Map<String, Object?> _toAckRuntime() {
-    return <String, Object?>{
-      'name': name,
-      'addresses': addresses
-          .map((item) => Address.$ack.toRuntime(item))
-          .toList(growable: false),
-    };
-  }
+  Map<String, Object?> _toAckRuntime() => <String, Object?>{
+    ..._$ContactListToJson(this),
+  };
+
+  static String _ackFromRuntimeName(Object? value) => value as String;
+
+  static Object? _ackToRuntimeName(String value) => value;
+
+  static List<Address> _ackFromRuntimeAddresses(Object? value) =>
+      (value as List)
+          .map((item) => Address.$ack.fromRuntime(item as Map<String, Object?>))
+          .toList();
+
+  static Object? _ackToRuntimeAddresses(List<Address> value) =>
+      value.map((item) => Address.$ack.toRuntime(item)).toList(growable: false);
 }
 
 /// Immutable model generated from `emptySchema`.
+@AckType.jsonSerializable
 final class Empty {
   Empty();
 
@@ -528,16 +581,16 @@ final class Empty {
 
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
 
-  static Empty _fromAckRuntime(Map<String, Object?> value) {
-    return Empty();
-  }
+  static Empty _fromAckRuntime(Map<String, Object?> value) =>
+      _$EmptyFromJson(Map<String, dynamic>.from(value));
 
-  Map<String, Object?> _toAckRuntime() {
-    return <String, Object?>{};
-  }
+  Map<String, Object?> _toAckRuntime() => <String, Object?>{
+    ..._$EmptyToJson(this),
+  };
 }
 
 /// Immutable model generated from `minimalSchema`.
+@AckType.jsonSerializable
 final class Minimal {
   Minimal({required this.id});
 
@@ -564,16 +617,20 @@ final class Minimal {
 
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
 
-  static Minimal _fromAckRuntime(Map<String, Object?> value) {
-    return Minimal(id: value['id'] as String);
-  }
+  static Minimal _fromAckRuntime(Map<String, Object?> value) =>
+      _$MinimalFromJson(Map<String, dynamic>.from(value));
 
-  Map<String, Object?> _toAckRuntime() {
-    return <String, Object?>{'id': id};
-  }
+  Map<String, Object?> _toAckRuntime() => <String, Object?>{
+    ..._$MinimalToJson(this),
+  };
+
+  static String _ackFromRuntimeId(Object? value) => value as String;
+
+  static Object? _ackToRuntimeId(String value) => value;
 }
 
 /// Immutable model generated from `namedItemSchema`.
+@AckType.jsonSerializable
 final class NamedItem {
   NamedItem({required this.name});
 
@@ -600,16 +657,20 @@ final class NamedItem {
 
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
 
-  static NamedItem _fromAckRuntime(Map<String, Object?> value) {
-    return NamedItem(name: value['name'] as String);
-  }
+  static NamedItem _fromAckRuntime(Map<String, Object?> value) =>
+      _$NamedItemFromJson(Map<String, dynamic>.from(value));
 
-  Map<String, Object?> _toAckRuntime() {
-    return <String, Object?>{'name': name};
-  }
+  Map<String, Object?> _toAckRuntime() => <String, Object?>{
+    ..._$NamedItemToJson(this),
+  };
+
+  static String _ackFromRuntimeName(Object? value) => value as String;
+
+  static Object? _ackToRuntimeName(String value) => value;
 }
 
 /// Immutable model generated from `item`.
+@AckType.jsonSerializable
 final class Item {
   Item({required this.id});
 
@@ -635,16 +696,20 @@ final class Item {
 
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
 
-  static Item _fromAckRuntime(Map<String, Object?> value) {
-    return Item(id: value['id'] as String);
-  }
+  static Item _fromAckRuntime(Map<String, Object?> value) =>
+      _$ItemFromJson(Map<String, dynamic>.from(value));
 
-  Map<String, Object?> _toAckRuntime() {
-    return <String, Object?>{'id': id};
-  }
+  Map<String, Object?> _toAckRuntime() => <String, Object?>{
+    ..._$ItemToJson(this),
+  };
+
+  static String _ackFromRuntimeId(Object? value) => value as String;
+
+  static Object? _ackToRuntimeId(String value) => value;
 }
 
 /// Immutable model generated from `myCustomSchema123`.
+@AckType.jsonSerializable
 final class MyCustomSchema123 {
   MyCustomSchema123({required this.value});
 
@@ -671,11 +736,14 @@ final class MyCustomSchema123 {
 
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
 
-  static MyCustomSchema123 _fromAckRuntime(Map<String, Object?> value) {
-    return MyCustomSchema123(value: value['value'] as String);
-  }
+  static MyCustomSchema123 _fromAckRuntime(Map<String, Object?> value) =>
+      _$MyCustomSchema123FromJson(Map<String, dynamic>.from(value));
 
-  Map<String, Object?> _toAckRuntime() {
-    return <String, Object?>{'value': value};
-  }
+  Map<String, Object?> _toAckRuntime() => <String, Object?>{
+    ..._$MyCustomSchema123ToJson(this),
+  };
+
+  static String _ackFromRuntimeValue(Object? value) => value as String;
+
+  static Object? _ackToRuntimeValue(String value) => value;
 }

@@ -6,6 +6,7 @@ import 'package:analyzer/dart/element/nullability_suffix.dart';
 import 'package:analyzer/dart/element/type.dart';
 import 'package:source_gen/source_gen.dart';
 
+import '../json/helper_names.dart';
 import '../models/schema_model_graph.dart';
 
 final class _Declaration {
@@ -190,6 +191,7 @@ final class SchemaModelGraphBuilder {
       );
     }
     _validateGeneratedHelperNames();
+    _validateDelegatedHelperNames();
     return _graph;
   }
 
@@ -993,10 +995,7 @@ final class SchemaModelGraphBuilder {
     }
     if (passthroughNode == null) return;
 
-    final localNames = {
-      for (final element in library.allElements)
-        if (element.name case final name?) name,
-    };
+    final localNames = _localDeclarationNames();
     for (final helperName in _generatedHelperNames) {
       if (!localNames.contains(helperName)) continue;
       throw InvalidGenerationSource(
@@ -1005,6 +1004,88 @@ final class SchemaModelGraphBuilder {
       );
     }
   }
+
+  void _validateDelegatedHelperNames() {
+    final localNames = _localDeclarationNames();
+    for (final node in _graph.nodes) {
+      final declaration = _declarationsById[node.id];
+      if (declaration == null) continue;
+      switch (node) {
+        case AckUnionModelNode():
+          continue;
+        case AckValueModelNode():
+          _validateClassHelperNames(
+            className: node.className,
+            fieldNames: const ['value'],
+            path: node.id.declarationName,
+            element: declaration.element,
+            localNames: localNames,
+          );
+        case AckObjectModelNode():
+          _validateClassHelperNames(
+            className: node.className,
+            fieldNames: [
+              for (final field in node.fields)
+                if (field.jsonKey != node.discriminatorKey) field.dartName,
+              if (node.additionalProperties) 'additionalProperties',
+            ],
+            path: node.id.declarationName,
+            element: declaration.element,
+            localNames: localNames,
+          );
+      }
+    }
+  }
+
+  void _validateClassHelperNames({
+    required String className,
+    required List<String> fieldNames,
+    required String path,
+    required Element element,
+    required Set<String> localNames,
+  }) {
+    final ownerByBridge = <String, String>{};
+    for (final fieldName in fieldNames) {
+      for (final bridgeName in ackFieldBridgeNames(fieldName)) {
+        final owner = ownerByBridge[bridgeName];
+        if (owner != null) {
+          throw InvalidGenerationSource(
+            '$path.$fieldName generates helper "$bridgeName" that conflicts '
+            'with $path.$owner.',
+            element: element,
+          );
+        }
+        if (fieldNames.contains(bridgeName)) {
+          throw InvalidGenerationSource(
+            '$path.$fieldName generates helper "$bridgeName" that conflicts '
+            'with a stored field.',
+            element: element,
+          );
+        }
+        if (_reservedMembers.contains(bridgeName)) {
+          throw InvalidGenerationSource(
+            '$path.$fieldName generates helper "$bridgeName" that conflicts '
+            'with a generated member.',
+            element: element,
+          );
+        }
+        ownerByBridge[bridgeName] = fieldName;
+      }
+    }
+
+    for (final helperName in ackJsonHelperNames(className)) {
+      if (!localNames.contains(helperName)) continue;
+      throw InvalidGenerationSource(
+        'Generated helper "$helperName" conflicts with a local declaration.',
+        element: element,
+      );
+    }
+  }
+
+  Set<String> _localDeclarationNames() => {
+    for (final element in library.allElements)
+      if (element.name case final name?) name,
+  };
 
   void _validateUnionBranchDiscriminator(
     _Declaration branch,

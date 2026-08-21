@@ -39,6 +39,7 @@ void main() {
               '''
 $_imports
 part 'empty.ack.dart';
+part 'empty.g.dart';
 
 @AckType()
 final emptySchema = Ack.object({});
@@ -48,8 +49,9 @@ final emptySchema = Ack.object({});
           'test_pkg|lib/empty.ack.dart': decodedMatches(
             allOf([
               contains('Empty()'),
-              contains('return Empty();'),
-              contains('return <String, Object?>{};'),
+              contains('@AckType.jsonSerializable'),
+              contains(r'_$EmptyFromJson'),
+              contains(r'_$EmptyToJson'),
               isNot(contains('\n  ,')),
             ]),
           ),
@@ -67,6 +69,7 @@ final emptySchema = Ack.object({});
               '''
 $_imports
 part 'values.ack.dart';
+part 'values.g.dart';
 
 enum Role { admin, member }
 
@@ -101,6 +104,7 @@ final metricsSchema = Ack.object({
             '''
 $_imports
 part 'address.ack.dart';
+part 'address.g.dart';
 
 @AckType()
 final addressSchema = Ack.object({'city': Ack.string()});
@@ -112,6 +116,7 @@ $_imports
 import 'address.dart' as direct;
 import 'exports.dart' as exported;
 part 'person.ack.dart';
+part 'person.g.dart';
 
 @AckType()
 final personSchema = Ack.object({
@@ -128,6 +133,8 @@ final personSchema = Ack.object({
           allOf([
             contains('required this.home'),
             contains('required List<exported.Address> history'),
+            contains(r'_$PersonFromJson'),
+            contains('_ackFromRuntimeHome'),
             contains(r'direct.Address.$ack.fromRuntime'),
             contains(r'exported.Address.$ack.toRuntime'),
           ]),
@@ -143,6 +150,7 @@ final personSchema = Ack.object({
             '''
 $_imports
 part 'pet.ack.dart';
+part 'pet.g.dart';
 
 @AckType()
 final catSchema = Ack.object({'kind': Ack.literal('cat'), 'lives': Ack.integer()});
@@ -163,9 +171,13 @@ final petSchema = Ack.discriminated(
             contains('sealed class Pet'),
             contains('final class Cat extends Pet'),
             contains('final class Dog extends Pet'),
+            isNot(contains('@AckType.jsonSerializable\nsealed class Pet')),
+            contains('@AckType.jsonSerializable\nfinal class Cat extends Pet'),
             contains("String get kind => 'cat';"),
             contains("'kind': 'dog'"),
             contains('...additionalProperties'),
+            contains(r'_$CatFromJson'),
+            contains(r'_$DogToJson'),
           ]),
         ),
       },
@@ -182,6 +194,7 @@ final petSchema = Ack.discriminated(
               '''
 $_imports
 part 'bad.ack.dart';
+part 'bad.g.dart';
 
 @AckType()
 final badSchema = Ack.object({'toJson': Ack.string()});
@@ -204,6 +217,7 @@ final badSchema = Ack.object({'toJson': Ack.string()});
             '''
 $_imports
 part 'bad.ack.dart';
+part 'bad.g.dart';
 
 @AckType()
 final badSchema = Ack.object({'class': Ack.string()});
@@ -227,6 +241,7 @@ final badSchema = Ack.object({'class': Ack.string()});
               '''
 $_imports
 part 'bad.ack.dart';
+part 'bad.g.dart';
 
 @AckType()
 final catSchema = Ack.object({'lives': Ack.integer()});
@@ -255,6 +270,7 @@ final petSchema = Ack.discriminated(
             '''
 $_imports
 part 'bad.ack.dart';
+part 'bad.g.dart';
 
 @AckType()
 final catSchema = Ack.object({
@@ -285,6 +301,7 @@ final petSchema = Ack.discriminated(
             '''
 $_imports
 part 'bad.ack.dart';
+part 'bad.g.dart';
 
 Object? _ackImmutableCopyValue(Object? value) => value;
 
@@ -298,5 +315,77 @@ final bagSchema = Ack.object({}).passthrough();
       },
     );
     expect(messages.single, contains('_ackImmutableCopyValue'));
+  });
+
+  test('preserves a prefixed AckType qualifier on the JSON marker', () async {
+    await _build(
+      {
+        'schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart' as annotations;
+
+part 'schema.ack.dart';
+part 'schema.g.dart';
+
+@annotations.AckType()
+final userSchema = Ack.object({'name': Ack.string()});
+''',
+      },
+      outputs: {
+        'test_pkg|lib/schema.ack.dart': decodedMatches(
+          contains('@annotations.AckType.jsonSerializable'),
+        ),
+      },
+    );
+  });
+
+  test('rejects field names that collide after bridge derivation', () async {
+    final messages = <String>{};
+    await _build(
+      {
+        'bad.dart':
+            '''
+$_imports
+part 'bad.ack.dart';
+part 'bad.g.dart';
+
+@AckType()
+final badSchema = Ack.object({
+  'name': Ack.string(),
+  'Name': Ack.string(),
+});
+''',
+      },
+      outputs: const {},
+      onLog: (log) {
+        if (log.level.name == 'SEVERE') messages.add(log.message);
+      },
+    );
+    expect(messages.single, contains('badSchema.Name'));
+    expect(messages.single, contains('_ackFromRuntimeName'));
+  });
+
+  test('rejects top-level JSON helper name collisions', () async {
+    final messages = <String>{};
+    await _build(
+      {
+        'bad.dart':
+            '''
+$_imports
+part 'bad.ack.dart';
+part 'bad.g.dart';
+
+void _\$UserFromJson() {}
+
+@AckType()
+final userSchema = Ack.object({'name': Ack.string()});
+''',
+      },
+      outputs: const {},
+      onLog: (log) {
+        if (log.level.name == 'SEVERE') messages.add(log.message);
+      },
+    );
+    expect(messages.single, contains(r'_$UserFromJson'));
   });
 }

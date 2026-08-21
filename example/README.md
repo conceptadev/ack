@@ -1,7 +1,8 @@
 # Ack Example Package
 
 This package demonstrates Ack schemas built directly in source and converted to
-immutable models with `@AckType()`.
+immutable models with `@AckType()`. Annotated examples declare both
+`.ack.dart` and `.g.dart` parts.
 
 ## Included examples
 

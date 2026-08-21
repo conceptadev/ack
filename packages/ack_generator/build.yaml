@@ -5,4 +5,18 @@ builders:
     build_extensions: {".dart": [".ack.dart"]}
     auto_apply: dependents
     build_to: source
-    runs_before: ["json_serializable"]
+    runs_before:
+      - ack_generator|ack_json_serializable
+      - json_serializable|json_serializable
+    applies_builders:
+      - ack_generator|ack_json_serializable
+
+  ack_json_serializable:
+    import: "package:ack_generator/builder.dart"
+    builder_factories: ["ackJsonSerializableBuilder"]
+    build_extensions: {".dart": [".ack_json_serializable.g.part"]}
+    auto_apply: none
+    build_to: cache
+    required_inputs: [".ack.dart"]
+    applies_builders:
+      - source_gen|combining_builder

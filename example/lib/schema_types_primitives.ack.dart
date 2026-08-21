@@ -8,6 +8,7 @@ part of 'schema_types_primitives.dart';
 // **************************************************************************
 
 /// Immutable value model generated from `passwordSchema`.
+@AckType.jsonSerializable
 final class Password {
   Password(this.value);
 
@@ -34,12 +35,18 @@ final class Password {
 
   SchemaResult<String> safeToJson() => $ack.safeEncode(this);
 
-  static Password _fromAckRuntime(String value) => Password(value);
+  static Password _fromAckRuntime(String value) =>
+      _$PasswordFromJson(<String, dynamic>{'value': value});
 
-  String _toAckRuntime() => value;
+  String _toAckRuntime() => _$PasswordToJson(this)['value'] as String;
+
+  static String _ackFromRuntimeValue(Object? value) => value as String;
+
+  static Object? _ackToRuntimeValue(String value) => value;
 }
 
 /// Immutable value model generated from `ageSchema`.
+@AckType.jsonSerializable
 final class Age {
   Age(this.value);
 
@@ -65,12 +72,18 @@ final class Age {
 
   SchemaResult<int> safeToJson() => $ack.safeEncode(this);
 
-  static Age _fromAckRuntime(int value) => Age(value);
+  static Age _fromAckRuntime(int value) =>
+      _$AgeFromJson(<String, dynamic>{'value': value});
 
-  int _toAckRuntime() => value;
+  int _toAckRuntime() => _$AgeToJson(this)['value'] as int;
+
+  static int _ackFromRuntimeValue(Object? value) => value as int;
+
+  static Object? _ackToRuntimeValue(int value) => value;
 }
 
 /// Immutable value model generated from `priceSchema`.
+@AckType.jsonSerializable
 final class Price {
   Price(this.value);
 
@@ -96,12 +109,18 @@ final class Price {
 
   SchemaResult<double> safeToJson() => $ack.safeEncode(this);
 
-  static Price _fromAckRuntime(double value) => Price(value);
+  static Price _fromAckRuntime(double value) =>
+      _$PriceFromJson(<String, dynamic>{'value': value});
 
-  double _toAckRuntime() => value;
+  double _toAckRuntime() => _$PriceToJson(this)['value'] as double;
+
+  static double _ackFromRuntimeValue(Object? value) => value as double;
+
+  static Object? _ackToRuntimeValue(double value) => value;
 }
 
 /// Immutable value model generated from `activeSchema`.
+@AckType.jsonSerializable
 final class Active {
   Active(this.value);
 
@@ -127,12 +146,18 @@ final class Active {
 
   SchemaResult<bool> safeToJson() => $ack.safeEncode(this);
 
-  static Active _fromAckRuntime(bool value) => Active(value);
+  static Active _fromAckRuntime(bool value) =>
+      _$ActiveFromJson(<String, dynamic>{'value': value});
 
-  bool _toAckRuntime() => value;
+  bool _toAckRuntime() => _$ActiveToJson(this)['value'] as bool;
+
+  static bool _ackFromRuntimeValue(Object? value) => value as bool;
+
+  static Object? _ackToRuntimeValue(bool value) => value;
 }
 
 /// Immutable value model generated from `tagsSchema`.
+@AckType.jsonSerializable
 final class Tags {
   Tags(List<String> value)
     : value = List<String>.unmodifiable(value.map((item) => item));
@@ -159,12 +184,20 @@ final class Tags {
 
   SchemaResult<List<String>> safeToJson() => $ack.safeEncode(this);
 
-  static Tags _fromAckRuntime(List<String> value) => Tags(value);
+  static Tags _fromAckRuntime(List<String> value) =>
+      _$TagsFromJson(<String, dynamic>{'value': value});
 
-  List<String> _toAckRuntime() => value;
+  List<String> _toAckRuntime() => _$TagsToJson(this)['value'] as List<String>;
+
+  static List<String> _ackFromRuntimeValue(Object? value) =>
+      (value as List).map((item) => item as String).toList();
+
+  static Object? _ackToRuntimeValue(List<String> value) =>
+      value.map((item) => item).toList(growable: false);
 }
 
 /// Immutable value model generated from `scoresSchema`.
+@AckType.jsonSerializable
 final class Scores {
   Scores(List<int> value)
     : value = List<int>.unmodifiable(value.map((item) => item));
@@ -191,12 +224,20 @@ final class Scores {
 
   SchemaResult<List<int>> safeToJson() => $ack.safeEncode(this);
 
-  static Scores _fromAckRuntime(List<int> value) => Scores(value);
+  static Scores _fromAckRuntime(List<int> value) =>
+      _$ScoresFromJson(<String, dynamic>{'value': value});
 
-  List<int> _toAckRuntime() => value;
+  List<int> _toAckRuntime() => _$ScoresToJson(this)['value'] as List<int>;
+
+  static List<int> _ackFromRuntimeValue(Object? value) =>
+      (value as List).map((item) => item as int).toList();
+
+  static Object? _ackToRuntimeValue(List<int> value) =>
+      value.map((item) => item).toList(growable: false);
 }
 
 /// Immutable value model generated from `statusSchema`.
+@AckType.jsonSerializable
 final class StatusLiteral {
   StatusLiteral(this.value);
 
@@ -223,12 +264,18 @@ final class StatusLiteral {
 
   SchemaResult<String> safeToJson() => $ack.safeEncode(this);
 
-  static StatusLiteral _fromAckRuntime(String value) => StatusLiteral(value);
+  static StatusLiteral _fromAckRuntime(String value) =>
+      _$StatusLiteralFromJson(<String, dynamic>{'value': value});
 
-  String _toAckRuntime() => value;
+  String _toAckRuntime() => _$StatusLiteralToJson(this)['value'] as String;
+
+  static String _ackFromRuntimeValue(Object? value) => value as String;
+
+  static Object? _ackToRuntimeValue(String value) => value;
 }
 
 /// Immutable value model generated from `roleSchema`.
+@AckType.jsonSerializable
 final class Role {
   Role(this.value);
 
@@ -254,12 +301,18 @@ final class Role {
 
   SchemaResult<String> safeToJson() => $ack.safeEncode(this);
 
-  static Role _fromAckRuntime(String value) => Role(value);
+  static Role _fromAckRuntime(String value) =>
+      _$RoleFromJson(<String, dynamic>{'value': value});
 
-  String _toAckRuntime() => value;
+  String _toAckRuntime() => _$RoleToJson(this)['value'] as String;
+
+  static String _ackFromRuntimeValue(Object? value) => value as String;
+
+  static Object? _ackToRuntimeValue(String value) => value;
 }
 
 /// Immutable value model generated from `userRoleSchema`.
+@AckType.jsonSerializable
 final class UserRoleModel {
   UserRoleModel(this.value);
 
@@ -286,12 +339,18 @@ final class UserRoleModel {
 
   SchemaResult<String> safeToJson() => $ack.safeEncode(this);
 
-  static UserRoleModel _fromAckRuntime(UserRole value) => UserRoleModel(value);
+  static UserRoleModel _fromAckRuntime(UserRole value) =>
+      _$UserRoleModelFromJson(<String, dynamic>{'value': value});
 
-  UserRole _toAckRuntime() => value;
+  UserRole _toAckRuntime() => _$UserRoleModelToJson(this)['value'] as UserRole;
+
+  static UserRole _ackFromRuntimeValue(Object? value) => value as UserRole;
+
+  static Object? _ackToRuntimeValue(UserRole value) => value;
 }
 
 /// Immutable value model generated from `statusEnumSchema`.
+@AckType.jsonSerializable
 final class StatusEnum {
   StatusEnum(this.value);
 
@@ -318,12 +377,18 @@ final class StatusEnum {
 
   SchemaResult<String> safeToJson() => $ack.safeEncode(this);
 
-  static StatusEnum _fromAckRuntime(Status value) => StatusEnum(value);
+  static StatusEnum _fromAckRuntime(Status value) =>
+      _$StatusEnumFromJson(<String, dynamic>{'value': value});
 
-  Status _toAckRuntime() => value;
+  Status _toAckRuntime() => _$StatusEnumToJson(this)['value'] as Status;
+
+  static Status _ackFromRuntimeValue(Object? value) => value as Status;
+
+  static Object? _ackToRuntimeValue(Status value) => value;
 }
 
 /// Immutable value model generated from `optionalStatusSchema`.
+@AckType.jsonSerializable
 final class OptionalStatus {
   OptionalStatus(this.value);
 
@@ -350,12 +415,18 @@ final class OptionalStatus {
 
   SchemaResult<String> safeToJson() => $ack.safeEncode(this);
 
-  static OptionalStatus _fromAckRuntime(String value) => OptionalStatus(value);
+  static OptionalStatus _fromAckRuntime(String value) =>
+      _$OptionalStatusFromJson(<String, dynamic>{'value': value});
 
-  String _toAckRuntime() => value;
+  String _toAckRuntime() => _$OptionalStatusToJson(this)['value'] as String;
+
+  static String _ackFromRuntimeValue(Object? value) => value as String;
+
+  static Object? _ackToRuntimeValue(String value) => value;
 }
 
 /// Immutable value model generated from `defaultedEnumSchema`.
+@AckType.jsonSerializable
 final class DefaultedEnum {
   DefaultedEnum(this.value);
 
@@ -382,12 +453,18 @@ final class DefaultedEnum {
 
   SchemaResult<String> safeToJson() => $ack.safeEncode(this);
 
-  static DefaultedEnum _fromAckRuntime(UserRole value) => DefaultedEnum(value);
+  static DefaultedEnum _fromAckRuntime(UserRole value) =>
+      _$DefaultedEnumFromJson(<String, dynamic>{'value': value});
 
-  UserRole _toAckRuntime() => value;
+  UserRole _toAckRuntime() => _$DefaultedEnumToJson(this)['value'] as UserRole;
+
+  static UserRole _ackFromRuntimeValue(Object? value) => value as UserRole;
+
+  static Object? _ackToRuntimeValue(UserRole value) => value;
 }
 
 /// Immutable value model generated from `chainedEnumStringSchema`.
+@AckType.jsonSerializable
 final class ChainedEnumString {
   ChainedEnumString(this.value);
 
@@ -415,12 +492,17 @@ final class ChainedEnumString {
   SchemaResult<String> safeToJson() => $ack.safeEncode(this);
 
   static ChainedEnumString _fromAckRuntime(String value) =>
-      ChainedEnumString(value);
+      _$ChainedEnumStringFromJson(<String, dynamic>{'value': value});
 
-  String _toAckRuntime() => value;
+  String _toAckRuntime() => _$ChainedEnumStringToJson(this)['value'] as String;
+
+  static String _ackFromRuntimeValue(Object? value) => value as String;
+
+  static Object? _ackToRuntimeValue(String value) => value;
 }
 
 /// Immutable value model generated from `refinedAgeSchema`.
+@AckType.jsonSerializable
 final class RefinedAge {
   RefinedAge(this.value);
 
@@ -447,7 +529,12 @@ final class RefinedAge {
 
   SchemaResult<int> safeToJson() => $ack.safeEncode(this);
 
-  static RefinedAge _fromAckRuntime(int value) => RefinedAge(value);
+  static RefinedAge _fromAckRuntime(int value) =>
+      _$RefinedAgeFromJson(<String, dynamic>{'value': value});
 
-  int _toAckRuntime() => value;
+  int _toAckRuntime() => _$RefinedAgeToJson(this)['value'] as int;
+
+  static int _ackFromRuntimeValue(Object? value) => value as int;
+
+  static Object? _ackToRuntimeValue(int value) => value;
 }

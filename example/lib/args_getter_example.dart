@@ -6,6 +6,7 @@ import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'args_getter_example.ack.dart';
+part 'args_getter_example.g.dart';
 
 /// Example 1: User configuration with additional metadata
 /// The generated model has `additionalProperties`, which contains
