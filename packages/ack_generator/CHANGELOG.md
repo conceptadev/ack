@@ -1,3 +1,25 @@
+## Unreleased
+
+### Breaking
+
+* Replace map-backed `@AckType()` extension types with immutable Dart model
+  classes. Generated names no longer receive a `Type` suffix.
+* Generated models no longer implement `Map<String, Object?>`.
+
+### Added
+
+* Generate `parse`, `safeParse`, `fromMap`, `fromJson`, `toMap`, and `toJson`
+  APIs for model classes.
+* Add `AckModelAdapter` for codec-safe conversion between Ack runtime values and
+  generated models.
+* Add a normalized schema graph foundation for imported, recursive, and
+  discriminated model dependencies.
+
+### Changed
+
+* Use `SharedPartBuilder` and the `source_gen` combining builder so Ack can share
+  `.g.dart` output with generators such as `json_serializable`.
+
 ## 1.1.0
 
 ### Changed

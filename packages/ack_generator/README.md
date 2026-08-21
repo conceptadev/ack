@@ -1,12 +1,13 @@
 # Ack Generator
 
-`ack_generator` emits extension types for top-level Ack schemas annotated with
-`@AckType()`.
+`ack_generator` generates immutable Dart model classes from top-level Ack
+schemas annotated with `@AckType()`.
+
+> This branch contains a draft class-generation rewrite. See
+> [`docs/architecture/acktype-model-generation.md`](../../docs/architecture/acktype-model-generation.md)
+> for design decisions, known gaps, and the validation checklist.
 
 ## Overview
-
-Write your schemas directly with the Ack fluent API, then annotate the schema
-variable or getter to generate a typed wrapper:
 
 ```dart
 import 'package:ack/ack.dart';
@@ -21,18 +22,46 @@ final userSchema = Ack.object({
 });
 ```
 
-Running `dart run build_runner build` generates an extension type such as:
+Running `dart run build_runner build` generates a real class:
 
 ```dart
-extension type UserType(Map<String, Object?> _data)
-    implements Map<String, Object?> {
-  static UserType parse(Object? data) { ... }
-  static SchemaResult<UserType> safeParse(Object? data) { ... }
+final class User {
+  User({required this.name, required this.email});
 
-  String get name => _data['name'] as String;
-  String get email => _data['email'] as String;
+  final String name;
+  final String email;
+
+  factory User.parse(Object? input) => $ack.parse(input);
+  static SchemaResult<User> safeParse(Object? input) =>
+      $ack.safeParse(input);
+
+  factory User.fromMap(Map<String, Object?> map) => $ack.parse(map);
+  factory User.fromJson(Map<String, dynamic> json) => $ack.parse(json);
+
+  Map<String, Object?> toMap() => $ack.encode(this);
+  Map<String, dynamic> toJson() => Map<String, dynamic>.from(toMap());
 }
 ```
+
+The generated class stores typed fields. It does not implement `Map` and does
+not use a map-backed extension type.
+
+## Serialization
+
+Ack performs parsing and encoding. Generated classes map between Ack's validated
+runtime values and stored Dart fields.
+
+This preserves codecs such as:
+
+- `Ack.datetime()` (`String` boundary to `DateTime` runtime);
+- `Ack.uri()`;
+- `Ack.duration()`;
+- enum codecs;
+- custom bidirectional codecs.
+
+The generated `fromJson` and `toJson` method shapes are compatible with the
+custom-type conventions used by `json_serializable`. Ack does not emit
+`@JsonSerializable` and does not call its generator internals.
 
 ## Installation
 
@@ -51,38 +80,29 @@ dev_dependencies:
 - Top-level schema variables
 - Top-level schema getters
 
-`@AckType()` is not supported on classes or instance members.
+`@AckType()` is not supported on classes, instance members, or local variables.
 
-## Supported schema shapes
+## Planned model shapes
 
-- `Ack.object(...)`
-- Primitive schemas such as `Ack.string()`, `Ack.integer()`, `Ack.double()`,
-  `Ack.boolean()`
-- `Ack.list(...)` and `Set`-like list wrappers
-- `Ack.literal(...)`, `Ack.enumString(...)`, `Ack.enumValues(...)`
-- Non-object transforms with explicit output types
-- `Ack.discriminated(...)` when branches are top-level `@AckType` object
-  schemas in the same library
+- `Ack.object(...)` -> immutable `final class`
+- Primitive and codec roots -> immutable value class
+- `Ack.discriminated(...)` -> `sealed class` with `final` branches
+- Nested named schemas -> nested generated model fields
+- Lists and sets -> unmodifiable typed collections
+- Additional properties -> explicit `additionalProperties` map
 
-For discriminated unions, `Ack.discriminated(...)` owns the discriminator
-property. Branch schemas normally omit the discriminator field; if they include
-it, that field must be `Ack.literal(...)` matching the branch key or
-`Ack.enumString(...)` containing the branch key. Boundary payloads must still
-include the discriminator key. Conflicting, broad, transformed/refined, and
-restrictive discriminator fields are rejected. Generated branches expose the
-exact branch literal, and generated subtype `parse()` / `safeParse()` methods
-validate through the union's effective branch.
+## Current draft limitations
 
-## Important limitations
+The rewrite is not yet validated. Before release it still needs:
 
-- `Ack.any()` and `Ack.anyOf()` do not generate extension types.
-- Inline anonymous object branches are rejected for typed generation. Extract
-  them to a named top-level schema first.
-- Nullable top-level schemas do not emit extension types.
-- Nullable list elements are rejected: `Ack.list(item.nullable())` is not
-  supported. Make the list nullable with `Ack.list(item).nullable()` when the
-  list itself may be `null`.
-- `@AckType()` requires static schema resolution for nested object references.
+- migration of all legacy extension-type fixtures;
+- normalized graph integration in the analyzer;
+- `Ack.lazy` and recursive-model analysis;
+- default and one-way-transform capability tracking;
+- complete typed map support;
+- current analyzer/source_gen dependency validation;
+- clean-build `json_serializable` integration fixtures;
+- full build, analysis, and runtime test execution.
 
 ## Build commands
 
@@ -90,9 +110,3 @@ validate through the union's effective branch.
 dart run build_runner build
 dart run build_runner watch
 ```
-
-## More information
-
-- Root docs: [../../README.md](../../README.md)
-- Annotation package: [../ack_annotations/README.md](../ack_annotations/README.md)
-- Example package: [../../example/README.md](../../example/README.md)

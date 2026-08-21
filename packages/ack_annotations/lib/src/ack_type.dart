@@ -1,6 +1,6 @@
 import 'package:meta/meta_meta.dart';
 
-/// Marks a top-level Ack schema for extension-type generation.
+/// Marks a top-level Ack schema for immutable model-class generation.
 ///
 /// Apply `@AckType()` to a top-level schema variable or getter:
 ///
@@ -12,8 +12,9 @@ import 'package:meta/meta_meta.dart';
 /// });
 /// ```
 ///
-/// `ack_generator` emits a typed wrapper around the schema's validated
-/// representation plus `parse()` and `safeParse()` helpers.
+/// `ack_generator` emits a real Dart class with stored typed fields plus
+/// `parse`, `safeParse`, `fromMap`, `fromJson`, `toMap`, and `toJson` APIs.
+/// Ack remains responsible for validation and codec-aware serialization.
 ///
 /// Supported targets:
 /// - Top-level variables
@@ -28,20 +29,19 @@ import 'package:meta/meta_meta.dart';
 /// - Local variables
 @Target({TargetKind.topLevelVariable, TargetKind.getter})
 class AckType {
-  /// Optional custom name for the generated extension type.
+  /// Optional exact name for the generated model class.
   ///
-  /// If not provided, the type name is derived from the schema variable name:
-  /// - `userSchema` -> `UserType`
-  /// - `passwordSchema` -> `PasswordType`
+  /// If omitted, the class name is derived from the schema declaration:
+  /// - `userSchema` -> `User`
+  /// - `passwordSchema` -> `Password`
   ///
-  /// If provided, the custom name is used with the `Type` suffix:
-  /// - `@AckType(name: 'CustomUser')` -> `CustomUserType`
-  /// - `@AckType(name: 'MyPassword')` -> `MyPasswordType`
+  /// If provided, the value is used directly:
+  /// - `@AckType(name: 'AppUser')` -> `AppUser`
   final String? name;
 
-  /// Creates an annotation to generate extension types for validated data.
+  /// Creates an annotation for immutable Ack model generation.
   ///
-  /// The [name] value must be a valid Dart identifier and should omit the
-  /// trailing `Type` suffix.
+  /// [name] must be a valid Dart class identifier. Do not add a `Type` suffix
+  /// unless it is intentionally part of the public model name.
   const AckType({this.name});
 }
