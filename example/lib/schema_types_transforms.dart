@@ -1,7 +1,7 @@
 import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
-part 'schema_types_transforms.g.dart';
+part 'schema_types_transforms.ack.dart';
 
 class Color {
   final String value;
@@ -15,8 +15,11 @@ class TagList {
 
 final baseColorSchema = Ack.string();
 
-@AckType()
-final colorSchema = Ack.string().transform<Color>((value) => Color(value));
+@AckType(name: 'ColorModel')
+final colorSchema = Ack.string().codec<Color>(
+  decode: Color.new,
+  encode: (color) => color.value,
+);
 
 @AckType()
 final profileSchema = Ack.object({
@@ -25,14 +28,24 @@ final profileSchema = Ack.object({
   'lastLogin': Ack.datetime(),
   'timeout': Ack.duration(),
   'links': Ack.list(Ack.uri()),
-  'favoriteColor': Ack.string().transform<Color>((value) => Color(value)),
-  'slug': Ack.string().transform<String>((value) => '$value#'),
+  'favoriteColor': Ack.string().codec<Color>(
+    decode: Color.new,
+    encode: (color) => color.value,
+  ),
+  'slug': Ack.string().codec<String>(
+    decode: (value) => '$value#',
+    encode: (value) =>
+        value.endsWith('#') ? value.substring(0, value.length - 1) : value,
+  ),
   'accent': colorSchema,
   'colors': Ack.list(colorSchema),
   'customColors': Ack.list(
-    baseColorSchema.transform<Color>((value) => Color(value)),
+    baseColorSchema.codec<Color>(
+      decode: Color.new,
+      encode: (color) => color.value,
+    ),
   ),
   'tagList': Ack.list(
     Ack.string(),
-  ).transform<TagList>((value) => TagList(value)),
+  ).codec<TagList>(decode: TagList.new, encode: (tags) => tags.value),
 });

@@ -1,300 +1,112 @@
-# AckType model-class generation
+# Ack model-class generation
 
-Status: draft implementation for review before validation.
-
-## Goal
-
-Replace the `@AckType()` map-backed extension types with real immutable Dart
-classes. The schema remains the single source of truth for validation, defaults,
-codecs, and boundary serialization.
+`@AckType()` generates immutable Dart classes while the source Ack schema
+remains responsible for validation, defaults, codecs, and serialization.
 
 ```text
-JSON boundary
-    -> Ack parse
-Ack runtime value
-    -> generated runtime mapper
-immutable model
-    -> generated runtime mapper
-Ack runtime value
-    -> Ack encode
-JSON boundary
+boundary input -> Ack parse -> runtime value -> generated model
+generated model -> runtime value -> Ack encode -> boundary output
 ```
 
-The generated class must not implement `Map<String, Object?>` and must not keep a
-backing map as its application data model.
+## Build contract
 
-## Public API
+Each annotated library declares a dedicated part such as
+`part 'user.ack.dart';`. A `PartBuilder` writes that source file and runs before
+`json_serializable`. Libraries using both builders declare both `.ack.dart` and
+`.g.dart`; the outputs aren't combined.
 
-Given:
+The dedicated source output lets later builders resolve Ack-generated model
+classes. Clean-build tests cover same-library and cross-library
+`json_serializable` consumers.
 
-```dart
-@AckType()
-final userSchema = Ack.object({
-  'id': Ack.integer(),
-  'name': Ack.string(),
-  'createdAt': Ack.datetime(),
-});
-```
+## Public model contract
 
-Generate:
+`userSchema` generates `User`. A custom `@AckType(name: 'MemberType')` value is
+used exactly.
 
-```dart
-final class User {
-  User({
-    required this.id,
-    required this.name,
-    required this.createdAt,
-  });
-
-  final int id;
-  final String name;
-  final DateTime createdAt;
-
-  factory User.parse(Object? input);
-  static SchemaResult<User> safeParse(Object? input);
-  factory User.fromMap(Map<String, Object?> map);
-  factory User.fromJson(Map<String, dynamic> json);
-  Map<String, Object?> toMap();
-  Map<String, dynamic> toJson();
-}
-```
-
-`@AckType(name: 'Member')` generates `Member`. The name is exact and no `Type`
-suffix is appended.
-
-## JSON serializable relationship
-
-Ack does not emit `@JsonSerializable` and does not call private
-`json_serializable` generator APIs.
-
-Ack generates the conventional methods itself:
-
-```dart
-factory User.fromJson(Map<String, dynamic> json);
-Map<String, dynamic> toJson();
-```
-
-This lets source classes processed by `json_serializable` treat an Ack model as a
-custom nested type. Actual validation and serialization still run through Ack.
-
-A second hidden generation pass over an Ack-generated class is intentionally not
-part of the architecture. Such a pass would require generated source to be
-resolved and analyzed again, creating builder-ordering and incremental-build
-complexity.
-
-## Build architecture
-
-The generator uses `SharedPartBuilder` with the part ID `ack`.
-
-```text
-source.dart
-  -> source.ack.g.part       Ack fragment in cache
-  -> source.json_serializable.g.part (when present)
-  -> source.g.dart           source_gen combining builder
-```
-
-The generator emits declarations only. `source_gen` owns the header, `part of`
-directive, output combination, and formatting for the target library language
-version.
+Object models have an unchecked public constructor, stored typed fields,
+`parse`, `safeParse`, `fromJson`, `toJson`, `safeToJson`, and a public static
+`$ack` adapter. They don't implement `Map` and don't provide `fromMap` or
+`toMap` aliases. Scalar and collection roots generate value models whose
+`fromJson` and `toJson` signatures use the schema's boundary type.
 
 ## Runtime adapter
 
-`AckModelAdapter<Boundary, Runtime, Model>` connects the source schema to a
-model's generated runtime conversion functions.
+`AckModelAdapter<Boundary, Runtime, Model>` connects a source schema to the
+generated runtime conversion functions. The adapter stores the schema as a
+callback to avoid static initialization cycles and to support schema getters.
 
-The schema is stored as a callback rather than an eager value. This avoids
-static initialization cycles and preserves top-level schema getter behavior.
+Nested conversion calls `Address.$ack.fromRuntime(...)` and
+`Address.$ack.toRuntime(...)`. It never reparses a value that the parent schema
+has already decoded, which matters for `DateTime`, `Uri`, enums, and custom
+codecs.
 
-For nested models, generated code calls:
+Generated roots are non-nullable. Nullable top-level schemas are rejected, and
+the adapter's generic bounds preserve that invariant.
 
-```dart
-Address.$ack.fromRuntime(runtimeMap);
-Address.$ack.toRuntime(address);
-```
+## Normalized graph
 
-It must not call `Address.parse(runtimeMap)`. The parent schema has already
-converted boundary values such as strings into runtime values such as
-`DateTime`, `Uri`, or custom codec outputs. Parsing again would decode codecs
-twice.
+Analysis produces one graph consumed directly by the emitter. Nodes carry:
 
-## Normalized model graph
+- model identity and source location;
+- structural boundary and runtime type references;
+- object, value, and discriminated-union shape;
+- field presence separately from nullability;
+- encode capability and named model references.
 
-The old `FieldInfo` and `ModelInfo` structures combine analyzer state with
-extension-type output details. The replacement graph separates analysis from
-emission.
+All annotated declarations are registered before resolution. Resolution uses
+`unseen`, `visiting`, and `resolved` states: named `Ack.lazy` edges may point to
+a visiting declaration, while ordinary alias cycles fail. Model identity
+includes the library URI and declaration name, so equal names in different
+libraries remain distinct.
 
-A schema identity includes its library URI and declaration name:
+The analyzer uses current `Element`, `PropertyAccessorElement`, and
+`TopLevelVariableElement` APIs. AST inspection is limited to syntax that generic
+`AckSchema<Boundary, Runtime>` types can't express on their own: object fields,
+collection elements, modifiers, codecs, lazy callbacks, and union branches.
 
-```dart
-AckSchemaId(
-  libraryUri: libraryUri,
-  declarationName: declarationName,
-)
-```
+## Field and collection semantics
 
-This prevents collisions between equal declaration names in different
-libraries.
+Required, nullable, optional, and defaulted fields remain distinct. Optional
+null fields are omitted during encoding; required nullable fields encode null.
+Defaulted fields stay required in the unchecked constructor because arbitrary
+schema defaults can't become Dart parameter defaults safely.
 
-The normalized graph represents:
+Every represented list, set, and map is recursively copied into an unmodifiable
+collection. Passthrough objects store unknown values in an unmodifiable
+`additionalProperties` map. Encoding writes additional entries first and
+declared fields second, so unknown data can't replace a declared property.
 
-- object models;
-- value models;
-- discriminated unions;
-- scalar types;
-- external Dart types;
-- generated model references;
-- lists, sets, and maps;
-- input presence separately from nullability;
-- bidirectional versus parse-only encoding capability.
+## Unsupported shapes
 
-The current draft adds this graph next to the existing analyzer. A follow-up
-change will make the analyzer produce it directly and remove output-specific
-string overrides.
+Generation reports a located error for:
 
-## Recursive dependencies
+- one-way `.transform()` calls;
+- nullable roots;
+- `Ack.any()`, `Ack.anyOf()`, and bare `Ack.instance<T>()`;
+- anonymous inline objects and unresolved dynamic schema factories;
+- invalid custom names and namespace/member collisions;
+- cross-library discriminated branches.
 
-Generation must not use topological sorting as a recursion strategy.
+These shapes don't provide the static, bidirectional contract required by an
+immutable generated model. A one-way transform can usually migrate to a custom
+`.codec()` with both decode and encode callbacks.
 
-Resolution uses three states:
+## Emission
 
-```text
-unseen -> visiting -> resolved
-```
+The emitter reads only the normalized graph and uses `code_builder` for
+declarations and type references. Runtime-to-model, model-to-runtime, and
+immutable-copy operations share structural type traversal. Empty objects are
+emitted structurally rather than through comma-sensitive templates.
 
-A declaration is registered before its fields are analyzed. A reference to a
-`visiting` declaration becomes a graph edge. It does not recursively create a
-second copy of the same model.
+Discriminated unions become a sealed base plus final same-library branches.
+The base dispatches by discriminator; each branch has a constant discriminator
+and uses the union's effective branch schema for its adapter.
 
-Dart class declarations can reference each other independent of declaration
-order. Output order should remain stable and follow source declaration order.
+## Validation
 
-`Ack.lazy` needs explicit analyzer support before recursive model generation is
-considered complete.
-
-## Field semantics
-
-Presence and nullability are different:
-
-| Schema state | Model field | Input behavior |
-| --- | --- | --- |
-| required, non-nullable | `required T value` | key required, null rejected |
-| required, nullable | `required T? value` | key required, null accepted |
-| optional, non-nullable | `T? value` | key may be absent, present null rejected |
-| optional, nullable | `T? value` | key may be absent or null |
-| defaulted | usually `required T value` in constructor | parse supplies default |
-
-A plain `T?` cannot preserve the distinction between an absent key and a key
-whose value is explicitly null. The first model release uses canonical output
-and does not add hidden presence bits. Exact three-state preservation can be a
-separate API feature.
-
-## Collections
-
-Generated fields use concrete typed collections and constructor inputs are
-copied to unmodifiable collections.
-
-```dart
-final List<Address> addresses;
-final Set<String> tags;
-final Map<String, Permission> permissions;
-```
-
-Nested model elements convert through their `$ack` adapters.
-
-## Additional properties
-
-Schemas that allow additional properties generate:
-
-```dart
-final Map<String, Object?> additionalProperties;
-```
-
-Encoding merges additional properties first and declared fields second, so an
-extra property cannot replace a declared property.
-
-## One-way transforms
-
-`transform()` is parse-only. `codec()` is bidirectional.
-
-The normalized graph tracks encode capability. Full model generation should
-produce a build error when any field is parse-only:
-
-```text
-Cannot generate toJson for User because field "color" uses a one-way transform.
-Replace transform() with codec().
-```
-
-The current draft emitter does not yet propagate this capability from the AST.
-It is a required validation item before merge.
-
-## Discriminated unions
-
-Generate a sealed hierarchy:
-
-```dart
-sealed class Pet {
-  const Pet();
-}
-
-final class Cat extends Pet {
-  Cat({required this.lives});
-  final int lives;
-  String get kind => 'cat';
-}
-```
-
-Preserve current discriminator checks:
-
-- branches are named and statically resolvable;
-- branches belong to the same library;
-- discriminator literals and enums are compatible;
-- broad or conflicting discriminator schemas fail generation;
-- a branch belongs to only one union base;
-- branch parse operations validate through the union's effective branch.
-
-## Current draft scope
-
-This branch contains the main architecture for review:
-
-- shared-part builder configuration;
-- `AckModelAdapter` runtime bridge;
-- immutable object and value class emitter;
-- sealed discriminated-class emitter;
-- normalized graph types and recursive-resolution states;
-- annotation contract and naming change.
-
-It is intentionally not represented as validated. Remaining work includes:
-
-- migrate all extension-type golden and integration tests;
-- make the analyzer produce the normalized graph directly;
-- add `Ack.lazy` analysis;
-- track defaults and encode capability;
-- complete map value typing;
-- validate import and generated-name collisions;
-- add clean-build `json_serializable` fixtures;
-- run formatting, build, analysis, and runtime tests;
-- remove legacy extension-only documentation and examples;
-- review dependency ranges for the current analyzer/source_gen stack.
-
-## Validation checklist
-
-Before this draft can leave draft status:
-
-```text
-[ ] dart pub get
-[ ] dart format --output=none --set-exit-if-changed .
-[ ] dart analyze --fatal-infos
-[ ] dart test
-[ ] dart run build_runner clean
-[ ] dart run build_runner build --delete-conflicting-outputs
-[ ] example package builds from no generated files
-[ ] nested DateTime/Uri/Duration round trips
-[ ] custom codec round trips
-[ ] direct, prefixed, and re-exported model references
-[ ] self-recursive and mutually-recursive models
-[ ] discriminated branch parse and encode
-[ ] additional-property collision behavior
-[ ] optional, nullable, and defaulted field behavior
-[ ] json_serializable builder coexistence fixture
-[ ] json_serializable custom nested-type fixture
-```
+The generator suite uses real workspace Ack package sources. Process fixtures
+build temporary packages from no generated output, run strict analysis and
+runtime tests, verify current `json_serializable` interoperability, then rebuild
+and compare generated bytes for determinism. The checked example package keeps
+its generated `.ack.dart` files as reviewable fixtures.

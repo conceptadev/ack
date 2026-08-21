@@ -5,19 +5,19 @@ import 'package:test/test.dart';
 void main() {
   group('discriminated generated types with omitted branch discriminators', () {
     test('base parser returns the matching subtype', () {
-      final cat = omitted.PetType.parse({'kind': 'cat', 'lives': 9});
-      final dog = omitted.PetType.parse({'kind': 'dog', 'bark': true});
+      final cat = omitted.Pet.parse({'kind': 'cat', 'lives': 9});
+      final dog = omitted.Pet.parse({'kind': 'dog', 'bark': true});
 
-      expect(cat, isA<omitted.CatType>());
-      expect(dog, isA<omitted.DogType>());
+      expect(cat, isA<omitted.Cat>());
+      expect(dog, isA<omitted.Dog>());
     });
 
     test('subtype parser rejects another valid union branch', () {
-      final result = omitted.CatType.safeParse({'kind': 'dog', 'bark': true});
+      final result = omitted.Cat.safeParse({'kind': 'dog', 'bark': true});
 
       expect(result.isFail, isTrue);
       expect(
-        () => omitted.CatType.parse({'kind': 'dog', 'bark': true}),
+        () => omitted.Cat.parse({'kind': 'dog', 'bark': true}),
         throwsA(anything),
       );
     });
@@ -25,22 +25,19 @@ void main() {
 
   group('discriminated generated types with explicit branch literals', () {
     test('base parser returns the matching subtype', () {
-      final cat = explicit.PetType.parse({'type': 'cat', 'lives': 9});
-      final dog = explicit.PetType.parse({'type': 'dog', 'breed': 'Poodle'});
+      final cat = explicit.Pet.parse({'type': 'cat', 'lives': 9});
+      final dog = explicit.Pet.parse({'type': 'dog', 'breed': 'Poodle'});
 
-      expect(cat, isA<explicit.CatType>());
-      expect(dog, isA<explicit.DogType>());
+      expect(cat, isA<explicit.Cat>());
+      expect(dog, isA<explicit.Dog>());
     });
 
     test('subtype parser rejects another valid union branch', () {
-      final result = explicit.CatType.safeParse({
-        'type': 'dog',
-        'breed': 'Poodle',
-      });
+      final result = explicit.Cat.safeParse({'type': 'dog', 'breed': 'Poodle'});
 
       expect(result.isFail, isTrue);
       expect(
-        () => explicit.CatType.parse({'type': 'dog', 'breed': 'Poodle'}),
+        () => explicit.Cat.parse({'type': 'dog', 'breed': 'Poodle'}),
         throwsA(anything),
       );
     });

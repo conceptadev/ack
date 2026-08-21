@@ -1,0 +1,267 @@
+import 'dart:io';
+
+import 'package:path/path.dart' as p;
+import 'package:test/test.dart';
+
+Future<ProcessResult> _run(Directory directory, List<String> arguments) =>
+    Process.run('dart', arguments, workingDirectory: directory.path);
+
+void _expectSuccess(ProcessResult result, String command) {
+  expect(
+    result.exitCode,
+    0,
+    reason:
+        '$command failed\nSTDOUT:\n${result.stdout}\nSTDERR:\n${result.stderr}',
+  );
+}
+
+void main() {
+  test(
+    'clean generated models compile and preserve the V2 runtime contract',
+    () async {
+      var projectRoot = Directory.current;
+      while (!Directory(
+        p.join(projectRoot.path, 'packages', 'ack_generator'),
+      ).existsSync()) {
+        projectRoot = projectRoot.parent;
+      }
+      final temporary = await Directory.systemTemp.createTemp(
+        'ack_v2_runtime_',
+      );
+      try {
+        Directory(p.join(temporary.path, 'lib')).createSync();
+        Directory(p.join(temporary.path, 'test')).createSync();
+        File(p.join(temporary.path, 'pubspec.yaml')).writeAsStringSync('''
+name: ack_v2_runtime
+publish_to: none
+environment:
+  sdk: '>=3.9.0 <4.0.0'
+dependencies:
+  ack:
+    path: ${p.join(projectRoot.path, 'packages', 'ack')}
+  ack_annotations:
+    path: ${p.join(projectRoot.path, 'packages', 'ack_annotations')}
+dev_dependencies:
+  ack_generator:
+    path: ${p.join(projectRoot.path, 'packages', 'ack_generator')}
+  build_runner: ^2.15.0
+  test: ^1.29.0
+dependency_overrides:
+  ack:
+    path: ${p.join(projectRoot.path, 'packages', 'ack')}
+  ack_annotations:
+    path: ${p.join(projectRoot.path, 'packages', 'ack_annotations')}
+''');
+        File(p.join(temporary.path, 'lib', 'models.dart')).writeAsStringSync(
+          r'''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+part 'models.ack.dart';
+
+final class Box {
+  const Box(this.values);
+  final List<String> values;
+}
+
+final class RuntimeUser {
+  const RuntimeUser(this.name);
+  final String name;
+}
+
+@AckType(name: 'UserRecord')
+final userRecordSchema = Ack.object({
+  'name': Ack.string(),
+}).codec<RuntimeUser>(
+  decode: (value) => RuntimeUser(value['name'] as String),
+  encode: (user) => {'name': user.name},
+);
+
+@AckType()
+final AckSchema<JsonMap, JsonMap> nodeSchema = Ack.object({
+  'label': Ack.string(),
+  'children': Ack.list(
+    Ack.lazy('node', () => nodeSchema),
+  ).optional(),
+});
+
+@AckType()
+final AckSchema<JsonMap, JsonMap> authorSchema = Ack.object({
+  'books': Ack.list(Ack.lazy('book', () => bookSchema)),
+});
+
+@AckType()
+final AckSchema<JsonMap, JsonMap> bookSchema = Ack.object({
+  'title': Ack.string(),
+  'author': Ack.lazy('author', () => authorSchema).optional(),
+});
+
+@AckType()
+final extrasSchema = Ack.object({
+  'name': Ack.string(),
+  'maybe': Ack.string().nullable(),
+  'nickname': Ack.string().optional(),
+  'role': Ack.string().withDefault('member'),
+  'numbers': Ack.list(Ack.list(Ack.integer())),
+  'box': Ack.list(Ack.string()).codec<Box>(
+    decode: Box.new,
+    encode: (box) => box.values,
+  ),
+}).passthrough();
+
+@AckType()
+final catSchema = Ack.object({'lives': Ack.integer()});
+
+@AckType()
+final dogSchema = Ack.object({'friendly': Ack.boolean()});
+
+@AckType()
+final petSchema = Ack.discriminated(
+  discriminatorKey: 'kind',
+  schemas: {'cat': catSchema, 'dog': dogSchema},
+);
+
+@AckType(name: 'MemberType')
+final memberSchema = Ack.string();
+''',
+        );
+        File(p.join(temporary.path, 'lib', 'address.dart')).writeAsStringSync(
+          r'''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+part 'address.ack.dart';
+
+@AckType()
+final addressSchema = Ack.object({'city': Ack.string()});
+''',
+        );
+        File(
+          p.join(temporary.path, 'lib', 'exports.dart'),
+        ).writeAsStringSync("export 'address.dart';\n");
+        File(p.join(temporary.path, 'lib', 'person.dart')).writeAsStringSync(
+          r'''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+import 'address.dart' as direct;
+import 'exports.dart' as exported;
+
+part 'person.ack.dart';
+
+@AckType()
+final personSchema = Ack.object({
+  'home': direct.addressSchema,
+  'history': Ack.list(exported.addressSchema),
+});
+''',
+        );
+        File(
+          p.join(temporary.path, 'test', 'runtime_test.dart'),
+        ).writeAsStringSync(r'''
+import 'package:ack_v2_runtime/models.dart';
+import 'package:ack_v2_runtime/person.dart';
+import 'package:test/test.dart';
+
+void main() {
+  test('recursion and imported model references round-trip', () {
+    final node = Node.parse({
+      'label': 'root',
+      'children': [
+        {'label': 'leaf'},
+      ],
+    });
+    expect(node.children!.single, isA<Node>());
+    expect(node.toJson(), {
+      'label': 'root',
+      'children': [
+        {'label': 'leaf'},
+      ],
+    });
+    expect(() => node.children!.add(Node(label: 'other')), throwsUnsupportedError);
+
+    final author = Author.parse({
+      'books': [
+        {'title': 'Ack'},
+      ],
+    });
+    expect(author.books.single, isA<Book>());
+    expect(author.books.single.author, isNull);
+
+    final person = Person.parse({
+      'home': {'city': 'New York'},
+      'history': [
+        {'city': 'Amsterdam'},
+      ],
+    });
+    expect(person.home.city, 'New York');
+    expect(person.history.single.city, 'Amsterdam');
+  });
+
+  test('field semantics, codecs, and recursive immutability hold', () {
+    final extras = Extras.parse({
+      'name': 'Ada',
+      'maybe': null,
+      'numbers': [
+        [1, 2],
+      ],
+      'box': ['a', 'b'],
+      'dynamic': {
+        'items': [1, 2],
+      },
+    });
+    expect(extras.role, 'member');
+    expect(extras.nickname, isNull);
+    expect(extras.box.values, ['a', 'b']);
+    expect(() => extras.numbers.single.add(3), throwsUnsupportedError);
+    final dynamic = extras.additionalProperties['dynamic']! as Map;
+    expect(() => (dynamic['items']! as List).add(3), throwsUnsupportedError);
+
+    final constructed = Extras(
+      name: 'declared',
+      maybe: null,
+      role: 'member',
+      numbers: const [
+        [1],
+      ],
+      box: const Box(['x']),
+      additionalProperties: const {'name': 'extra'},
+    );
+    expect(constructed.toJson()['name'], 'declared');
+    expect(constructed.toJson().containsKey('nickname'), isFalse);
+    expect(constructed.toJson()['maybe'], isNull);
+  });
+
+  test('unions and exact value-root names round-trip', () {
+    final pet = Pet.parse({'kind': 'cat', 'lives': 9});
+    expect(pet, isA<Cat>());
+    expect(pet.toJson(), {'kind': 'cat', 'lives': 9});
+
+    final member = MemberType.parse('admin');
+    expect(member.value, 'admin');
+    expect(member.toJson(), 'admin');
+
+    final user = UserRecord.parse({'name': 'Ada'});
+    expect(user.value.name, 'Ada');
+    expect(user.toJson(), {'name': 'Ada'});
+  });
+}
+''');
+
+        _expectSuccess(await _run(temporary, ['pub', 'get']), 'dart pub get');
+        _expectSuccess(
+          await _run(temporary, ['run', 'build_runner', 'build']),
+          'build_runner build',
+        );
+        _expectSuccess(
+          await _run(temporary, ['analyze', '--fatal-infos']),
+          'dart analyze --fatal-infos',
+        );
+        _expectSuccess(await _run(temporary, ['test']), 'dart test');
+      } finally {
+        temporary.deleteSync(recursive: true);
+      }
+    },
+    timeout: const Timeout(Duration(minutes: 3)),
+  );
+}

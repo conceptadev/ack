@@ -39,9 +39,9 @@ void main() {
       expect(result.isFail, isTrue);
     });
 
-    test('ColorType parse works', () {
-      final color = ColorType.parse('#00FF00');
-      expect(color.toString(), '#00FF00');
+    test('Color parse works', () {
+      final color = ColorModel.parse('#00FF00');
+      expect(color.value.toString(), '#00FF00');
     });
   });
 
@@ -57,7 +57,7 @@ void main() {
     test('parses profile without optional website', () {
       final result = profileSchema.safeParse({'bio': 'Hello world'});
       expect(result.isOk, isTrue);
-      final profile = ProfileType.parse({'bio': 'Hello world'});
+      final profile = Profile.parse({'bio': 'Hello world'});
       expect(profile.bio, 'Hello world');
       expect(profile.website, isNull);
     });
@@ -101,68 +101,68 @@ void main() {
       expect(result.isFail, isTrue);
     });
 
-    test('PetType.parse dispatches to CatType', () {
-      final pet = PetType.parse({'type': 'cat', 'lives': 9});
+    test('Pet.parse dispatches to Cat', () {
+      final pet = Pet.parse({'type': 'cat', 'lives': 9});
       expect(pet.type, 'cat');
-      final cat = pet as CatType;
+      final cat = pet as Cat;
       expect(cat.lives, 9);
     });
 
-    test('PetType.parse dispatches to DogType', () {
-      final pet = PetType.parse({'type': 'dog', 'breed': 'Poodle'});
+    test('Pet.parse dispatches to Dog', () {
+      final pet = Pet.parse({'type': 'dog', 'breed': 'Poodle'});
       expect(pet.type, 'dog');
-      final dog = pet as DogType;
+      final dog = pet as Dog;
       expect(dog.breed, 'Poodle');
     });
   });
 
   group('UserWithColorSchema', () {
     test('parses valid data with all fields', () {
-      final user = UserWithColorType.parse(_validData());
+      final user = UserWithColor.parse(_validData());
       expect(user.firstName, 'Leo');
       expect(user.lastName, 'Farias');
       expect(user.age, 30);
       expect(user.profile.bio, 'Software engineer');
       expect(user.profile.website, Uri.parse('https://example.com'));
-      expect(user.color.toString(), '#FF5733');
+      expect(user.color.value.toString(), '#FF5733');
       expect(user.pet.type, 'cat');
       expect(user.pets.length, 2);
     });
 
     test('firstName validation - rejects empty', () {
       final data = _validData()..['firstName'] = '';
-      final result = UserWithColorType.safeParse(data);
+      final result = UserWithColor.safeParse(data);
       expect(result.isFail, isTrue);
     });
 
     test('lastName validation - rejects too long', () {
       final data = _validData()..['lastName'] = 'A' * 51;
-      final result = UserWithColorType.safeParse(data);
+      final result = UserWithColor.safeParse(data);
       expect(result.isFail, isTrue);
     });
 
     test('age validation - rejects negative', () {
       final data = _validData()..['age'] = -1;
-      final result = UserWithColorType.safeParse(data);
+      final result = UserWithColor.safeParse(data);
       expect(result.isFail, isTrue);
     });
 
     test('age validation - rejects over 150', () {
       final data = _validData()..['age'] = 151;
-      final result = UserWithColorType.safeParse(data);
+      final result = UserWithColor.safeParse(data);
       expect(result.isFail, isTrue);
     });
 
     test('color validation - rejects invalid hex', () {
       final data = _validData()..['color'] = 'red';
-      final result = UserWithColorType.safeParse(data);
+      final result = UserWithColor.safeParse(data);
       expect(result.isFail, isTrue);
     });
   });
 
   group('Object-level refine (firstName != lastName)', () {
     test('accepts when firstName and lastName differ', () {
-      final result = UserWithColorType.safeParse(_validData());
+      final result = UserWithColor.safeParse(_validData());
       expect(result.isOk, isTrue);
     });
 
@@ -170,73 +170,73 @@ void main() {
       final data = _validData()
         ..['firstName'] = 'Same'
         ..['lastName'] = 'Same';
-      final result = UserWithColorType.safeParse(data);
+      final result = UserWithColor.safeParse(data);
       expect(result.isFail, isTrue);
     });
   });
 
-  group('Optional transformed schema (favoriteColor)', () {
+  group('Optional codec schema (favoriteColor)', () {
     test('omitted favoriteColor returns null', () {
-      final user = UserWithColorType.parse(_validData());
+      final user = UserWithColor.parse(_validData());
       expect(user.favoriteColor, isNull);
     });
 
     test('provided favoriteColor parses correctly', () {
       final data = _validData()..['favoriteColor'] = '#00FF00';
-      final user = UserWithColorType.parse(data);
+      final user = UserWithColor.parse(data);
       expect(user.favoriteColor, isNotNull);
-      expect(user.favoriteColor.toString(), '#00FF00');
+      expect(user.favoriteColor?.value.toString(), '#00FF00');
     });
 
     test('invalid favoriteColor fails validation', () {
       final data = _validData()..['favoriteColor'] = 'bad';
-      final result = UserWithColorType.safeParse(data);
+      final result = UserWithColor.safeParse(data);
       expect(result.isFail, isTrue);
     });
   });
 
   group('Nested discriminated type (pet)', () {
     test('accesses nested cat fields via cast', () {
-      final user = UserWithColorType.parse(_validData());
+      final user = UserWithColor.parse(_validData());
       expect(user.pet.type, 'cat');
-      final cat = user.pet as CatType;
+      final cat = user.pet as Cat;
       expect(cat.lives, 7);
     });
 
     test('nested dog in pet field', () {
       final data = _validData()..['pet'] = {'type': 'dog', 'breed': 'Husky'};
-      final user = UserWithColorType.parse(data);
+      final user = UserWithColor.parse(data);
       expect(user.pet.type, 'dog');
-      final dog = user.pet as DogType;
+      final dog = user.pet as Dog;
       expect(dog.breed, 'Husky');
     });
 
     test('rejects invalid nested pet', () {
       final data = _validData()..['pet'] = {'type': 'fish'};
-      final result = UserWithColorType.safeParse(data);
+      final result = UserWithColor.safeParse(data);
       expect(result.isFail, isTrue);
     });
   });
 
   group('List of discriminated types (pets)', () {
     test('parses list with mixed pet types', () {
-      final user = UserWithColorType.parse(_validData());
+      final user = UserWithColor.parse(_validData());
       expect(user.pets.length, 2);
       expect(user.pets[0].type, 'cat');
       expect(user.pets[1].type, 'dog');
     });
 
     test('can cast list elements to subtypes', () {
-      final user = UserWithColorType.parse(_validData());
-      final cat = user.pets[0] as CatType;
+      final user = UserWithColor.parse(_validData());
+      final cat = user.pets[0] as Cat;
       expect(cat.lives, 9);
-      final dog = user.pets[1] as DogType;
+      final dog = user.pets[1] as Dog;
       expect(dog.breed, 'Labrador');
     });
 
     test('empty pets list is valid', () {
       final data = _validData()..['pets'] = [];
-      final user = UserWithColorType.parse(data);
+      final user = UserWithColor.parse(data);
       expect(user.pets, isEmpty);
     });
 
@@ -245,7 +245,7 @@ void main() {
         ..['pets'] = [
           {'type': 'cat', 'lives': 0}, // lives min is 1
         ];
-      final result = UserWithColorType.safeParse(data);
+      final result = UserWithColor.safeParse(data);
       expect(result.isFail, isTrue);
     });
   });

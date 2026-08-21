@@ -1,3 +1,10 @@
+## Unreleased
+
+### Added
+
+* Add `AckModelAdapter` as the non-nullable runtime bridge used by generated
+  immutable Ack models.
+
 ## 1.1.0
 
 ### Fixed

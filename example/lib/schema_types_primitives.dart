@@ -1,10 +1,10 @@
 import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
-part 'schema_types_primitives.g.dart';
+part 'schema_types_primitives.ack.dart';
 
-// Note: Primitive schemas generate extension types, but you can still use
-// the schema directly via parse() or safeParse().
+// Primitive schemas generate immutable value models while the schema remains
+// available directly for parse() and safeParse().
 
 /// Test primitive schema types with @AckType
 
@@ -38,7 +38,7 @@ final tagsSchema = Ack.list(Ack.string());
 final scoresSchema = Ack.list(Ack.integer());
 
 // Literal schema
-@AckType()
+@AckType(name: 'StatusLiteral')
 final statusSchema = Ack.literal('active');
 
 // String enum schema
@@ -46,7 +46,7 @@ final statusSchema = Ack.literal('active');
 final roleSchema = Ack.enumString(['admin', 'user', 'guest']);
 
 // EnumValues schemas
-@AckType()
+@AckType(name: 'UserRoleModel')
 final userRoleSchema = Ack.enumValues(UserRole.values);
 
 @AckType()
@@ -56,7 +56,6 @@ final statusEnumSchema = Ack.enumValues(Status.values);
 @AckType()
 final optionalStatusSchema = Ack.literal('active').optional();
 
-@AckType()
 final nullableRoleSchema = Ack.enumString(['admin', 'user']).nullable();
 
 @AckType()
@@ -64,7 +63,6 @@ final defaultedEnumSchema = Ack.enumValues(
   UserRole.values,
 ).withDefault(UserRole.guest);
 
-@AckType()
 final optionalNullableLiteralSchema = Ack.literal(
   'pending',
 ).optional().nullable();

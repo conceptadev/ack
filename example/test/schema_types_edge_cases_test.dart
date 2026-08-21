@@ -5,7 +5,7 @@ import 'package:ack_example/schema_types_edge_cases.dart';
 void main() {
   group('Edge case schema examples', () {
     test('typed list extraction keeps element types', () {
-      final product = ProductType.parse({
+      final product = Product.parse({
         'name': 'Widget',
         'tags': ['sale', 'featured'],
         'scores': [1, 2, 3],
@@ -17,8 +17,8 @@ void main() {
       expect(product.flags, everyElement(isA<bool>()));
     });
 
-    test('nested schema references produce typed nested wrappers', () {
-      final employee = EmployeeType.parse({
+    test('nested schema references produce typed nested models', () {
+      final employee = Employee.parse({
         'name': 'Leo',
         'employeeId': 'EMP-1',
         'homeAddress': {
@@ -35,13 +35,13 @@ void main() {
         },
       });
 
-      expect(employee.homeAddress, isA<AddressType>());
+      expect(employee.homeAddress, isA<Address>());
       expect(employee.homeAddress.city, 'Miami');
       expect(employee.workAddress.street, '200 Market St');
     });
 
     test('optional and nullable fields are surfaced as nullable getters', () {
-      final modifier = ModifierType.parse({
+      final modifier = Modifier.parse({
         'requiredField': 'value',
         'nullableField': null,
         'nullableOptional': null,
@@ -55,17 +55,17 @@ void main() {
     });
 
     test('empty and minimal schemas still parse', () {
-      final empty = EmptyType.parse({});
-      final minimal = MinimalType.parse({'id': 'abc-123'});
+      final empty = Empty.parse({});
+      final minimal = Minimal.parse({'id': 'abc-123'});
 
-      expect(empty, isEmpty);
+      expect(empty.toJson(), isEmpty);
       expect(minimal.id, 'abc-123');
     });
 
-    test('naming variations generate the expected type wrappers', () {
-      final named = NamedItemType.parse({'name': 'named'});
-      final itemValue = ItemType.parse({'id': 'item-1'});
-      final custom = MyCustomSchema123Type.parse({'value': 'custom'});
+    test('naming variations generate the expected model classes', () {
+      final named = NamedItem.parse({'name': 'named'});
+      final itemValue = Item.parse({'id': 'item-1'});
+      final custom = MyCustomSchema123.parse({'value': 'custom'});
 
       expect(named.name, 'named');
       expect(itemValue.id, 'item-1');

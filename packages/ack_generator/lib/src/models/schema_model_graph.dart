@@ -1,9 +1,6 @@
 /// Stable identity for a schema declaration across libraries.
 final class AckSchemaId {
-  const AckSchemaId({
-    required this.libraryUri,
-    required this.declarationName,
-  });
+  const AckSchemaId({required this.libraryUri, required this.declarationName});
 
   final Uri libraryUri;
   final String declarationName;
@@ -24,20 +21,13 @@ final class AckSchemaId {
 
 /// Whether every value in a generated model graph can be encoded back to the
 /// schema boundary.
-enum AckEncodeCapability {
-  bidirectional,
-  parseOnly,
-}
+enum AckEncodeCapability { bidirectional, parseOnly }
 
 /// Input-presence semantics for an object field.
 ///
 /// Presence and nullability are deliberately separate. A field can be required
 /// and nullable, optional and non-nullable, or defaulted by the schema.
-enum AckFieldPresence {
-  required,
-  optional,
-  defaulted,
-}
+enum AckFieldPresence { required, optional, defaulted }
 
 /// A normalized Dart/runtime type used by generation.
 ///
@@ -47,6 +37,16 @@ sealed class AckTypeRef {
   const AckTypeRef();
 
   Iterable<AckSchemaId> get modelDependencies => const [];
+}
+
+/// A nullable structural type reference.
+final class AckNullableTypeRef extends AckTypeRef {
+  const AckNullableTypeRef(this.inner);
+
+  final AckTypeRef inner;
+
+  @override
+  Iterable<AckSchemaId> get modelDependencies => inner.modelDependencies;
 }
 
 /// A core scalar such as `String`, `int`, `double`, `bool`, or `num`.
@@ -59,18 +59,27 @@ final class AckScalarTypeRef extends AckTypeRef {
 /// A visible type declared outside the generated model graph.
 final class AckExternalTypeRef extends AckTypeRef {
   const AckExternalTypeRef({
-    required this.dartType,
+    required this.name,
     required this.libraryUri,
     this.importPrefix,
+    this.typeArguments = const [],
   });
 
-  final String dartType;
+  final String name;
   final Uri libraryUri;
   final String? importPrefix;
+  final List<AckTypeRef> typeArguments;
 
   String get visibleName {
     final prefix = importPrefix;
-    return prefix == null || prefix.isEmpty ? dartType : '$prefix.$dartType';
+    return prefix == null || prefix.isEmpty ? name : '$prefix.$name';
+  }
+
+  @override
+  Iterable<AckSchemaId> get modelDependencies sync* {
+    for (final argument in typeArguments) {
+      yield* argument.modelDependencies;
+    }
   }
 }
 
@@ -79,11 +88,13 @@ final class AckModelTypeRef extends AckTypeRef {
   const AckModelTypeRef({
     required this.schemaId,
     required this.className,
+    required this.runtimeRef,
     this.importPrefix,
   });
 
   final AckSchemaId schemaId;
   final String className;
+  final AckTypeRef runtimeRef;
   final String? importPrefix;
 
   String get visibleName {
@@ -101,8 +112,7 @@ final class AckListTypeRef extends AckTypeRef {
   final AckTypeRef elementType;
 
   @override
-  Iterable<AckSchemaId> get modelDependencies =>
-      elementType.modelDependencies;
+  Iterable<AckSchemaId> get modelDependencies => elementType.modelDependencies;
 }
 
 final class AckSetTypeRef extends AckTypeRef {
@@ -111,8 +121,7 @@ final class AckSetTypeRef extends AckTypeRef {
   final AckTypeRef elementType;
 
   @override
-  Iterable<AckSchemaId> get modelDependencies =>
-      elementType.modelDependencies;
+  Iterable<AckSchemaId> get modelDependencies => elementType.modelDependencies;
 }
 
 final class AckMapTypeRef extends AckTypeRef {
@@ -131,7 +140,7 @@ final class AckFieldNode {
     required this.jsonKey,
     required this.presence,
     required this.nullable,
-    required this.runtimeType,
+    required this.runtimeRef,
     this.description,
   });
 
@@ -139,10 +148,23 @@ final class AckFieldNode {
   final String jsonKey;
   final AckFieldPresence presence;
   final bool nullable;
-  final AckTypeRef runtimeType;
+  final AckTypeRef runtimeRef;
   final String? description;
 
-  bool get isRequired => presence == AckFieldPresence.required;
+  bool get isRequired => presence != AckFieldPresence.optional;
+}
+
+/// Stable source position for diagnostics without leaking analyzer objects.
+final class AckSourceLocation {
+  const AckSourceLocation({
+    required this.libraryUri,
+    required this.offset,
+    required this.length,
+  });
+
+  final Uri libraryUri;
+  final int offset;
+  final int length;
 }
 
 /// Base node for a generated class or value object.
@@ -151,16 +173,18 @@ sealed class AckModelNode {
     required this.id,
     required this.className,
     required this.boundaryType,
-    required this.runtimeType,
+    required this.runtimeRef,
     required this.encodeCapability,
+    required this.sourceLocation,
     this.description,
   });
 
   final AckSchemaId id;
   final String className;
   final AckTypeRef boundaryType;
-  final AckTypeRef runtimeType;
+  final AckTypeRef runtimeRef;
   final AckEncodeCapability encodeCapability;
+  final AckSourceLocation sourceLocation;
   final String? description;
 
   Iterable<AckSchemaId> get dependencies;
@@ -172,20 +196,27 @@ final class AckObjectModelNode extends AckModelNode {
     required super.id,
     required super.className,
     required super.boundaryType,
-    required super.runtimeType,
+    required super.runtimeRef,
     required super.encodeCapability,
+    required super.sourceLocation,
     required Iterable<AckFieldNode> fields,
     this.additionalProperties = false,
+    this.unionId,
+    this.discriminatorKey,
+    this.discriminatorValue,
     super.description,
   }) : fields = List.unmodifiable(fields);
 
   final List<AckFieldNode> fields;
   final bool additionalProperties;
+  final AckSchemaId? unionId;
+  final String? discriminatorKey;
+  final String? discriminatorValue;
 
   @override
   Iterable<AckSchemaId> get dependencies sync* {
     for (final field in fields) {
-      yield* field.runtimeType.modelDependencies;
+      yield* field.runtimeRef.modelDependencies;
     }
   }
 }
@@ -196,13 +227,14 @@ final class AckValueModelNode extends AckModelNode {
     required super.id,
     required super.className,
     required super.boundaryType,
-    required super.runtimeType,
+    required super.runtimeRef,
     required super.encodeCapability,
+    required super.sourceLocation,
     super.description,
   });
 
   @override
-  Iterable<AckSchemaId> get dependencies => runtimeType.modelDependencies;
+  Iterable<AckSchemaId> get dependencies => runtimeRef.modelDependencies;
 }
 
 /// A sealed class generated from `Ack.discriminated(...)`.
@@ -211,8 +243,9 @@ final class AckUnionModelNode extends AckModelNode {
     required super.id,
     required super.className,
     required super.boundaryType,
-    required super.runtimeType,
+    required super.runtimeRef,
     required super.encodeCapability,
+    required super.sourceLocation,
     required this.discriminatorKey,
     required Map<String, AckSchemaId> branches,
     super.description,
@@ -226,11 +259,7 @@ final class AckUnionModelNode extends AckModelNode {
 }
 
 /// Resolution state used while building recursive model graphs.
-enum AckResolutionState {
-  unseen,
-  visiting,
-  resolved,
-}
+enum AckResolutionState { unseen, visiting, resolved }
 
 /// Mutable graph assembly with immutable model nodes.
 ///
@@ -275,6 +304,15 @@ final class AckModelGraph {
   }
 
   AckModelNode? nodeFor(AckSchemaId id) => _nodes[id];
+
+  void replace(AckModelNode node) {
+    if (stateOf(node.id) != AckResolutionState.resolved) {
+      throw StateError(
+        'Schema ${node.id} must be resolved before replacement.',
+      );
+    }
+    _nodes[node.id] = node;
+  }
 
   /// Returns source-stable dependencies for diagnostics and tests.
   List<AckSchemaId> dependenciesOf(AckSchemaId id) {

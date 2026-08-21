@@ -264,7 +264,7 @@ Schema reference for recursive object graphs.
 
 ## Code generation annotations
 
-Use the [`ack_generator`](https://pub.dev/packages/ack_generator) builder to turn annotations into extension types. After adding the annotations below, run:
+Use the [`ack_generator`](https://pub.dev/packages/ack_generator) builder to turn annotated top-level schemas into immutable model classes. After adding the annotation and a matching `.ack.dart` part directive, run:
 
 ```bash
 dart run build_runner build
@@ -274,18 +274,18 @@ dart run build_runner build
 
 **Target**: Schema variables and getters
 
-**Generates**: An extension type wrapper around the existing schema
+**Generates**: An immutable model class backed by the existing schema
 
-Annotate a schema variable or getter to generate an extension type wrapper. The schema stays in your source file.
+Annotate a top-level schema variable or getter. The schema stays in your source file and remains responsible for validation and codecs.
 
 **Supported schema types:**
-- `Ack.object({...})` → Object extension types
+- `Ack.object({...})` → immutable object models
 - Primitives: `Ack.string()`, `Ack.integer()`, `Ack.double()`, `Ack.boolean()`
-- Collections: `Ack.list(...)`
+- Collections: `Ack.list(...)`, typed sets and maps
 - Enums: `Ack.literal()`, `Ack.enumString()`, `Ack.enumValues()`
 - Discriminated unions: `Ack.discriminated(...)`
 
-**Unsupported:** `Ack.any()`, `Ack.anyOf()`
+**Unsupported:** nullable roots, one-way transforms, `Ack.any()`, `Ack.anyOf()`, bare `Ack.instance<T>()`, and anonymous inline objects
 
 For `Ack.discriminated(...)` constraints with `@AckType`, see
 [Type-safe Schemas](../core-concepts/typesafe-schemas.mdx#discriminated-schemas).
@@ -299,13 +299,14 @@ final userSchema = Ack.object({
 });
 
 // Generated:
-// - extension type UserType(Map<String, Object?> _data) { ... }
+// - final class User { ... }
 // - The schema variable remains unchanged
 
 // Usage:
-final user = UserType.parse({'name': 'Alice', 'email': 'alice@example.com'});
+final user = User.parse({'name': 'Alice', 'email': 'alice@example.com'});
 print(user.name);  // Type-safe String access
 print(user.email); // Type-safe String access
+print(user.toJson());
 ```
 
 ### `EnumSchema<T>`

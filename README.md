@@ -22,7 +22,7 @@ This repository is a monorepo containing:
 
 - **[ack](./packages/ack)**: Core validation library with a fluent schema-building API, codecs, and JSON Schema export
 - **[ack_annotations](./packages/ack_annotations)**: The `@AckType()` annotation that marks schemas for code generation
-- **[ack_generator](./packages/ack_generator)**: Code generator that turns `@AckType()` schemas into type-safe extension types
+- **[ack_generator](./packages/ack_generator)**: Code generator that turns `@AckType()` schemas into immutable model classes
 - **[ack_firebase_ai](./packages/ack_firebase_ai)**: Firebase AI (Gemini) schema converter for structured-output generation
 - **[ack_json_schema_builder](./packages/ack_json_schema_builder)**: Converter to `json_schema_builder` schemas
 - **[example](./example)**: Example projects demonstrating usage of all packages
@@ -120,7 +120,7 @@ if (result.isOk) {
 
 ## Code generation
 
-Generate type-safe wrappers for hand-written schemas with `@AckType()`. Add
+Generate immutable models for hand-written schemas with `@AckType()`. Add
 `ack_annotations` to `dependencies` and `ack_generator` + `build_runner` to
 `dev_dependencies`, then annotate a top-level schema:
 
@@ -128,7 +128,7 @@ Generate type-safe wrappers for hand-written schemas with `@AckType()`. Add
 import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
-part 'user.g.dart';
+part 'user.ack.dart';
 
 @AckType()
 final userSchema = Ack.object({
@@ -143,15 +143,18 @@ Run the generator:
 dart run build_runner build
 ```
 
-This emits a `UserType` extension type with `parse`/`safeParse` and typed
-getters — no manual casting:
+This emits a `User` class with stored typed fields, validation helpers, and a
+JSON boundary:
 
 ```dart
-final user = UserType.parse({'name': 'Alice', 'email': 'alice@example.com'});
-print(user.name); // typed String getter
+final user = User.parse({'name': 'Alice', 'email': 'alice@example.com'});
+print(user.name);     // String
+print(user.toJson()); // {'name': 'Alice', 'email': 'alice@example.com'}
 ```
 
-`@AckType()` supports objects, primitives, lists, enums, explicit transforms, and discriminated unions. See the [TypeSafe Schemas guide](https://docs.page/btwld/ack/core-concepts/typesafe-schemas).
+`@AckType()` supports objects, primitives, lists, enums, bidirectional codecs,
+named recursion, and discriminated unions. One-way transforms are rejected
+because a generated model must be encodable. See the [TypeSafe Schemas guide](https://docs.page/btwld/ack/core-concepts/typesafe-schemas).
 
 ## Codecs
 

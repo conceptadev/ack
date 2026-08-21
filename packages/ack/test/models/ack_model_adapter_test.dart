@@ -1,10 +1,7 @@
 import 'package:ack/ack.dart';
 import 'package:test/test.dart';
 
-final _userSchema = Ack.object({
-  'name': Ack.string(),
-  'age': Ack.integer(),
-});
+final _userSchema = Ack.object({'name': Ack.string(), 'age': Ack.integer()});
 
 final _userAdapter = AckModelAdapter<JsonMap, JsonMap, _User>(
   schema: () => _userSchema,
@@ -19,10 +16,7 @@ final class _User {
   final int age;
 
   static _User fromRuntime(JsonMap value) {
-    return _User(
-      name: value['name'] as String,
-      age: value['age'] as int,
-    );
+    return _User(name: value['name'] as String, age: value['age'] as int);
   }
 
   JsonMap toRuntime() => {'name': name, 'age': age};
@@ -38,9 +32,7 @@ void main() {
     });
 
     test('encodes a model through the source schema', () {
-      final encoded = _userAdapter.encode(
-        const _User(name: 'Ada', age: 36),
-      );
+      final encoded = _userAdapter.encode(const _User(name: 'Ada', age: 36));
 
       expect(encoded, {'name': 'Ada', 'age': 36});
     });

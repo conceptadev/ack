@@ -84,18 +84,18 @@ if (result.isOk) {
 }
 ```
 
-## Parsing JSON into typed wrappers
+## Parsing JSON into generated models
 
-Once a schema is annotated with `@AckType()` (see [TypeSafe Schemas](./typesafe-schemas.mdx) for setup), parse JSON straight into typed getters — no manual casting:
+Once a schema is annotated with `@AckType()` (see [TypeSafe Schemas](./typesafe-schemas.mdx) for setup), parse JSON into a generated immutable model:
 
 ```dart
 import 'dart:convert';
 
 final jsonData = jsonDecode('{"name": "Alice", "email": "alice@example.com"}');
-final result = UserType.safeParse(jsonData);
+final result = User.safeParse(jsonData);
 
 if (result.isOk) {
-  final user = result.getOrThrow()!;
+  final user = result.getOrThrow();
   print(user.name);  // typed String
   print(user.email); // typed String?
 }

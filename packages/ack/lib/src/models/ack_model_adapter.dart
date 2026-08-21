@@ -60,21 +60,11 @@ final class AckModelAdapter<
 
   /// Encodes a generated model to its boundary representation.
   Boundary encode(Model value, {String? debugName}) {
-    return schema.encode(
-          _toRuntime(value),
-          debugName: debugName,
-        )
-        as Boundary;
+    return schema.encode(_toRuntime(value), debugName: debugName) as Boundary;
   }
 
   /// Safely encodes a generated model to its boundary representation.
-  SchemaResult<Boundary> safeEncode(
-    Model value, {
-    String? debugName,
-  }) {
-    return schema.safeEncode(
-      _toRuntime(value),
-      debugName: debugName,
-    );
+  SchemaResult<Boundary> safeEncode(Model value, {String? debugName}) {
+    return schema.safeEncode(_toRuntime(value), debugName: debugName);
   }
 }

@@ -12,8 +12,10 @@ import 'package:meta/meta_meta.dart';
 /// });
 /// ```
 ///
-/// `ack_generator` emits a real Dart class with stored typed fields plus
-/// `parse`, `safeParse`, `fromMap`, `fromJson`, `toMap`, and `toJson` APIs.
+/// The declaring library must include its dedicated generated part, for
+/// example `part 'user.ack.dart';`. `ack_generator` emits a real Dart class
+/// with stored typed fields plus `parse`, `safeParse`, `fromJson`, `toJson`,
+/// `safeToJson`, and a public static `$ack` adapter.
 /// Ack remains responsible for validation and codec-aware serialization.
 ///
 /// Supported targets:
@@ -41,7 +43,7 @@ class AckType {
 
   /// Creates an annotation for immutable Ack model generation.
   ///
-  /// [name] must be a valid Dart class identifier. Do not add a `Type` suffix
-  /// unless it is intentionally part of the public model name.
+  /// [name] must be an unchanged UpperCamelCase Dart identifier. It is used
+  /// exactly; a `Type` suffix is retained when intentionally supplied.
   const AckType({this.name});
 }

@@ -1,7 +1,7 @@
 import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
-part 'schema_types_simple.g.dart';
+part 'schema_types_simple.ack.dart';
 
 /// Simple example: Basic primitives
 @AckType()

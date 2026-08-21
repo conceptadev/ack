@@ -1,19 +1,15 @@
 # Ack Generator
 
-`ack_generator` generates immutable Dart model classes from top-level Ack
-schemas annotated with `@AckType()`.
+`ack_generator` turns top-level Ack schemas annotated with `@AckType()` into
+immutable Dart model classes.
 
-> This branch contains a draft class-generation rewrite. See
-> [`docs/architecture/acktype-model-generation.md`](../../docs/architecture/acktype-model-generation.md)
-> for design decisions, known gaps, and the validation checklist.
-
-## Overview
+## Usage
 
 ```dart
 import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
-part 'user_schema.g.dart';
+part 'user_schema.ack.dart';
 
 @AckType()
 final userSchema = Ack.object({
@@ -22,91 +18,72 @@ final userSchema = Ack.object({
 });
 ```
 
-Running `dart run build_runner build` generates a real class:
+Run `dart run build_runner build`. A declaration ending in `Schema` loses that
+suffix, so `userSchema` generates `User`:
 
 ```dart
 final class User {
-  User({required this.name, required this.email});
+  User({required String name, required String email});
 
   final String name;
   final String email;
 
-  factory User.parse(Object? input) => $ack.parse(input);
-  static SchemaResult<User> safeParse(Object? input) =>
-      $ack.safeParse(input);
+  factory User.parse(Object? input);
+  static SchemaResult<User> safeParse(Object? input);
+  factory User.fromJson(Map<String, dynamic> json);
+  Map<String, dynamic> toJson();
+  SchemaResult<Map<String, Object?>> safeToJson();
 
-  factory User.fromMap(Map<String, Object?> map) => $ack.parse(map);
-  factory User.fromJson(Map<String, dynamic> json) => $ack.parse(json);
-
-  Map<String, Object?> toMap() => $ack.encode(this);
-  Map<String, dynamic> toJson() => Map<String, dynamic>.from(toMap());
+  static final $ack = AckModelAdapter(/* ... */);
 }
 ```
 
-The generated class stores typed fields. It does not implement `Map` and does
-not use a map-backed extension type.
+Constructors don't validate immediately. Use `parse` for untrusted input;
+`toJson` and `safeToJson` validate a directly constructed model while encoding
+it. Generated models don't implement `Map`, and there are no `fromMap` or
+`toMap` aliases.
 
-## Serialization
+Use `@AckType(name: 'MemberType')` to choose an exact class name. Custom names
+must be unchanged UpperCamelCase identifiers.
 
-Ack performs parsing and encoding. Generated classes map between Ack's validated
-runtime values and stored Dart fields.
+## Schema support
 
-This preserves codecs such as:
+The generator supports objects, empty objects, scalar and collection roots,
+literals, enums, defaults, additional properties, built-in and custom
+bidirectional codecs, named nested models, aliases, named `Ack.lazy` recursion,
+and same-library discriminated unions. Lists, sets, and maps stored by a model
+are copied recursively into unmodifiable collections.
 
-- `Ack.datetime()` (`String` boundary to `DateTime` runtime);
-- `Ack.uri()`;
-- `Ack.duration()`;
-- enum codecs;
-- custom bidirectional codecs.
+Generation rejects shapes without a useful static, encodable model contract:
 
-The generated `fromJson` and `toJson` method shapes are compatible with the
-custom-type conventions used by `json_serializable`. Ack does not emit
-`@JsonSerializable` and does not call its generator internals.
+- one-way `.transform()` calls; use `.codec()` with an encoder;
+- nullable roots;
+- `Ack.any()`, `Ack.anyOf()`, and bare `Ack.instance<T>()`;
+- anonymous inline object fields and unresolved dynamic schema factories;
+- invalid names, generated-member collisions, and cross-library union branches.
 
-## Installation
+Named model references work through direct imports, prefixes, and re-exports.
+Nested conversion uses each model's public `$ack` adapter so codec runtime
+values aren't parsed twice.
 
-```yaml
-dependencies:
-  ack: ^1.0.0
-  ack_annotations: ^1.0.0
+## JSON serialization
 
-dev_dependencies:
-  ack_generator: ^1.0.0
-  build_runner: ^2.4.0
+Ack writes a dedicated `.ack.dart` part before `json_serializable`. A library
+using both generators declares both parts:
+
+```dart
+part 'account.ack.dart';
+part 'account.g.dart';
 ```
+
+Generated Ack models provide the conventional `fromJson` and `toJson` methods
+that `json_serializable` uses for custom nested types, in the same library or
+across imports.
 
 ## Supported declarations
 
-- Top-level schema variables
-- Top-level schema getters
+`@AckType()` can annotate top-level schema variables and top-level schema
+getters. Classes, instance members, and local variables are rejected.
 
-`@AckType()` is not supported on classes, instance members, or local variables.
-
-## Planned model shapes
-
-- `Ack.object(...)` -> immutable `final class`
-- Primitive and codec roots -> immutable value class
-- `Ack.discriminated(...)` -> `sealed class` with `final` branches
-- Nested named schemas -> nested generated model fields
-- Lists and sets -> unmodifiable typed collections
-- Additional properties -> explicit `additionalProperties` map
-
-## Current draft limitations
-
-The rewrite is not yet validated. Before release it still needs:
-
-- migration of all legacy extension-type fixtures;
-- normalized graph integration in the analyzer;
-- `Ack.lazy` and recursive-model analysis;
-- default and one-way-transform capability tracking;
-- complete typed map support;
-- current analyzer/source_gen dependency validation;
-- clean-build `json_serializable` integration fixtures;
-- full build, analysis, and runtime test execution.
-
-## Build commands
-
-```bash
-dart run build_runner build
-dart run build_runner watch
-```
+For design details and migration notes, see
+[`docs/architecture/acktype-model-generation.md`](../../docs/architecture/acktype-model-generation.md).

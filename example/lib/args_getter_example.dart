@@ -1,14 +1,14 @@
-/// This file demonstrates the automatic `args` getter feature
+/// This file demonstrates immutable additional-property storage
 /// for schemas with additionalProperties enabled via passthrough()
 library;
 
 import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
-part 'args_getter_example.g.dart';
+part 'args_getter_example.ack.dart';
 
 /// Example 1: User configuration with additional metadata
-/// The generated extension type will have an `args` getter that returns
+/// The generated model has `additionalProperties`, which contains
 /// only the additional properties (not 'username' or 'email')
 @AckType()
 final userConfigSchema = Ack.object({
@@ -17,7 +17,7 @@ final userConfigSchema = Ack.object({
 }).passthrough();
 
 /// Example 2: API request with explicit additionalProperties
-/// Same behavior as passthrough() - generates args getter
+/// Same behavior as passthrough().
 @AckType()
 final apiRequestSchema = Ack.object({
   'method': Ack.string(),

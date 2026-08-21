@@ -12,7 +12,7 @@ library;
 import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
-part 'schema_types_edge_cases.g.dart';
+part 'schema_types_edge_cases.ack.dart';
 
 // ============================================================================
 // EDGE CASE 1: List Type Extraction
@@ -136,7 +136,7 @@ final contactListSchema = Ack.object({
 /// Empty schema (edge case)
 ///
 /// EXPECTED BEHAVIOR:
-/// - Should generate extension type with no fields
+/// Generates an immutable model with no stored schema fields.
 /// - parse() should still work
 @AckType()
 final emptySchema = Ack.object({});

@@ -4,51 +4,50 @@ import 'package:test/test.dart';
 import 'package:ack_example/schema_types_simple.dart';
 
 void main() {
-  group('Schema Variable Extension Types', () {
-    test('UserType parses valid data', () {
+  group('Schema variable models', () {
+    test('User parses valid data', () {
       final data = {'name': 'Alice', 'age': 30, 'active': true};
 
-      final user = UserType.parse(data);
+      final user = User.parse(data);
 
       expect(user.name, 'Alice');
       expect(user.age, 30);
       expect(user.active, true);
     });
 
-    test('UserType validates data through schema', () {
+    test('User validates data through schema', () {
       final invalidData = {
         'name': 'Alice',
         'age': 'not a number', // Invalid type
         'active': true,
       };
 
-      expect(() => UserType.parse(invalidData), throwsA(isA<AckException>()));
+      expect(() => User.parse(invalidData), throwsA(isA<AckException>()));
     });
 
-    test('UserType can be used as Map (implements Map)', () {
-      final user = UserType.parse({'name': 'Alice', 'age': 30, 'active': true});
+    test('User serializes to a JSON map', () {
+      final user = User.parse({'name': 'Alice', 'age': 30, 'active': true});
 
-      // Extension type implements Map<String, Object?>, so it can be used directly as a map
-      final Map<String, Object?> json = user;
+      final json = user.toJson();
 
       expect(json, {'name': 'Alice', 'age': 30, 'active': true});
       expect(json['name'], 'Alice');
       expect(json['age'], 30);
     });
 
-    test('UserType safeParse returns success for valid data', () {
-      final result = UserType.safeParse({
+    test('User safeParse returns success for valid data', () {
+      final result = User.safeParse({
         'name': 'Alice',
         'age': 30,
         'active': true,
       });
 
       expect(result.isOk, true);
-      expect(result.getOrNull(), isA<Map<String, dynamic>>());
+      expect(result.getOrNull(), isA<User>());
     });
 
-    test('UserType safeParse returns failure for invalid data', () {
-      final result = UserType.safeParse({
+    test('User safeParse returns failure for invalid data', () {
+      final result = User.safeParse({
         'name': 'Alice',
         'age': 'not a number',
         'active': true,

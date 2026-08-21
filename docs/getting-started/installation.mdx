@@ -44,13 +44,15 @@ dev_dependencies:
   build_runner: ^2.4.0
 ```
 
-`ack_generator` does not generate schemas from classes. It reads top-level Ack schema variables and getters annotated with `@AckType()` and emits typed extension wrappers with `parse()`/`safeParse()` helpers.
+`ack_generator` does not generate schemas from classes. It reads top-level Ack
+schema variables and getters annotated with `@AckType()` and emits immutable
+models with typed fields, parsing helpers, and JSON methods.
 
 ```dart
 import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
-part 'user.g.dart';
+part 'user.ack.dart';
 
 @AckType()
 final userSchema = Ack.object({

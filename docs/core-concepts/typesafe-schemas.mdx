@@ -2,14 +2,9 @@
 title: TypeSafe Schemas
 ---
 
-Tired of writing `data['name'] as String` after every parse? Annotate a top-level schema with `@AckType()` and run the generator once to get typed getters like `user.name`. The schema stays in your source file; the generator adds a typed wrapper around its validated representation.
-
-## Overview
-
-1. Define schemas with the Ack fluent API.
-2. Annotate each top-level schema variable or getter with `@AckType()`.
-3. Run `dart run build_runner build`.
-4. Use the generated `TypeName.parse()` / `TypeName.safeParse()` helpers.
+Annotate a top-level Ack schema with `@AckType()` to generate an immutable Dart
+model. The source schema still owns validation, defaults, and codecs; the model
+adds stored typed fields and an explicit JSON boundary.
 
 ## Basic usage
 
@@ -17,7 +12,7 @@ Tired of writing `data['name'] as String` after every parse? Annotate a top-leve
 import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
-part 'user_schema.g.dart';
+part 'user_schema.ack.dart';
 
 @AckType()
 final addressSchema = Ack.object({
@@ -33,92 +28,115 @@ final userSchema = Ack.object({
 });
 ```
 
-The generated part file contains `AddressType` and `UserType` extension types, each with typed field getters and `parse()` / `safeParse()` static methods.
+Run `dart run build_runner build`. The generated part contains `Address` and
+`User` classes:
 
-The type name drops a trailing `Schema` and adds `Type` (`userSchema` → `UserType`). Override it with `@AckType(name: 'AppUser')`, which generates `AppUserType`.
+```dart
+final user = User.parse(payload);
+print(user.address.city);
 
-## Supported schema shapes
+final json = user.toJson();
+final result = User.safeParse(payload); // SchemaResult<User>
+```
+
+`userSchema` becomes `User`: a trailing `Schema` is removed and no suffix is
+added. `@AckType(name: 'AppUser')` generates `AppUser` exactly. Custom names
+must be unchanged UpperCamelCase identifiers.
+
+The public constructor is intentionally unchecked. `parse` and `fromJson`
+validate input. `toJson` validates a constructed model while encoding it, and
+`safeToJson` returns the validation result instead of throwing.
+
+## Field behavior
+
+- Required fields are required constructor parameters.
+- Required nullable fields remain required and use `T?`.
+- Optional fields use nullable constructor parameters and are omitted from JSON
+  when null.
+- Defaulted fields remain required in the unchecked constructor; parsing still
+  applies the schema default.
+- Stored lists, sets, and maps are copied recursively into unmodifiable
+  collections.
+- A passthrough object exposes unknown keys through
+  `additionalProperties`. Declared fields win if an extra key collides.
+
+Generated models don't implement `Map`. Use `toJson()` when a map is needed.
+
+## Supported schemas
 
 `@AckType()` supports:
 
-- `Ack.object(...)`
-- `Ack.string()`, `Ack.integer()`, `Ack.double()`, `Ack.boolean()`
-- `Ack.list(...)`
-- `Ack.literal(...)`, `Ack.enumString(...)`, `Ack.enumValues(...)`
-- non-object transforms with explicit output types
-- `Ack.discriminated(...)` with the constraints below
+- objects and empty objects;
+- scalar roots, `num`, literals, enums, lists, sets, and typed maps;
+- built-in codecs such as `Ack.datetime()`, plus custom bidirectional codecs;
+- named nested models, aliases, defaults, and additional properties;
+- direct, prefixed, and re-exported model references;
+- named `Ack.lazy` self-recursion and mutual recursion;
+- same-library discriminated unions.
 
-`Ack.any()` and `Ack.anyOf()` are not supported.
+One-way `.transform()` calls are rejected because a generated model must encode
+back to its boundary value. Replace them with `.codec(decode: ..., encode: ...)`.
 
-## Discriminated schemas
+The generator also rejects nullable roots, `Ack.any()`, `Ack.anyOf()`, bare
+`Ack.instance<T>()`, anonymous inline object fields, unresolved dynamic schema
+factories, name/member collisions, and cross-library discriminated branches.
 
-`Ack.discriminated(...)` works with `@AckType()` when all of the following hold:
+## Nested models and recursion
 
-- `schemas` is a non-empty map literal
-- the base schema is non-nullable
-- each branch is a top-level, non-nullable `@AckType` object schema in the same library
-- branch schemas omit the discriminator field, or include it as `Ack.literal(...)` matching the branch key, or `Ack.enumString(...)` containing the branch key
-
-Example:
+Object fields reference named top-level schemas:
 
 ```dart
 @AckType()
-final catSchema = Ack.object({
-  'lives': Ack.integer(),
+final AckSchema<JsonMap, JsonMap> nodeSchema = Ack.object({
+  'name': Ack.string(),
+  'children': Ack.list(Ack.lazy('node', () => nodeSchema)),
 });
+```
+
+The explicit schema type breaks Dart's top-level inference cycle. The generated
+`Node` stores `List<Node>`. Nested conversion uses the referenced model's public
+`$ack` adapter, which avoids decoding codec values twice.
+
+## Discriminated unions
+
+All branches must be named `@AckType` object schemas in the same library:
+
+```dart
+@AckType()
+final catSchema = Ack.object({'lives': Ack.integer()});
 
 @AckType()
-final dogSchema = Ack.object({
-  'breed': Ack.string(),
-});
+final dogSchema = Ack.object({'breed': Ack.string()});
 
 @AckType()
 final petSchema = Ack.discriminated(
   discriminatorKey: 'type',
-  schemas: {
-    'cat': catSchema,
-    'dog': dogSchema,
-  },
+  schemas: {'cat': catSchema, 'dog': dogSchema},
 );
 ```
 
-`Ack.discriminated(...)` owns the discriminator property. Boundary payloads must include the discriminator key; branch schemas should usually omit it. When a branch includes the discriminator field, it must be an exact literal or enum containing the branch key:
+This generates a sealed `Pet` base and final `Cat` and `Dog` branches. Boundary
+payloads include the discriminator. A branch may omit that field or declare a
+compatible literal; the generated branch exposes a constant discriminator and
+encodes it safely.
+
+## Using json_serializable
+
+Ack owns `.ack.dart`; `json_serializable` continues to own `.g.dart`. Declare
+both when a library uses both generators:
 
 ```dart
-@AckType()
-final catSchema = Ack.object({
-  'type': Ack.literal('cat'), // allowed, but usually unnecessary
-  'lives': Ack.integer(),
-});
+part 'account.ack.dart';
+part 'account.g.dart';
 ```
 
-Conflicting discriminator fields, broad `Ack.string()`, and transformed or refined discriminator fields are rejected. Generated subtype `parse()` / `safeParse()` methods validate through the union's effective branch.
-
-## Resolution rules
-
-- Nested object fields must reference a named top-level schema — inline anonymous objects are rejected.
-- `Ack.list(...)` element schemas must be statically resolvable.
-- Cross-file references work for direct imports, prefixed imports, and re-exports.
-- Unannotated object schema references fail generation rather than silently falling back to raw maps.
-- Circular alias/reference chains fail generation with a clear error.
-
-## Limitations
-
-- `@AckType()` only works on top-level schema variables and getters.
-- Nullable top-level schemas do not emit extension types.
-- `Ack.list(...)` rejects nullable item schemas. Make the list itself nullable
-  with `Ack.list(item).nullable()` when the whole field may be null.
-- Use `.transform<T>(...)` with an explicit output type so the generator can infer the representation type.
+Ack runs first, so `json_serializable` can resolve generated models in the same
+library. The generated `fromJson` and `toJson` methods also work when an Ack
+model is imported from another library.
 
 ## Build checklist
 
-1. Add `ack_annotations`, `ack_generator`, and `build_runner` to your pubspec.
-2. Add `part '<file>.g.dart';` to the file.
-3. Annotate top-level schema variables or getters with `@AckType()`.
+1. Add `ack` and `ack_annotations` to dependencies.
+2. Add `ack_generator` and `build_runner` to dev dependencies.
+3. Add `part '<file>.ack.dart';` to each annotated library.
 4. Run `dart run build_runner build`.
-
-## Next steps
-
-- [JSON Serialization](./json-serialization.mdx) — parse JSON straight into generated types
-- [Common Recipes](../guides/common-recipes.mdx) — patterns that combine schemas and generated types
-- [API Reference](../api-reference/index.mdx) — core API quick reference and generated API docs
