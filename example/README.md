@@ -12,7 +12,7 @@ immutable models with `@AckType()`. Annotated examples declare both
 - Built-in and custom codec schemas in `lib/schema_types_transforms.dart`
 - Edge cases and strict resolution in `lib/schema_types_edge_cases.dart`
 - Cross-schema object models in `lib/pet.dart`, `lib/user_with_color.dart`,
-  and `lib/args_getter_example.dart`
+  and `lib/additional_properties_example.dart`
 - Codecs (built-in and custom) in `lib/codecs_example.dart`
 
 ## Running the examples

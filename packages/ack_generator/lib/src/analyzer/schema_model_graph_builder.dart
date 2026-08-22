@@ -308,8 +308,6 @@ final class SchemaModelGraphBuilder {
         context: declaration.element,
         throughLazy: false,
       ),
-      encodeCapability: AckEncodeCapability.bidirectional,
-      sourceLocation: _location(declaration.element),
       description: _description(expression),
     );
   }
@@ -338,8 +336,6 @@ final class SchemaModelGraphBuilder {
         className: declaration.className,
         boundaryType: source.boundaryType,
         runtimeRef: source.runtimeRef,
-        encodeCapability: source.encodeCapability,
-        sourceLocation: _location(declaration.element),
         fields: source.fields,
         additionalProperties: source.additionalProperties,
         description: source.description,
@@ -357,8 +353,6 @@ final class SchemaModelGraphBuilder {
       className: declaration.className,
       boundaryType: source.boundaryType,
       runtimeRef: source.runtimeRef,
-      encodeCapability: source.encodeCapability,
-      sourceLocation: _location(declaration.element),
       description: source.description,
     );
   }
@@ -443,8 +437,6 @@ final class SchemaModelGraphBuilder {
       className: declaration.className,
       boundaryType: types.boundary,
       runtimeRef: types.runtime,
-      encodeCapability: AckEncodeCapability.bidirectional,
-      sourceLocation: _location(declaration.element),
       fields: fields,
       additionalProperties: additionalProperties,
       description: _description(declaration.expression),
@@ -525,8 +517,6 @@ final class SchemaModelGraphBuilder {
           className: branch.className,
           boundaryType: branch.boundaryType,
           runtimeRef: branch.runtimeRef,
-          encodeCapability: branch.encodeCapability,
-          sourceLocation: branch.sourceLocation,
           fields: branch.fields,
           additionalProperties: branch.additionalProperties,
           unionId: declaration.id,
@@ -553,8 +543,6 @@ final class SchemaModelGraphBuilder {
       className: declaration.className,
       boundaryType: types.boundary,
       runtimeRef: types.runtime,
-      encodeCapability: AckEncodeCapability.bidirectional,
-      sourceLocation: _location(declaration.element),
       discriminatorKey: discriminatorKey,
       branches: branches,
       description: _description(declaration.expression),
@@ -757,10 +745,7 @@ final class SchemaModelGraphBuilder {
       return const AckNullableTypeRef(AckScalarTypeRef('Object'));
     }
     if (type is TypeParameterType) {
-      return AckExternalTypeRef(
-        name: type.element.name ?? 'Object',
-        libraryUri: context.library?.uri ?? Uri.parse('dart:core'),
-      );
+      return AckExternalTypeRef(name: type.element.name ?? 'Object');
     }
     if (type is! InterfaceType) {
       throw InvalidGenerationSource(
@@ -776,6 +761,17 @@ final class SchemaModelGraphBuilder {
     } else if (type.isDartCoreSet && type.typeArguments.length == 1) {
       result = AckSetTypeRef(_typeRef(type.typeArguments.single, context));
     } else if (type.isDartCoreMap && type.typeArguments.length == 2) {
+      final keyType = type.typeArguments.first;
+      if (keyType is! InterfaceType || !keyType.isDartCoreString) {
+        throw InvalidGenerationSource(
+          'Generated Ack models support only Map<String, T> runtime types; '
+          'received ${type.getDisplayString()}.',
+          element: context,
+          todo:
+              'Use a string-keyed map or codec the value to a supported '
+              'runtime type before generating the model.',
+        );
+      }
       result = AckMapTypeRef(_typeRef(type.typeArguments[1], context));
     } else if (type.element.library.uri.toString() == 'dart:core' &&
         const {
@@ -788,11 +784,9 @@ final class SchemaModelGraphBuilder {
         }.contains(name)) {
       result = AckScalarTypeRef(name);
     } else {
-      final owner = type.element.library.uri;
       result = AckExternalTypeRef(
         name: name,
-        libraryUri: owner,
-        importPrefix: _visiblePrefix(owner),
+        importPrefix: _visiblePrefix(type.element),
         typeArguments: [
           for (final argument in type.typeArguments)
             _typeRef(argument, context),
@@ -802,12 +796,24 @@ final class SchemaModelGraphBuilder {
     return nullable ? AckNullableTypeRef(result) : result;
   }
 
-  String? _visiblePrefix(Uri target) {
+  String? _visiblePrefix(InterfaceElement target) {
+    final name = target.name;
+    if (name == null) return null;
+    String? prefixed;
     for (final import in library.element.firstFragment.libraryImports) {
-      if (import.importedLibrary?.uri != target) continue;
-      return import.prefix?.element.name;
+      if (import.isSynthetic || (import.prefix?.isDeferred ?? false)) {
+        continue;
+      }
+      final prefix = import.prefix?.element.name;
+      final candidate = prefix == null
+          ? import.namespace.get2(name)
+          : import.namespace.getPrefixed2(prefix, name);
+      if (candidate != target) continue;
+      if (prefix != null && prefix.isNotEmpty) {
+        prefixed ??= prefix;
+      }
     }
-    return null;
+    return prefixed;
   }
 
   _SchemaChain _chain(Expression expression) {
@@ -1232,13 +1238,5 @@ final class SchemaModelGraphBuilder {
       final expression = dynamicArgument.expression as Expression;
       return (name: name, expression: expression);
     }
-  }
-
-  AckSourceLocation _location(Element element) {
-    return AckSourceLocation(
-      libraryUri: element.library?.uri ?? library.element.uri,
-      offset: element.firstFragment.offset,
-      length: element.name?.length ?? 0,
-    );
   }
 }

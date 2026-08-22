@@ -143,6 +143,32 @@ final personSchema = Ack.object({
     );
   });
 
+  test('preserves external type qualifiers through prefixed barrels', () async {
+    await _build(
+      {
+        'role.dart': 'enum Role { admin, member }',
+        'types.dart': "export 'role.dart';",
+        'user.dart':
+            '''
+$_imports
+import 'types.dart' as types;
+part 'user.ack.dart';
+part 'user.g.dart';
+
+@AckType()
+final userSchema = Ack.object({
+  'role': Ack.enumValues(types.Role.values),
+});
+''',
+      },
+      outputs: {
+        'test_pkg|lib/user.ack.dart': decodedMatches(
+          contains('final types.Role role;'),
+        ),
+      },
+    );
+  });
+
   test('emits sealed unions with final same-library branches', () async {
     await _build(
       {
@@ -439,6 +465,59 @@ final userSchema = Ack.object({'name': Ack.string()});
       );
     },
   );
+
+  test('preserves Ack runtime qualifiers through prefixed barrels', () async {
+    await _build(
+      {
+        'support.dart': '''
+export 'package:ack/ack.dart';
+export 'package:ack_annotations/ack_annotations.dart';
+''',
+        'schema.dart': '''
+import 'support.dart' as support;
+
+part 'schema.ack.dart';
+part 'schema.g.dart';
+
+@support.AckType()
+final userSchema = support.Ack.object({'name': support.Ack.string()});
+''',
+      },
+      outputs: {
+        'test_pkg|lib/schema.ack.dart': decodedMatches(
+          allOf([
+            contains('support.AckModelAdapter'),
+            contains('support.SchemaResult<User>'),
+          ]),
+        ),
+      },
+    );
+  });
+
+  test('rejects non-string map keys in generated runtime types', () async {
+    final messages = <String>{};
+    await _build(
+      {
+        'bad.dart':
+            '''
+$_imports
+part 'bad.ack.dart';
+part 'bad.g.dart';
+
+@AckType()
+final valuesSchema = Ack.string().codec<Map<int, String>>(
+  decode: (value) => {1: value},
+  encode: (value) => value.values.single,
+);
+''',
+      },
+      outputs: const {},
+      onLog: (log) {
+        if (log.level.name == 'SEVERE') messages.add(log.message);
+      },
+    );
+    expect(messages.single, contains('Map<String, T>'));
+  });
 
   test('rejects field names that collide after bridge derivation', () async {
     final messages = <String>{};

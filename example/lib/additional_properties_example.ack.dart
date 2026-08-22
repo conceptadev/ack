@@ -1,7 +1,7 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format width=80
 
-part of 'args_getter_example.dart';
+part of 'additional_properties_example.dart';
 
 // **************************************************************************
 // AckSchemaGenerator

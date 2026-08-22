@@ -68,7 +68,7 @@ Generated models don't implement `Map`. Use `toJson()` when a map is needed.
 `@AckType()` supports:
 
 - objects and empty objects;
-- scalar roots, `num`, literals, enums, lists, sets, and typed maps;
+- scalar roots, `num`, literals, enums, lists, sets, and string-keyed typed maps;
 - built-in codecs such as `Ack.datetime()`, plus custom bidirectional codecs;
 - named nested models, aliases, defaults, and additional properties;
 - direct, prefixed, and re-exported model references;
@@ -81,6 +81,8 @@ back to its boundary value. Replace them with `.codec(decode: ..., encode: ...)`
 The generator also rejects nullable roots, `Ack.any()`, `Ack.anyOf()`, bare
 `Ack.instance<T>()`, anonymous inline object fields, unresolved dynamic schema
 factories, name/member collisions, and cross-library discriminated branches.
+Runtime maps with key types other than `String` are also rejected because the
+generator's structural map contract is string-keyed.
 
 ## Nested models and recursion
 

@@ -39,7 +39,7 @@ Ack part owns those declarations; `json_serializable` writes the structural
 field-mapping helpers into `user.g.dart`. Ack-only apps do not add JSON
 packages for generated models. The annotation package requires Dart 3.9.
 
-Generate the wrapper with:
+Generate the model with:
 
 ```bash
 dart run build_runner build

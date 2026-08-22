@@ -1,20 +1,20 @@
 # Ack
 
-[![CI/CD](https://github.com/btwld/ack/actions/workflows/ci.yml/badge.svg)](https://github.com/btwld/ack/actions/workflows/ci.yml)
-[![docs.page](https://img.shields.io/badge/docs.page-documentation-blue)](https://docs.page/btwld/ack)
+[![CI/CD](https://github.com/conceptadev/ack/actions/workflows/ci.yml/badge.svg)](https://github.com/conceptadev/ack/actions/workflows/ci.yml)
+[![Documentation](https://img.shields.io/badge/docs-documentation-blue)](https://concepta.dev/ack)
 [![pub package](https://img.shields.io/pub/v/ack.svg)](https://pub.dev/packages/ack)
-[![llms.txt](https://img.shields.io/badge/llms.txt-available-8A2BE2)](https://docs.page/btwld/ack/llms.txt)
+[![llms.txt](https://img.shields.io/badge/llms.txt-available-8A2BE2)](https://concepta.dev/documentation/ack/reference/llms-txt)
 
 Ack is a schema validation library for Dart and Flutter. It validates data with a fluent API. Ack is short for "acknowledge".
 
-For AI agents: start at [`/llms.txt`](https://docs.page/btwld/ack/llms.txt).
+For AI agents: start at [`/llms.txt`](https://concepta.dev/documentation/ack/reference/llms-txt).
 
 ## Why use Ack?
 
 - **Validate external payloads**: Guard API and user inputs by validating required fields, types, and constraints at boundaries
 - **Single source of truth**: Define data structures and rules in one place
 - **Less boilerplate**: Minimize repetitive validation and JSON conversion code
-- **Type safety**: Generate typed wrappers for hand-written Ack schemas with `@AckType()`
+- **Type safety**: Generate immutable models for hand-written Ack schemas with `@AckType()`
 
 ## Packages
 
@@ -155,7 +155,7 @@ print(user.toJson()); // {'name': 'Alice', 'email': 'alice@example.com'}
 
 `@AckType()` supports objects, primitives, lists, enums, bidirectional codecs,
 named recursion, and discriminated unions. One-way transforms are rejected
-because a generated model must be encodable. See the [TypeSafe Schemas guide](https://docs.page/btwld/ack/core-concepts/typesafe-schemas).
+because a generated model must be encodable. See the [TypeSafe Schemas guide](https://concepta.dev/documentation/ack/advanced/typesafe-schemas).
 
 ## Codecs
 
@@ -181,13 +181,13 @@ csv.encode(['a', 'b', 'c']); // 'a,b,c'
 ```
 
 Use `.transform<R>(...)` for one-way (parse-only) conversions. See the
-[Codecs guide](https://docs.page/btwld/ack/core-concepts/codecs).
+[Codecs guide](https://concepta.dev/documentation/ack/advanced/codecs).
 
 ## Documentation
 
-- Human docs: [docs.page/btwld/ack](https://docs.page/btwld/ack)
-- AI agent index: [docs.page/btwld/ack/llms.txt](https://docs.page/btwld/ack/llms.txt)
-- Canonical plaintext source: [raw.githubusercontent.com/btwld/ack/main/llms.txt](https://raw.githubusercontent.com/btwld/ack/main/llms.txt)
+- Human docs: [concepta.dev/ack](https://concepta.dev/ack)
+- AI agent index: [AI & llms.txt](https://concepta.dev/documentation/ack/reference/llms-txt)
+- Canonical plaintext source: [raw.githubusercontent.com/conceptadev/ack/main/llms.txt](https://raw.githubusercontent.com/conceptadev/ack/main/llms.txt)
 
 ## Development
 

@@ -4,8 +4,8 @@ import 'package:test/test.dart';
 
 /// Tests for primitive schemas.
 ///
-/// Extension types are generated for primitive schemas, but the schema can
-/// still be used directly via `safeParse()` or `parse()`.
+/// Generated value models are available for annotated primitive schemas, while
+/// these tests exercise the underlying schemas directly.
 void main() {
   group('Primitive Schemas', () {
     test('passwordSchema validates and returns String', () {

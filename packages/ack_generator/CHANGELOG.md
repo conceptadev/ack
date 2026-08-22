@@ -4,7 +4,13 @@
 
 * Replace map-backed `@AckType()` extension types with immutable Dart model
   classes. Generated names no longer receive a `Type` suffix.
-* Generated models no longer implement `Map<String, Object?>`.
+* Generated models no longer implement `Map`, `List`, or scalar interfaces.
+  Collection and scalar roots expose a `.value` field.
+* Replace passthrough `.args` with `.additionalProperties`, and replace
+  generated `fromMap` / `toMap` with `fromJson` / `toJson`.
+* Require annotated libraries to declare both `.ack.dart` and `.g.dart` parts.
+* Reject one-way transforms and non-string runtime map keys; generated models
+  require a bidirectional, statically encodable contract.
 
 ### Added
 
@@ -24,6 +30,15 @@
 * Reject parse-only transforms and schema shapes without a static model form.
 * Support named recursion, cross-file references, custom codecs, additional
   properties, and sealed discriminated model hierarchies.
+
+### Migration
+
+* Rename generated `UserType` references to `User` unless `@AckType(name: ...)`
+  supplies an exact custom name.
+* Use stored fields or `.value` instead of treating models as maps, lists, or
+  scalars. Use `.additionalProperties` for passthrough data.
+* Replace `fromMap` / `toMap` calls with `fromJson` / `toJson`, add both part
+  directives, convert required transforms to codecs, and regenerate outputs.
 
 ## 1.1.0
 

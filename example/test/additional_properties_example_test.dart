@@ -1,6 +1,6 @@
 import 'package:test/test.dart';
 
-import 'package:ack_example/args_getter_example.dart';
+import 'package:ack_example/additional_properties_example.dart';
 
 void main() {
   group('Additional properties examples', () {

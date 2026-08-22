@@ -34,7 +34,7 @@ jobs:
             echo "llms.txt is missing or empty."
             exit 1
           }
-          grep -q '^redirect: https://raw.githubusercontent.com/btwld/ack/main/llms.txt$' docs/llms.txt.mdx || {
+          grep -q '^redirect: https://raw.githubusercontent.com/conceptadev/ack/main/llms.txt$' docs/llms.txt.mdx || {
             echo "docs/llms.txt.mdx must redirect to the canonical raw llms.txt URL."
             exit 1
           }
@@ -49,7 +49,7 @@ jobs:
     steps:
       - name: Notify docs.page update
         run: |
-          echo "Documentation has been updated and is now available at https://docs.page/btwld/ack"
+          echo "Documentation has been updated and is now available at https://concepta.dev/ack"
           # You could add additional notification steps here, such as:
           # - Sending a Slack message
           # - Creating a GitHub issue

@@ -1,8 +1,8 @@
 # Ack
 
 [![pub package](https://img.shields.io/pub/v/ack.svg)](https://pub.dev/packages/ack)
-[![CI/CD](https://github.com/btwld/ack/actions/workflows/ci.yml/badge.svg)](https://github.com/btwld/ack/actions/workflows/ci.yml)
-[![docs.page](https://img.shields.io/badge/docs.page-documentation-blue)](https://docs.page/btwld/ack)
+[![CI/CD](https://github.com/conceptadev/ack/actions/workflows/ci.yml/badge.svg)](https://github.com/conceptadev/ack/actions/workflows/ci.yml)
+[![Documentation](https://img.shields.io/badge/docs-documentation-blue)](https://concepta.dev/ack)
 
 Ack is a schema validation library for Dart and Flutter that helps you validate data with a simple, fluent API. Ack is short for "acknowledge".
 
@@ -12,7 +12,7 @@ Ack is a schema validation library for Dart and Flutter that helps you validate 
 - **Validate external payloads**: Guard API and user inputs by validating required fields, types, and constraints at boundaries
 - **Single Source of Truth**: Define data structures and rules in one place
 - **Reduce Boilerplate**: Minimize repetitive code for validation and JSON conversion
-- **Type Safety**: Generate typed wrappers for hand-written Ack schemas
+- **Type Safety**: Generate immutable models for hand-written Ack schemas
 
 ## Quick Start
 
@@ -50,11 +50,11 @@ Use `.optional()` when a field may be omitted entirely. Chain `.nullable()` if a
 
 ## Documentation
 
-- [Full documentation](https://docs.page/btwld/ack)
-- [AI agent index (llms.txt)](https://docs.page/btwld/ack/llms.txt)
+- [Full documentation](https://concepta.dev/ack)
+- [AI agent index (llms.txt)](https://concepta.dev/documentation/ack/reference/llms-txt)
 
 ## Related Packages
 
-- [ack_generator](https://pub.dev/packages/ack_generator) — Code generator for typed wrappers from `@AckType()` schemas
+- [ack_generator](https://pub.dev/packages/ack_generator) — Code generator for immutable models from `@AckType()` schemas
 - [ack_firebase_ai](https://pub.dev/packages/ack_firebase_ai) — Firebase AI (Gemini) schema converter
 - [ack_json_schema_builder](https://pub.dev/packages/ack_json_schema_builder) — JSON Schema converter

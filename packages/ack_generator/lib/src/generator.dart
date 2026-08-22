@@ -1,4 +1,5 @@
 import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack/ack.dart' show AckModelAdapter, SchemaResult;
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:build/build.dart';
@@ -12,6 +13,8 @@ import 'builders/model_emitter.dart';
 /// `@AckType`.
 final class AckSchemaGenerator extends Generator {
   static const _ackTypeChecker = TypeChecker.typeNamed(AckType);
+  static const _ackModelAdapterChecker = TypeChecker.typeNamed(AckModelAdapter);
+  static const _schemaResultChecker = TypeChecker.typeNamed(SchemaResult);
 
   @override
   Future<String> generate(LibraryReader library, BuildStep buildStep) async {
@@ -54,7 +57,7 @@ final class AckSchemaGenerator extends Generator {
 
     final graph = await SchemaModelGraphBuilder(library).build(annotated);
     final specs = AckModelEmitter(
-      ackPrefix: _importPrefix(library, 'package:ack/ack.dart'),
+      ackPrefix: _ackRuntimeQualifier(library, annotated.first),
       ackTypePrefix: _ackTypeQualifier(library, annotated.first),
     ).emit(graph);
     return Library((b) => b.body.addAll(specs))
@@ -97,19 +100,54 @@ final class AckSchemaGenerator extends Generator {
     );
   }
 
-  String? _importPrefix(LibraryReader library, String uri) {
-    for (final import in library.element.firstFragment.libraryImports) {
-      if (import.importedLibrary?.uri.toString() != uri) continue;
-      return import.prefix?.element.name;
-    }
-    return null;
-  }
+  /// Resolves the qualifier that exposes Ack's generated-model support types.
+  ///
+  /// Looking through import namespaces supports package barrels, local barrels,
+  /// prefixes, and combinators without tying generation to one exact URI.
+  String? _ackRuntimeQualifier(
+    LibraryReader library,
+    Element annotatedElement,
+  ) => _visibleQualifier(
+    library,
+    annotatedElement,
+    requiredTypes: const {
+      'AckModelAdapter': _ackModelAdapterChecker,
+      'SchemaResult': _schemaResultChecker,
+    },
+    message:
+        'Generated Ack models require visible exact AckModelAdapter and '
+        'SchemaResult imports in this library.',
+    todo:
+        'Import package:ack/ack.dart, directly or through a barrel, and '
+        'ensure AckModelAdapter and SchemaResult are exposed.',
+  );
 
   /// Resolves the visible `AckType` qualifier for generated JSON markers.
   ///
   /// Uses import namespaces so barrel re-exports and `show` combinators work.
   /// Prefixed imports win over unprefixed ones, in import order.
-  String? _ackTypeQualifier(LibraryReader library, Element annotatedElement) {
+  String? _ackTypeQualifier(
+    LibraryReader library,
+    Element annotatedElement,
+  ) => _visibleQualifier(
+    library,
+    annotatedElement,
+    requiredTypes: const {'AckType': _ackTypeChecker},
+    message:
+        'Generated @AckType.jsonSerializable requires a visible exact AckType '
+        'import in this library.',
+    todo:
+        'Import AckType from ack_annotations, using the same prefix as '
+        '@AckType() when one is present.',
+  );
+
+  String? _visibleQualifier(
+    LibraryReader library,
+    Element annotatedElement, {
+    required Map<String, TypeChecker> requiredTypes,
+    required String message,
+    required String todo,
+  }) {
     String? prefixed;
     var hasUnprefixed = false;
     for (final import in library.element.firstFragment.libraryImports) {
@@ -117,31 +155,25 @@ final class AckSchemaGenerator extends Generator {
         continue;
       }
       final prefix = import.prefix?.element.name;
-      final candidate = prefix == null
-          ? import.namespace.get2('AckType')
-          : import.namespace.getPrefixed2(prefix, 'AckType');
-      if (candidate == null || !_ackTypeChecker.isExactly(candidate)) {
-        continue;
-      }
+      final exposesRequiredTypes = requiredTypes.entries.every((entry) {
+        final candidate = prefix == null
+            ? import.namespace.get2(entry.key)
+            : import.namespace.getPrefixed2(prefix, entry.key);
+        return candidate != null && entry.value.isExactly(candidate);
+      });
+      if (!exposesRequiredTypes) continue;
       if (prefix != null && prefix.isNotEmpty) {
         prefixed ??= prefix;
       } else {
         hasUnprefixed = true;
       }
     }
-    if (prefixed != null) {
-      return prefixed;
-    }
-    if (hasUnprefixed) {
-      return null;
-    }
+    if (prefixed != null) return prefixed;
+    if (hasUnprefixed) return null;
     throw InvalidGenerationSource(
-      'Generated @AckType.jsonSerializable requires a visible exact AckType '
-      'import in this library.',
+      message,
       element: annotatedElement,
-      todo:
-          'Import AckType from ack_annotations, using the same prefix as '
-          '@AckType() when one is present.',
+      todo: todo,
     );
   }
 }

@@ -1,9 +1,9 @@
 name: ack
 description: A simple validation library for Dart
 version: 1.1.0
-repository: https://github.com/btwld/ack
-issue_tracker: https://github.com/btwld/ack/issues
-homepage: https://docs.page/btwld/ack
+repository: https://github.com/conceptadev/ack
+issue_tracker: https://github.com/conceptadev/ack/issues
+homepage: https://concepta.dev/ack
 
 resolution: workspace
 

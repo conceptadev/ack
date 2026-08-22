@@ -24,7 +24,7 @@ Before creating a release:
 
 ### 2. Create a GitHub Release
 
-1. Go to the [Releases page](https://github.com/btwld/ack/releases) in the repository
+1. Go to the [Releases page](https://github.com/conceptadev/ack/releases) in the repository
 2. Click "Draft a new release"
 3. Create a new tag in the format `v0.2.0` (must start with "v")
 4. Add a title, e.g., "Release v0.2.0"

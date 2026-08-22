@@ -19,7 +19,7 @@ dependencies:
 
 ### Compatibility
 
-Requires `json_schema_builder: >=0.1.3 <1.0.0` as a peer dependency. Report [compatibility issues](https://github.com/btwld/ack/issues).
+Requires `json_schema_builder: >=0.1.3 <1.0.0` as a peer dependency. Report [compatibility issues](https://github.com/conceptadev/ack/issues).
 
 ## Conversion Model
 
@@ -137,7 +137,7 @@ For contribution guidelines, see [CONTRIBUTING.md](../../CONTRIBUTING.md) in the
 
 ## License
 
-This package is part of the [ACK](https://github.com/btwld/ack) monorepo.
+This package is part of the [ACK](https://github.com/conceptadev/ack) monorepo.
 
 ## Related Packages
 

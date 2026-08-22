@@ -251,19 +251,24 @@ dependency_overrides:
     path: ${p.join(projectRoot.path, 'packages', 'ack_annotations')}
 ''');
         File(
-          p.join(temporary.path, 'lib', 'annotations.dart'),
-        ).writeAsStringSync(
-          "export 'package:ack_annotations/ack_annotations.dart';\n",
+          p.join(temporary.path, 'lib', 'role.dart'),
+        ).writeAsStringSync('enum Role { admin, member }\n');
+        File(p.join(temporary.path, 'lib', 'support.dart')).writeAsStringSync(
+          "export 'package:ack/ack.dart';\n"
+          "export 'package:ack_annotations/ack_annotations.dart';\n"
+          "export 'role.dart';\n",
         );
         File(p.join(temporary.path, 'lib', 'user.dart')).writeAsStringSync(r'''
-import 'package:ack/ack.dart';
-import 'annotations.dart' as annotations show AckType;
+import 'support.dart' as support;
 
 part 'user.ack.dart';
 part 'user.g.dart';
 
-@annotations.AckType()
-final userSchema = Ack.object({'name': Ack.string()});
+@support.AckType()
+final userSchema = support.Ack.object({
+  'name': support.Ack.string(),
+  'role': support.Ack.enumValues(support.Role.values),
+});
 ''');
         File(
           p.join(temporary.path, 'test', 'runtime_test.dart'),
@@ -273,7 +278,10 @@ import 'package:test/test.dart';
 
 void main() {
   test('prefixed barrel models compile and round-trip', () {
-    expect(User.parse({'name': 'Ada'}).toJson(), {'name': 'Ada'});
+    expect(User.parse({'name': 'Ada', 'role': 'admin'}).toJson(), {
+      'name': 'Ada',
+      'role': 'admin',
+    });
   });
 }
 ''');
@@ -291,7 +299,9 @@ void main() {
         final ackPart = File(
           p.join(temporary.path, 'lib', 'user.ack.dart'),
         ).readAsStringSync();
-        expect(ackPart, contains('@annotations.AckType.jsonSerializable'));
+        expect(ackPart, contains('@support.AckType.jsonSerializable'));
+        expect(ackPart, contains('support.AckModelAdapter'));
+        expect(ackPart, contains('final support.Role role;'));
         _expectSuccess(await _run(temporary, ['test']), 'dart test');
       } finally {
         temporary.deleteSync(recursive: true);

@@ -28,9 +28,9 @@ part 'schema_types_edge_cases.g.dart';
 @AckType()
 final productSchema = Ack.object({
   'name': Ack.string(),
-  'tags': Ack.list(Ack.string()), // Should generate: List<String> get tags
-  'scores': Ack.list(Ack.integer()), // Should generate: List<int> get scores
-  'flags': Ack.list(Ack.boolean()), // Should generate: List<bool> get flags
+  'tags': Ack.list(Ack.string()), // Generates: final List<String> tags
+  'scores': Ack.list(Ack.integer()), // Generates: final List<int> scores
+  'flags': Ack.list(Ack.boolean()), // Generates: final List<bool> flags
 });
 
 /// Schema with nested lists (matrix/grid data)
@@ -42,7 +42,7 @@ final gridSchema = Ack.object({
   'name': Ack.string(),
   'matrix': Ack.list(
     Ack.list(Ack.integer()),
-  ), // Should generate: List<List<int>> get matrix
+  ), // Generates: final List<List<int>> matrix
 });
 
 // ============================================================================
@@ -62,7 +62,7 @@ final addressSchema = Ack.object({
 ///
 /// EXPECTED BEHAVIOR:
 /// - address field should NOT be null/missing
-/// - Should generate: AddressType get address (or `Map<String, dynamic>`)
+/// - Generates: `final Address address`
 @AckType()
 final personSchema = Ack.object({
   'name': Ack.string(),
@@ -123,7 +123,7 @@ final taggedItemSchema = Ack.object({
 /// Schema with list of nested objects
 ///
 /// EXPECTED BEHAVIOR:
-/// - addresses: `List<AddressType>` (eager list with typed elements)
+/// - addresses: `List<Address>` (eager list with typed elements)
 @AckType()
 final contactListSchema = Ack.object({
   'name': Ack.string(),
@@ -150,11 +150,11 @@ final minimalSchema = Ack.object({'id': Ack.string()});
 // EDGE CASE 6: Naming Variations
 // ============================================================================
 
-/// Schema with 'Schema' suffix (should generate NamedType)
+/// Schema with 'Schema' suffix (generates `NamedItem`)
 @AckType()
 final namedItemSchema = Ack.object({'name': Ack.string()});
 
-/// Schema without 'Schema' suffix (should generate ItemType)
+/// Schema without 'Schema' suffix (generates `Item`)
 @AckType()
 final item = Ack.object({'id': Ack.string()});
 

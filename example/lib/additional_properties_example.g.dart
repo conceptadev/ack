@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'args_getter_example.dart';
+part of 'additional_properties_example.dart';
 
 // **************************************************************************
 // AckJsonSerializableGenerator

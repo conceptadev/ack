@@ -2,7 +2,7 @@
 title: Installing Ack
 ---
 
-Ack is a pure-Dart package with no required build step. Add the core library — and, optionally, the code generator for typed wrappers.
+Ack is a pure-Dart package with no required build step. Add the core library — and, optionally, the code generator for immutable models.
 
 ## Add to your project
 
@@ -25,7 +25,7 @@ dependencies:
 
 ## Code generator (`@AckType()`)
 
-To generate typed wrappers for hand-written schemas, add the annotation and generator packages alongside `ack`:
+To generate immutable models for hand-written schemas, add the annotation and generator packages alongside `ack`:
 
 ```bash
 dart pub add ack ack_annotations

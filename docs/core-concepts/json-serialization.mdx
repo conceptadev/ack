@@ -45,7 +45,7 @@ void processApiResponse(String jsonString) {
     print('Valid JSON received: $validDataMap');
 
     // Pass the validated map to your own model layer,
-    // or use an AckType-generated wrapper (see next section).
+    // or use an AckType-generated immutable model (see next section).
   } else {
     // Handle validation errors (see the Error Handling guide).
     print('Invalid JSON data: ${result.getError()}');
@@ -63,7 +63,7 @@ processApiResponse('not valid json'); // Decoding error
 
 ## Working with validated data
 
-After successful validation, `result.getOrThrow()` returns a `Map<String, Object?>` whose structure and types match your schema. You can work with it directly, pass it into a model class, or use a generated typed wrapper:
+After successful validation, `result.getOrThrow()` returns a `Map<String, Object?>` whose structure and types match your schema. You can work with it directly, pass it into your own model class, or parse it into a generated immutable model:
 
 ```dart
 final result = userSchema.safeParse(jsonData);

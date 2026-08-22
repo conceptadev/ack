@@ -4,7 +4,7 @@ import 'package:ack_annotations/ack_annotations.dart';
 part 'schema_types_discriminated.ack.dart';
 part 'schema_types_discriminated.g.dart';
 
-/// Discriminated schema example for @AckType extension generation.
+/// Discriminated schema example for immutable model generation with @AckType.
 @AckType()
 final catSchema = Ack.object({'lives': Ack.integer()});
 
