@@ -11,8 +11,7 @@ import 'builders/model_emitter.dart';
 /// Generates immutable model classes for top-level schemas annotated with
 /// `@AckType`.
 final class AckSchemaGenerator extends Generator {
-  static const _ackAnnotationsUri =
-      'package:ack_annotations/ack_annotations.dart';
+  static const _ackTypeChecker = TypeChecker.typeNamed(AckType);
 
   @override
   Future<String> generate(LibraryReader library, BuildStep buildStep) async {
@@ -56,7 +55,7 @@ final class AckSchemaGenerator extends Generator {
     final graph = await SchemaModelGraphBuilder(library).build(annotated);
     final specs = AckModelEmitter(
       ackPrefix: _importPrefix(library, 'package:ack/ack.dart'),
-      ackTypePrefix: _importPrefix(library, _ackAnnotationsUri),
+      ackTypePrefix: _ackTypeQualifier(library, annotated.first),
     ).emit(graph);
     return Library((b) => b.body.addAll(specs))
         .accept(
@@ -70,7 +69,7 @@ final class AckSchemaGenerator extends Generator {
   }
 
   bool _hasAckType(Element element) =>
-      TypeChecker.typeNamed(AckType).hasAnnotationOfExact(element);
+      _ackTypeChecker.hasAnnotationOfExact(element);
 
   Future<void> _requirePartDirectives(
     BuildStep buildStep,
@@ -104,5 +103,45 @@ final class AckSchemaGenerator extends Generator {
       return import.prefix?.element.name;
     }
     return null;
+  }
+
+  /// Resolves the visible `AckType` qualifier for generated JSON markers.
+  ///
+  /// Uses import namespaces so barrel re-exports and `show` combinators work.
+  /// Prefixed imports win over unprefixed ones, in import order.
+  String? _ackTypeQualifier(LibraryReader library, Element annotatedElement) {
+    String? prefixed;
+    var hasUnprefixed = false;
+    for (final import in library.element.firstFragment.libraryImports) {
+      if (import.isSynthetic || (import.prefix?.isDeferred ?? false)) {
+        continue;
+      }
+      final prefix = import.prefix?.element.name;
+      final candidate = prefix == null
+          ? import.namespace.get2('AckType')
+          : import.namespace.getPrefixed2(prefix, 'AckType');
+      if (candidate == null || !_ackTypeChecker.isExactly(candidate)) {
+        continue;
+      }
+      if (prefix != null && prefix.isNotEmpty) {
+        prefixed ??= prefix;
+      } else {
+        hasUnprefixed = true;
+      }
+    }
+    if (prefixed != null) {
+      return prefixed;
+    }
+    if (hasUnprefixed) {
+      return null;
+    }
+    throw InvalidGenerationSource(
+      'Generated @AckType.jsonSerializable requires a visible exact AckType '
+      'import in this library.',
+      element: annotatedElement,
+      todo:
+          'Import AckType from ack_annotations, using the same prefix as '
+          '@AckType() when one is present.',
+    );
   }
 }

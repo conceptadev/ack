@@ -175,7 +175,7 @@ final petSchema = Ack.discriminated(
             contains('@AckType.jsonSerializable\nfinal class Cat extends Pet'),
             contains("String get kind => 'cat';"),
             contains("'kind': 'dog'"),
-            contains('...additionalProperties'),
+            contains('additionalProperties.entries'),
             contains(r'_$CatFromJson'),
             contains(r'_$DogToJson'),
           ]),
@@ -338,6 +338,107 @@ final userSchema = Ack.object({'name': Ack.string()});
       },
     );
   });
+
+  test('preserves a direct AckType qualifier on the JSON marker', () async {
+    await _build(
+      {
+        'schema.dart':
+            '''
+$_imports
+part 'schema.ack.dart';
+part 'schema.g.dart';
+
+@AckType()
+final userSchema = Ack.object({'name': Ack.string()});
+''',
+      },
+      outputs: {
+        'test_pkg|lib/schema.ack.dart': decodedMatches(
+          contains('@AckType.jsonSerializable'),
+        ),
+      },
+    );
+  });
+
+  test(
+    'preserves an unprefixed barrel AckType qualifier on the JSON marker',
+    () async {
+      await _build(
+        {
+          'annotations.dart':
+              "export 'package:ack_annotations/ack_annotations.dart';",
+          'schema.dart': '''
+import 'package:ack/ack.dart';
+import 'annotations.dart';
+
+part 'schema.ack.dart';
+part 'schema.g.dart';
+
+@AckType()
+final userSchema = Ack.object({'name': Ack.string()});
+''',
+        },
+        outputs: {
+          'test_pkg|lib/schema.ack.dart': decodedMatches(
+            contains('@AckType.jsonSerializable'),
+          ),
+        },
+      );
+    },
+  );
+
+  test(
+    'prefers a prefixed AckType qualifier when both imports are visible',
+    () async {
+      await _build(
+        {
+          'schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack_annotations/ack_annotations.dart' as annotations;
+
+part 'schema.ack.dart';
+part 'schema.g.dart';
+
+@AckType()
+final userSchema = Ack.object({'name': Ack.string()});
+''',
+        },
+        outputs: {
+          'test_pkg|lib/schema.ack.dart': decodedMatches(
+            contains('@annotations.AckType.jsonSerializable'),
+          ),
+        },
+      );
+    },
+  );
+
+  test(
+    'preserves a prefixed barrel AckType qualifier on the JSON marker',
+    () async {
+      await _build(
+        {
+          'annotations.dart':
+              "export 'package:ack_annotations/ack_annotations.dart';",
+          'schema.dart': '''
+import 'package:ack/ack.dart';
+import 'annotations.dart' as annotations show AckType;
+
+part 'schema.ack.dart';
+part 'schema.g.dart';
+
+@annotations.AckType()
+final userSchema = Ack.object({'name': Ack.string()});
+''',
+        },
+        outputs: {
+          'test_pkg|lib/schema.ack.dart': decodedMatches(
+            contains('@annotations.AckType.jsonSerializable'),
+          ),
+        },
+      );
+    },
+  );
 
   test('rejects field names that collide after bridge derivation', () async {
     final messages = <String>{};

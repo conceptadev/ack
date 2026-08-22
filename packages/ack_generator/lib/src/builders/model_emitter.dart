@@ -436,10 +436,10 @@ ${_ack('AckModelAdapter')}(
     }
 
     final effectiveFields = fields ?? _storedFields(node);
-    final keys = {
-      ...additionalKnownKeys,
-      for (final field in effectiveFields) field.jsonKey,
-    };
+    final keys = _declaredJsonKeys(
+      effectiveFields,
+      additionalKeys: additionalKnownKeys,
+    );
     return Method(
       (m) => m
         ..name = '_fromAckRuntime'
@@ -453,7 +453,7 @@ ${_ack('AckModelAdapter')}(
           ),
         )
         ..body = Code('''
-const declared = <String>{${keys.map(_literal).join(', ')}};
+const declared = ${_declaredKeysLiteral(keys)};
 return $helper(<String, dynamic>{
   ...value,
   'additionalProperties': Map<String, Object?>.fromEntries(
@@ -476,6 +476,14 @@ return $helper(<String, dynamic>{
     ];
     final helper = jsonToHelperName(node.className);
     final needsBlock = node.additionalProperties || requiredNulls.isNotEmpty;
+    final declaredLiteral = node.additionalProperties
+        ? _declaredKeysLiteral(
+            _declaredJsonKeys(
+              effectiveFields,
+              additionalKeys: leadingEntries.keys,
+            ),
+          )
+        : null;
 
     return Method((m) {
       m
@@ -496,11 +504,10 @@ return $helper(<String, dynamic>{
       }
 
       final lines = <String>[
+        if (declaredLiteral != null) 'const declared = $declaredLiteral;',
         'final result = $_runtimeMapLiteral{...$helper(this)};',
+        if (declaredLiteral != null) "result.remove('additionalProperties');",
       ];
-      if (node.additionalProperties) {
-        lines.add("result.remove('additionalProperties');");
-      }
       for (final field in requiredNulls) {
         lines.add(
           'if (${field.dartName} == null) {'
@@ -509,7 +516,9 @@ return $helper(<String, dynamic>{
         );
       }
       final returnEntries = <String>[
-        if (node.additionalProperties) '...additionalProperties',
+        if (declaredLiteral != null)
+          'for (final entry in additionalProperties.entries)\n'
+              '    if (!declared.contains(entry.key)) entry.key: entry.value',
         for (final entry in leadingEntries.entries)
           '${_literal(entry.key)}: ${entry.value}',
         '...result',
@@ -718,6 +727,14 @@ return $helper(<String, dynamic>{
         if (field.jsonKey != discriminator) field,
     ];
   }
+
+  Set<String> _declaredJsonKeys(
+    Iterable<AckFieldNode> fields, {
+    Iterable<String> additionalKeys = const [],
+  }) => {...additionalKeys, for (final field in fields) field.jsonKey};
+
+  String _declaredKeysLiteral(Set<String> keys) =>
+      '<String>{${keys.map(_literal).join(', ')}}';
 
   AckTypeRef _nonNullable(AckTypeRef type) => switch (type) {
     AckNullableTypeRef(:final inner) => inner,

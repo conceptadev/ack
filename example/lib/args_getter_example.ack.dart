@@ -55,9 +55,14 @@ final class UserConfig {
   }
 
   Map<String, Object?> _toAckRuntime() {
+    const declared = <String>{'username', 'email'};
     final result = <String, Object?>{..._$UserConfigToJson(this)};
     result.remove('additionalProperties');
-    return <String, Object?>{...additionalProperties, ...result};
+    return <String, Object?>{
+      for (final entry in additionalProperties.entries)
+        if (!declared.contains(entry.key)) entry.key: entry.value,
+      ...result,
+    };
   }
 
   static String _ackFromRuntimeUsername(Object? value) => value as String;
@@ -125,9 +130,14 @@ final class ApiRequest {
   }
 
   Map<String, Object?> _toAckRuntime() {
+    const declared = <String>{'method', 'url'};
     final result = <String, Object?>{..._$ApiRequestToJson(this)};
     result.remove('additionalProperties');
-    return <String, Object?>{...additionalProperties, ...result};
+    return <String, Object?>{
+      for (final entry in additionalProperties.entries)
+        if (!declared.contains(entry.key)) entry.key: entry.value,
+      ...result,
+    };
   }
 
   static String _ackFromRuntimeMethod(Object? value) => value as String;
@@ -195,9 +205,14 @@ final class FeatureFlags {
   }
 
   Map<String, Object?> _toAckRuntime() {
+    const declared = <String>{'appVersion', 'environment'};
     final result = <String, Object?>{..._$FeatureFlagsToJson(this)};
     result.remove('additionalProperties');
-    return <String, Object?>{...additionalProperties, ...result};
+    return <String, Object?>{
+      for (final entry in additionalProperties.entries)
+        if (!declared.contains(entry.key)) entry.key: entry.value,
+      ...result,
+    };
   }
 
   static String _ackFromRuntimeAppVersion(Object? value) => value as String;
@@ -258,9 +273,14 @@ final class DynamicData {
   }
 
   Map<String, Object?> _toAckRuntime() {
+    const declared = <String>{};
     final result = <String, Object?>{..._$DynamicDataToJson(this)};
     result.remove('additionalProperties');
-    return <String, Object?>{...additionalProperties, ...result};
+    return <String, Object?>{
+      for (final entry in additionalProperties.entries)
+        if (!declared.contains(entry.key)) entry.key: entry.value,
+      ...result,
+    };
   }
 
   static Map<String, Object?>? _ackFromRuntimeAdditionalProperties(

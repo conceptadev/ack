@@ -114,7 +114,7 @@ final extrasSchema = Ack.object({
 final catSchema = Ack.object({'lives': Ack.integer()});
 
 @AckType()
-final dogSchema = Ack.object({'friendly': Ack.boolean()});
+final dogSchema = Ack.object({'friendly': Ack.boolean()}).passthrough();
 
 @AckType()
 final petSchema = Ack.discriminated(
@@ -263,11 +263,30 @@ void main() {
         [1],
       ],
       box: const Box(['x']),
-      additionalProperties: const {'name': 'extra'},
+      additionalProperties: const {
+        'name': 'extra',
+        'nickname': 'injected',
+        'maybe': 'spoofed',
+      },
     );
+    expect(constructed.additionalProperties, {
+      'name': 'extra',
+      'nickname': 'injected',
+      'maybe': 'spoofed',
+    });
     expect(constructed.toJson()['name'], 'declared');
     expect(constructed.toJson().containsKey('nickname'), isFalse);
     expect(constructed.toJson()['maybe'], isNull);
+    expect(constructed.toJson().containsKey('maybe'), isTrue);
+  });
+
+  test('union discriminators cannot be spoofed through extras', () {
+    final dog = Dog(
+      friendly: true,
+      additionalProperties: const {'kind': 'cat', 'lives': 9},
+    );
+    expect(dog.additionalProperties['kind'], 'cat');
+    expect(dog.toJson(), {'lives': 9, 'kind': 'dog', 'friendly': true});
   });
 
   test('unions and exact value-root names round-trip', () {

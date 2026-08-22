@@ -127,9 +127,15 @@ final class Dog extends Pet {
 
   @override
   Map<String, Object?> _toAckRuntime() {
+    const declared = <String>{'kind', 'bark'};
     final result = <String, Object?>{..._$DogToJson(this)};
     result.remove('additionalProperties');
-    return <String, Object?>{...additionalProperties, 'kind': 'dog', ...result};
+    return <String, Object?>{
+      for (final entry in additionalProperties.entries)
+        if (!declared.contains(entry.key)) entry.key: entry.value,
+      'kind': 'dog',
+      ...result,
+    };
   }
 
   static bool _ackFromRuntimeBark(Object? value) => value as bool;
