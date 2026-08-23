@@ -1,3 +1,4 @@
+import 'package:ack/ack.dart';
 import 'package:ack_example/pet.dart' as explicit;
 import 'package:ack_example/schema_types_discriminated.dart' as omitted;
 import 'package:test/test.dart';
@@ -40,6 +41,19 @@ void main() {
         () => explicit.Cat.parse({'type': 'dog', 'breed': 'Poodle'}),
         throwsA(anything),
       );
+    });
+
+    test('unknown discriminator fails via the schema', () {
+      expect(
+        () => explicit.Pet.parse({'type': 'fish'}),
+        throwsA(isA<AckException>()),
+      );
+    });
+
+    test('unchecked constructor encode fails schema constraints', () {
+      final cat = explicit.Cat(lives: 99);
+      expect(cat.toJson, throwsA(isA<AckException>()));
+      expect(cat.safeToJson().isFail, isTrue);
     });
   });
 }

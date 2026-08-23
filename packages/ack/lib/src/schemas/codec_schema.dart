@@ -144,6 +144,9 @@ final class CodecSchema<Boundary extends Object, Runtime extends Object>
     try {
       intermediate = encode(runtime);
     } catch (e, st) {
+      if (e is Error) {
+        Error.throwWithStackTrace(e, st);
+      }
       return SchemaResult.fail(
         SchemaEncodeError.encoderThrew(
           message: 'Codec encode failed: ${e.toString()}',

@@ -17,6 +17,20 @@ void main() {
       expect(config.additionalProperties, {'theme': 'dark', 'retries': 3});
     });
 
+    test('encode writes extras first and declared fields win', () {
+      final config = UserConfig(
+        username: 'leo',
+        email: 'leo@example.com',
+        additionalProperties: {'theme': 'dark', 'username': 'intruder'},
+      );
+      final json = config.toJson();
+
+      expect(json['username'], 'leo');
+      expect(json['email'], 'leo@example.com');
+      expect(json['theme'], 'dark');
+      expect(json.containsKey('additionalProperties'), isFalse);
+    });
+
     test('passthrough additional properties are preserved', () {
       final request = ApiRequest.parse({
         'method': 'POST',

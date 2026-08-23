@@ -16,8 +16,6 @@
 
 * Generate `parse`, `safeParse`, `fromJson`, `toJson`, `safeToJson`, unchecked
   constructors, and public `$ack` adapters for model classes.
-* Add `AckModelAdapter` for codec-safe conversion between Ack runtime values and
-  generated models.
 * Add a normalized schema graph foundation for imported, recursive, and
   discriminated model dependencies.
 

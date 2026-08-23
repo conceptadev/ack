@@ -180,7 +180,7 @@ final class Tags {
 
   static SchemaResult<Tags> safeParse(Object? input) => $ack.safeParse(input);
 
-  List<String> toJson() => $ack.encode(this);
+  List<String> toJson() => List<String>.of($ack.encode(this));
 
   SchemaResult<List<String>> safeToJson() => $ack.safeEncode(this);
 
@@ -220,7 +220,7 @@ final class Scores {
 
   static SchemaResult<Scores> safeParse(Object? input) => $ack.safeParse(input);
 
-  List<int> toJson() => $ack.encode(this);
+  List<int> toJson() => List<int>.of($ack.encode(this));
 
   SchemaResult<List<int>> safeToJson() => $ack.safeEncode(this);
 

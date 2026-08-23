@@ -6,6 +6,12 @@ import 'package:json_annotation/json_annotation.dart';
 /// [AckType.jsonSerializable] so the internal JSON builder can delegate
 /// structural mapping to `json_serializable` without a literal
 /// `@JsonSerializable` annotation that the ordinary builder would also claim.
+///
+/// The marker must hold a real [JsonSerializable] constant because
+/// `JsonSerializableGenerator.generateForAnnotatedElement` → `mergeConfig`
+/// reads annotation fields via `ConstantReader`, and source_gen's null reader
+/// throws `UnsupportedError`. That is why `json_annotation` is a runtime
+/// dependency of this package.
 class AckGeneratedJson {
   /// Creates the internal JSON-mapping marker.
   const AckGeneratedJson({

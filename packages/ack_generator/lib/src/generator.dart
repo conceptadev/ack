@@ -12,9 +12,18 @@ import 'builders/model_emitter.dart';
 /// Generates immutable model classes for top-level schemas annotated with
 /// `@AckType`.
 final class AckSchemaGenerator extends Generator {
-  static const _ackTypeChecker = TypeChecker.typeNamed(AckType);
-  static const _ackModelAdapterChecker = TypeChecker.typeNamed(AckModelAdapter);
-  static const _schemaResultChecker = TypeChecker.typeNamed(SchemaResult);
+  static const _ackTypeChecker = TypeChecker.typeNamed(
+    AckType,
+    inPackage: 'ack_annotations',
+  );
+  static const _ackModelAdapterChecker = TypeChecker.typeNamed(
+    AckModelAdapter,
+    inPackage: 'ack',
+  );
+  static const _schemaResultChecker = TypeChecker.typeNamed(
+    SchemaResult,
+    inPackage: 'ack',
+  );
 
   @override
   Future<String> generate(LibraryReader library, BuildStep buildStep) async {
@@ -85,7 +94,8 @@ final class AckSchemaGenerator extends Generator {
     final unit = await buildStep.resolver.compilationUnitFor(buildStep.inputId);
     final parts = {
       for (final directive in unit.directives.whereType<PartDirective>())
-        if (directive.uri.stringValue case final uri?) uri,
+        if (directive.uri.stringValue case final uri?)
+          Uri.parse(uri).pathSegments.last,
     };
     if (parts.contains(expectedAckPart) && parts.contains(expectedJsonPart)) {
       return;

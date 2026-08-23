@@ -19,7 +19,10 @@ final class AckJsonSerializableGenerator extends Generator {
 
   final JsonSerializableGenerator _delegate;
 
-  static final _marker = TypeChecker.typeNamed(AckGeneratedJson);
+  static const _marker = TypeChecker.typeNamed(
+    AckGeneratedJson,
+    inPackage: 'ack_annotations',
+  );
 
   @override
   String generate(LibraryReader library, BuildStep buildStep) {

@@ -54,6 +54,20 @@ void main() {
       expect(modifier.nullableOptional, isNull);
     });
 
+    test('required nullable encodes null and optional null is omitted', () {
+      final modifier = Modifier(
+        requiredField: 'value',
+        nullableField: null,
+      );
+      final json = modifier.toJson();
+
+      expect(json.containsKey('nullableField'), isTrue);
+      expect(json['nullableField'], isNull);
+      expect(json.containsKey('optionalField'), isFalse);
+      expect(json.containsKey('optionalNullable'), isFalse);
+      expect(json.containsKey('nullableOptional'), isFalse);
+    });
+
     test('empty and minimal schemas still parse', () {
       final empty = Empty.parse({});
       final minimal = Minimal.parse({'id': 'abc-123'});

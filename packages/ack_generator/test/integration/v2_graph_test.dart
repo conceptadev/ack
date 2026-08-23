@@ -177,10 +177,216 @@ $_head
 @AckType()
 final payloadSchema = ${unsupported.key};
 ''',
-        [unsupported.value],
+        ['payloadSchema', unsupported.value],
       );
     });
   }
+
+  test('rejects a .trim() field with the declaration path', () async {
+    await _expectFailure(
+      '''
+$_head
+@AckType()
+final userSchema = Ack.object({
+  'nick': Ack.string().trim(),
+});
+''',
+      ['userSchema.nick', '.transform()'],
+    );
+  });
+
+  test('rejects a local one-way transform field and names the variable', () async {
+    await _expectFailure(
+      '''
+$_head
+final ageFromString = Ack.string().transform(int.parse);
+
+@AckType()
+final userSchema = Ack.object({
+  'age': ageFromString,
+});
+''',
+      ['userSchema.age', 'ageFromString', '.transform()'],
+    );
+  });
+
+  test('rejects a local one-way transform used as an annotated root', () async {
+    await _expectFailure(
+      '''
+$_head
+final ageFromString = Ack.string().transform(int.parse);
+
+@AckType()
+final ageSchema = ageFromString;
+''',
+      ['ageSchema', 'ageFromString', '.transform()'],
+    );
+  });
+
+  test('rejects a local Ack.any() field by following the variable', () async {
+    await _expectFailure(
+      '''
+$_head
+final payloadAny = Ack.any();
+
+@AckType()
+final userSchema = Ack.object({
+  'payload': payloadAny,
+});
+''',
+      ['userSchema.payload', 'payloadAny', 'Ack.any()'],
+    );
+  });
+
+  test('rejects an unannotated named Ack.object field', () async {
+    await _expectFailure(
+      '''
+$_head
+final address = Ack.object({'city': Ack.string()});
+
+@AckType()
+final userSchema = Ack.object({
+  'home': address,
+});
+''',
+      ['userSchema.home', "'address'", '@AckType'],
+    );
+  });
+
+  test('rejects a leading-underscore JSON key', () async {
+    await _expectFailure(
+      '''
+$_head
+@AckType()
+final userSchema = Ack.object({
+  '_id': Ack.string(),
+});
+''',
+      ['userSchema._id', "cannot start with '_'"],
+    );
+  });
+
+  test('rejects a leading-underscore discriminator key', () async {
+    await _expectFailure(
+      '''
+$_head
+@AckType()
+final catSchema = Ack.object({'lives': Ack.integer()});
+
+@AckType()
+final petSchema = Ack.discriminated(
+  discriminatorKey: '_kind',
+  schemas: {'cat': catSchema},
+);
+''',
+      ['petSchema._kind', "cannot start with '_'"],
+    );
+  });
+
+  test('rejects an anonymous inline object field with the path', () async {
+    await _expectFailure(
+      '''
+$_head
+@AckType()
+final userSchema = Ack.object({
+  'home': Ack.object({'city': Ack.string()}),
+});
+''',
+      ['userSchema.home', 'anonymous inline'],
+    );
+  });
+
+  test('rejects an anonymous inline object inside Ack.list', () async {
+    await _expectFailure(
+      '''
+$_head
+@AckType()
+final bagSchema = Ack.object({
+  'items': Ack.list(Ack.object({'n': Ack.string()})),
+});
+''',
+      ['bagSchema.items[]', 'anonymous inline'],
+    );
+  });
+
+  test('rejects a dynamic factory root with the declaration path', () async {
+    await _expectFailure(
+      '''
+$_head
+AckSchema make() => Ack.string();
+
+@AckType()
+final payloadSchema = make();
+''',
+      ['payloadSchema', 'unresolvable dynamic schema factory'],
+    );
+  });
+
+  test('rejects a generated-class-name collision', () async {
+    await _expectFailure(
+      '''
+$_head
+@AckType(name: 'User')
+final firstSchema = Ack.object({'a': Ack.string()});
+
+@AckType(name: 'User')
+final secondSchema = Ack.object({'b': Ack.string()});
+''',
+      ['User', 'Multiple @AckType'],
+    );
+  });
+
+  test('follows local bidirectional codec and list variables', () async {
+    await _expectOutput(
+      '''
+$_head
+final class Color {
+  const Color(this.value);
+  final String value;
+}
+
+final color = Ack.string().codec<Color>(
+  decode: Color.new,
+  encode: (c) => c.value,
+);
+
+final tags = Ack.list(Ack.string());
+
+@AckType()
+final profileSchema = Ack.object({
+  'color': color,
+  'tags': tags,
+});
+''',
+      allOf([
+        contains('required this.color'),
+        contains('final Color color'),
+        contains('required List<String> tags'),
+        contains('final List<String> tags'),
+      ]),
+    );
+  });
+
+  test('generates codec fields whose outputSchema is InstanceSchema', () async {
+    await _expectOutput(
+      '''
+$_head
+final class Color {
+  const Color(this.value);
+  final String value;
+}
+
+@AckType()
+final userSchema = Ack.object({
+  'color': Ack.string().codec<Color>(
+    decode: Color.new,
+    encode: (c) => c.value,
+  ),
+});
+''',
+      allOf([contains('required this.color'), contains('final Color color')]),
+    );
+  });
 
   test('rejects ordinary alias cycles', () async {
     await _expectFailure(

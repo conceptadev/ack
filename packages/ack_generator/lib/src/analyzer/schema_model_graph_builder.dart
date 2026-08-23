@@ -1,3 +1,5 @@
+import 'package:ack/ack.dart'
+    show AckSchema, AnyOfSchema, AnySchema, InstanceSchema;
 import 'package:ack_annotations/ack_annotations.dart';
 import 'package:analyzer/dart/analysis/results.dart';
 import 'package:analyzer/dart/ast/ast.dart';
@@ -138,11 +140,43 @@ final class SchemaModelGraphBuilder {
     '_ackImmutableCopyMap',
   };
 
+  static const _oneWayTransformMethods = {
+    'transform',
+    'trim',
+    'toLowerCase',
+    'toUpperCase',
+  };
+
+  static const _maxReferenceDepth = 16;
+
+  static const _ackTypeChecker = TypeChecker.typeNamed(
+    AckType,
+    inPackage: 'ack_annotations',
+  );
+  static const _ackSchemaChecker = TypeChecker.typeNamed(
+    AckSchema,
+    inPackage: 'ack',
+  );
+  static const _anySchemaChecker = TypeChecker.typeNamed(
+    AnySchema,
+    inPackage: 'ack',
+  );
+  static const _anyOfSchemaChecker = TypeChecker.typeNamed(
+    AnyOfSchema,
+    inPackage: 'ack',
+  );
+  static const _instanceSchemaChecker = TypeChecker.typeNamed(
+    InstanceSchema,
+    inPackage: 'ack',
+  );
+
   final LibraryReader library;
   final AckModelGraph _graph = AckModelGraph();
   final Map<Element, _Declaration> _declarationsByElement = {};
   final Map<AckSchemaId, _Declaration> _declarationsById = {};
   final Map<AckSchemaId, AckSchemaId> _unionOwnerByBranch = {};
+  ResolvedLibraryResult? _inputResolved;
+  final Map<Uri, ResolvedLibraryResult> _resolvedByUri = {};
 
   Future<AckModelGraph> build(List<Element> annotatedElements) async {
     final libraryElement = library.element;
@@ -154,6 +188,8 @@ final class SchemaModelGraphBuilder {
         'Could not resolve ${libraryElement.uri} for Ack model generation.',
       );
     }
+    _inputResolved = resolved;
+    _resolvedByUri[libraryElement.uri] = resolved;
 
     for (final element in annotatedElements) {
       final expression = _declarationExpression(resolved, element);
@@ -226,6 +262,26 @@ final class SchemaModelGraphBuilder {
     return null;
   }
 
+  Future<ResolvedLibraryResult> _resolvedLibraryFor(
+    LibraryElement libraryElement,
+  ) async {
+    if (identical(libraryElement, library.element) && _inputResolved != null) {
+      return _inputResolved!;
+    }
+    final cached = _resolvedByUri[libraryElement.uri];
+    if (cached != null) return cached;
+    final resolved = await libraryElement.session.getResolvedLibraryByElement(
+      libraryElement,
+    );
+    if (resolved is! ResolvedLibraryResult) {
+      throw InvalidGenerationSource(
+        'Could not resolve ${libraryElement.uri} for Ack model generation.',
+      );
+    }
+    _resolvedByUri[libraryElement.uri] = resolved;
+    return resolved;
+  }
+
   Future<void> _resolve(
     _Declaration declaration, {
     required bool throughLazy,
@@ -264,7 +320,8 @@ final class SchemaModelGraphBuilder {
       node = await _objectNode(declaration, chain, path);
     } else if (baseName == 'discriminated') {
       node = await _unionNode(declaration, chain, path);
-    } else if (chain.reference != null) {
+    } else if (chain.reference != null &&
+        _localDeclaration(chain.reference!) != null) {
       node = await _aliasNode(declaration, chain.reference!, path);
     } else {
       const supportedValueRoots = {
@@ -284,7 +341,7 @@ final class SchemaModelGraphBuilder {
         'codec',
         'lazy',
       };
-      if (!supportedValueRoots.contains(baseName)) {
+      if (baseName != null && !supportedValueRoots.contains(baseName)) {
         _rejectUnsupportedRoot(baseName, path, declaration.element);
       }
       node = await _valueNode(declaration, path);
@@ -381,13 +438,7 @@ final class SchemaModelGraphBuilder {
         );
       }
       final jsonKey = (entry.key as SimpleStringLiteral).value;
-      if (!RegExp(r'^[A-Za-z_$][A-Za-z0-9_$]*$').hasMatch(jsonKey) ||
-          _dartKeywords.contains(jsonKey)) {
-        throw InvalidGenerationSource(
-          '$path.$jsonKey cannot be represented as a Dart field name.',
-          element: declaration.element,
-        );
-      }
+      _rejectInvalidMemberName(jsonKey, path, declaration.element);
       if (_reservedMembers.contains(jsonKey)) {
         throw InvalidGenerationSource(
           '$path.$jsonKey conflicts with generated/Object member "$jsonKey".',
@@ -468,8 +519,8 @@ final class SchemaModelGraphBuilder {
         element: declaration.element,
       );
     }
+    _rejectInvalidMemberName(discriminatorKey, path, declaration.element);
     if (_reservedMembers.contains(discriminatorKey) ||
-        _dartKeywords.contains(discriminatorKey) ||
         discriminatorKey == 'additionalProperties') {
       throw InvalidGenerationSource(
         '$path.$discriminatorKey conflicts with a generated member or Dart '
@@ -554,6 +605,9 @@ final class SchemaModelGraphBuilder {
     required String path,
     required Element context,
     required bool throughLazy,
+    Set<Element>? visited,
+    int depth = 0,
+    String? followedName,
   }) async {
     final chain = _chain(expression);
     _rejectTransform(chain, path, context);
@@ -563,6 +617,13 @@ final class SchemaModelGraphBuilder {
     final baseName = chain.base?.methodName.name;
     switch (baseName) {
       case 'object':
+        if (followedName != null) {
+          throw InvalidGenerationSource(
+            "$path references '$followedName', an Ack.object schema without "
+            '@AckType. Annotate it to generate a model.',
+            element: context,
+          );
+        }
         throw InvalidGenerationSource(
           '$path uses an anonymous inline Ack.object(...).',
           element: context,
@@ -585,6 +646,8 @@ final class SchemaModelGraphBuilder {
             path: '$path[]',
             context: context,
             throughLazy: throughLazy,
+            visited: visited,
+            depth: depth,
           ),
         );
       case 'enumValues':
@@ -602,6 +665,13 @@ final class SchemaModelGraphBuilder {
       case 'lazy':
         return _lazyType(chain.base!, path, context);
       case 'discriminated':
+        if (followedName != null) {
+          throw InvalidGenerationSource(
+            "$path references '$followedName', an Ack.discriminated schema "
+            'without @AckType. Annotate it to generate a model.',
+            element: context,
+          );
+        }
         throw InvalidGenerationSource(
           '$path uses an anonymous discriminated union.',
           element: context,
@@ -617,8 +687,74 @@ final class SchemaModelGraphBuilder {
         throughLazy: throughLazy,
       );
       if (model != null) return model;
+      if (chain.base == null) {
+        final followed = await _followUnannotatedReference(
+          reference,
+          path: path,
+          context: context,
+          throughLazy: throughLazy,
+          visited: visited ?? {},
+          depth: depth,
+        );
+        if (followed != null) return followed;
+      }
+    }
+
+    _rejectUnsupportedSchemaType(expression, path, context);
+    if (chain.base == null) {
+      _rejectUnsupportedRoot(null, path, context);
     }
     return _schemaTypes(expression, path, context).runtime;
+  }
+
+  Future<AckTypeRef?> _followUnannotatedReference(
+    Expression reference, {
+    required String path,
+    required Element context,
+    required bool throughLazy,
+    required Set<Element> visited,
+    required int depth,
+  }) async {
+    final element = _referencedElement(reference);
+    if (element == null) return null;
+    if (element is! TopLevelVariableElement && element is! GetterElement) {
+      return null;
+    }
+    if (_hasAckType(element)) return null;
+    if (depth >= _maxReferenceDepth) {
+      throw InvalidGenerationSource(
+        '$path exceeds schema reference depth $_maxReferenceDepth.',
+        element: context,
+      );
+    }
+    final canonical = element.baseElement;
+    if (visited.contains(canonical)) {
+      throw InvalidGenerationSource(
+        "$path follows a cyclic schema reference through '${element.name}'.",
+        element: context,
+      );
+    }
+    final declaration = _propertyDeclaration(element);
+    final owningLibrary = declaration.library;
+    if (owningLibrary == null) return null;
+    final resolved = await _resolvedLibraryFor(owningLibrary);
+    final initializer = _declarationExpression(resolved, declaration);
+    if (initializer == null) {
+      throw InvalidGenerationSource(
+        "$path references '${element.name}', which has no statically "
+        'resolvable initializer.',
+        element: context,
+      );
+    }
+    return _runtimeRefForSchema(
+      initializer,
+      path: '$path(→ ${element.name})',
+      context: context,
+      throughLazy: throughLazy,
+      visited: {...visited, canonical},
+      depth: depth + 1,
+      followedName: element.name,
+    );
   }
 
   Future<AckTypeRef> _lazyType(
@@ -735,9 +871,7 @@ final class SchemaModelGraphBuilder {
   }
 
   bool _isAckSchema(InterfaceType type) {
-    return type.element.name == 'AckSchema' &&
-        type.element.library.uri.toString() ==
-            'package:ack/src/schemas/schema.dart';
+    return _ackSchemaChecker.isExactlyType(type);
   }
 
   AckTypeRef _typeRef(DartType type, Element context) {
@@ -841,7 +975,7 @@ final class SchemaModelGraphBuilder {
       optional |= name == 'optional';
       nullable |= name == 'nullable';
       defaulted |= name == 'withDefault';
-      transform |= name == 'transform';
+      transform |= _oneWayTransformMethods.contains(name);
       codec |= name == 'codec';
       final target = current.target;
       if (_isAckTarget(target)) {
@@ -912,15 +1046,13 @@ final class SchemaModelGraphBuilder {
   }
 
   bool _hasAckType(Element element) {
-    return TypeChecker.typeNamed(
-      AckType,
-    ).hasAnnotationOfExact(_propertyDeclaration(element));
+    return _ackTypeChecker.hasAnnotationOfExact(_propertyDeclaration(element));
   }
 
   String? _annotationName(Element element) {
-    final annotation = TypeChecker.typeNamed(
-      AckType,
-    ).firstAnnotationOfExact(_propertyDeclaration(element));
+    final annotation = _ackTypeChecker.firstAnnotationOfExact(
+      _propertyDeclaration(element),
+    );
     final field = annotation == null
         ? null
         : ConstantReader(annotation).peek('name');
@@ -1137,6 +1269,40 @@ final class SchemaModelGraphBuilder {
     };
   }
 
+  void _rejectInvalidMemberName(String jsonKey, String path, Element element) {
+    if (jsonKey.startsWith('_')) {
+      throw InvalidGenerationSource(
+        "$path.$jsonKey cannot start with '_' (private Dart member).",
+        element: element,
+      );
+    }
+    if (!RegExp(r'^[A-Za-z$][A-Za-z0-9_$]*$').hasMatch(jsonKey) ||
+        _dartKeywords.contains(jsonKey)) {
+      throw InvalidGenerationSource(
+        '$path.$jsonKey cannot be represented as a Dart field name.',
+        element: element,
+      );
+    }
+  }
+
+  void _rejectUnsupportedSchemaType(
+    Expression expression,
+    String path,
+    Element element,
+  ) {
+    final type = expression.staticType;
+    if (type == null) return;
+    if (_anySchemaChecker.isAssignableFromType(type)) {
+      _rejectUnsupportedRoot('any', path, element);
+    }
+    if (_anyOfSchemaChecker.isAssignableFromType(type)) {
+      _rejectUnsupportedRoot('anyOf', path, element);
+    }
+    if (_instanceSchemaChecker.isAssignableFromType(type)) {
+      _rejectUnsupportedRoot('instance', path, element);
+    }
+  }
+
   void _rejectTransform(_SchemaChain chain, String path, Element element) {
     if (!chain.hasTransform) return;
     throw InvalidGenerationSource(
@@ -1193,6 +1359,12 @@ final class SchemaModelGraphBuilder {
 
   /// Normalizes analyzer 10's expression arguments and analyzer 13's
   /// dedicated argument nodes into the expression API used by the graph.
+  ///
+  /// The `dynamic` shim exists because analyzer 10 represents arguments as
+  /// [Expression] / [NamedExpression], while analyzer 13+ wraps them in an
+  /// `Argument` interface that is not a compile-time type in analyzer 10.
+  /// Keeping `analyzer: ">=10.0.0 <15.0.0"` matches json_serializable 6.14.1
+  /// so consumers are not forced onto a narrower resolver.
   List<Expression> _argumentExpressions(ArgumentList argumentList) =>
       argumentList.arguments
           .map((argument) => _argumentExpression(argument))
@@ -1204,12 +1376,22 @@ final class SchemaModelGraphBuilder {
     if (argument is Expression) return argument;
 
     final dynamic dynamicArgument = argument;
-    // Analyzer 13+ wraps positional expressions in the Argument interface.
-    // ignore: avoid_dynamic_calls
-    return dynamicArgument.argumentExpression as Expression;
+    try {
+      // Analyzer 13+ wraps positional expressions in the Argument interface.
+      // ignore: avoid_dynamic_calls
+      return dynamicArgument.argumentExpression as Expression;
+    } on Object {
+      throw InvalidGenerationSource(
+        'Unsupported analyzer argument node ${argument.runtimeType}; '
+        'ack_generator supports analyzer 10–14',
+      );
+    }
   }
 
   ({String name, Expression expression})? _namedArgument(AstNode argument) {
+    // NamedExpression (analyzer 10) and Argument (analyzer 13+) are not a
+    // shared compile-time type across analyzer 10–14. The build script is
+    // AOT-compiled against the resolved analyzer, so this must stay dynamic.
     final dynamic dynamicArgument = argument;
     String? name;
     try {
@@ -1222,7 +1404,11 @@ final class SchemaModelGraphBuilder {
         // ignore: avoid_dynamic_calls
         name = dynamicArgument.name.label.name as String?;
       } on Object {
-        return null;
+        if (argument is Expression) return null;
+        throw InvalidGenerationSource(
+          'Unsupported analyzer argument node ${argument.runtimeType}; '
+          'ack_generator supports analyzer 10–14',
+        );
       }
     }
     if (name == null) return null;
@@ -1233,10 +1419,17 @@ final class SchemaModelGraphBuilder {
       final expression = dynamicArgument.argumentExpression as Expression;
       return (name: name, expression: expression);
     } on Object {
-      // Analyzer 10 uses NamedExpression.expression.
-      // ignore: avoid_dynamic_calls
-      final expression = dynamicArgument.expression as Expression;
-      return (name: name, expression: expression);
+      try {
+        // Analyzer 10 uses NamedExpression.expression.
+        // ignore: avoid_dynamic_calls
+        final expression = dynamicArgument.expression as Expression;
+        return (name: name, expression: expression);
+      } on Object {
+        throw InvalidGenerationSource(
+          'Unsupported analyzer argument node ${argument.runtimeType}; '
+          'ack_generator supports analyzer 10–14',
+        );
+      }
     }
   }
 }

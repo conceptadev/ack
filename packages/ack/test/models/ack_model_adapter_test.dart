@@ -9,6 +9,12 @@ final _userAdapter = AckModelAdapter<JsonMap, JsonMap, _User>(
   toRuntime: (user) => user.toRuntime(),
 );
 
+final _boomAdapter = AckModelAdapter<JsonMap, JsonMap, _User>(
+  schema: () => _userSchema,
+  fromRuntime: (_) => throw TypeError(),
+  toRuntime: (user) => user.toRuntime(),
+);
+
 final class _User {
   const _User({required this.name, required this.age});
 
@@ -48,6 +54,24 @@ void main() {
       final result = _userAdapter.safeParse({'name': 'Ada', 'age': '36'});
 
       expect(result.isFail, isTrue);
+    });
+
+    test('parse wraps validation failures as AckException', () {
+      expect(
+        () => _userAdapter.parse({'name': 'Ada', 'age': '36'}),
+        throwsA(isA<AckException>()),
+      );
+    });
+
+    test('fromRuntime TypeError propagates from parse and safeParse', () {
+      expect(
+        () => _boomAdapter.parse({'name': 'Ada', 'age': 36}),
+        throwsA(isA<TypeError>()),
+      );
+      expect(
+        () => _boomAdapter.safeParse({'name': 'Ada', 'age': 36}),
+        throwsA(isA<TypeError>()),
+      );
     });
   });
 }

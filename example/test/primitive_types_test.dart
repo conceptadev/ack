@@ -1,6 +1,6 @@
 import 'package:ack/ack.dart';
 import 'package:ack_example/schema_types_primitives.dart';
-import 'package:test/test.dart';
+import 'package:test/test.dart' hide Tags;
 
 /// Tests for primitive schemas.
 ///
@@ -116,6 +116,12 @@ void main() {
       // Can use String methods on elements
       final uppercaseTags = tags.map((t) => t.toUpperCase()).toList();
       expect(uppercaseTags, ['DART', 'FLUTTER', 'VALIDATION']);
+    });
+
+    test('Tags.toJson returns a mutable top-level list', () {
+      final json = Tags.parse(['dart', 'flutter']).toJson();
+      json.add('ack');
+      expect(json, ['dart', 'flutter', 'ack']);
     });
   });
 

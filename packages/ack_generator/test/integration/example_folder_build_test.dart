@@ -3,7 +3,11 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
-void _copyDirectory(Directory source, Directory destination) {
+void _copyDirectory(
+  Directory source,
+  Directory destination, {
+  bool keepGenerated = false,
+}) {
   destination.createSync(recursive: true);
   for (final entity in source.listSync()) {
     final name = p.basename(entity.path);
@@ -12,10 +16,10 @@ void _copyDirectory(Directory source, Directory destination) {
     }
     final target = p.join(destination.path, name);
     if (entity is Directory) {
-      _copyDirectory(entity, Directory(target));
+      _copyDirectory(entity, Directory(target), keepGenerated: keepGenerated);
     } else if (entity is File &&
-        !name.endsWith('.ack.dart') &&
-        !name.endsWith('.g.dart')) {
+        (keepGenerated ||
+            (!name.endsWith('.ack.dart') && !name.endsWith('.g.dart')))) {
       entity.copySync(target);
     }
   }
@@ -149,6 +153,95 @@ dependency_overrides:
           'second build_runner build',
         );
         expect(_generatedContents(temporaryExample), first);
+      } finally {
+        temporaryRoot.deleteSync(recursive: true);
+      }
+    },
+    timeout: const Timeout(Duration(minutes: 3)),
+  );
+
+  test(
+    'rebuilds when generated outputs are already present',
+    () async {
+      var projectRoot = Directory.current;
+      while (!Directory(
+        p.join(projectRoot.path, 'packages', 'ack_generator'),
+      ).existsSync()) {
+        projectRoot = projectRoot.parent;
+      }
+      final sourceExample = Directory(p.join(projectRoot.path, 'example'));
+      final temporaryRoot = await Directory.systemTemp.createTemp(
+        'ack_generator_example_present_',
+      );
+      final temporaryExample = Directory(
+        p.join(temporaryRoot.path, 'ack_example'),
+      );
+
+      try {
+        _copyDirectory(sourceExample, temporaryExample, keepGenerated: true);
+        File(
+          p.join(temporaryExample.path, 'analysis_options.yaml'),
+        ).writeAsStringSync('''
+analyzer:
+  language:
+    strict-casts: true
+''');
+        File(p.join(temporaryExample.path, 'pubspec.yaml')).writeAsStringSync(
+          '''
+name: ack_example
+publish_to: none
+environment:
+  sdk: '>=3.9.0 <4.0.0'
+dependencies:
+  ack:
+    path: ${p.join(projectRoot.path, 'packages', 'ack')}
+  ack_annotations:
+    path: ${p.join(projectRoot.path, 'packages', 'ack_annotations')}
+dev_dependencies:
+  ack_generator:
+    path: ${p.join(projectRoot.path, 'packages', 'ack_generator')}
+  build_runner: ^2.15.0
+  test: ^1.29.0
+dependency_overrides:
+  ack:
+    path: ${p.join(projectRoot.path, 'packages', 'ack')}
+  ack_annotations:
+    path: ${p.join(projectRoot.path, 'packages', 'ack_annotations')}
+''',
+        );
+
+        _expectSuccess(
+          await _run(temporaryExample, ['pub', 'get']),
+          'dart pub get',
+        );
+
+        final schemaFile = File(
+          p.join(temporaryExample.path, 'lib', 'schema_types_simple.dart'),
+        );
+        schemaFile.writeAsStringSync(
+          schemaFile.readAsStringSync().replaceFirst(
+            "'name': Ack.string(),",
+            "'name': Ack.string(),\n  'nickname': Ack.string().optional(),",
+          ),
+        );
+        final generatedFile = File(
+          p.join(temporaryExample.path, 'lib', 'schema_types_simple.ack.dart'),
+        );
+        final before = generatedFile.readAsStringSync();
+
+        _expectSuccess(
+          await _run(temporaryExample, ['run', 'build_runner', 'build']),
+          'outputs-present build_runner build',
+        );
+
+        final after = generatedFile.readAsStringSync();
+        expect(after, isNot(equals(before)));
+        expect(after, contains('nickname'));
+        _expectSuccess(
+          await _run(temporaryExample, ['analyze', '--fatal-infos']),
+          'dart analyze --fatal-infos',
+        );
+        _expectSuccess(await _run(temporaryExample, ['test']), 'dart test');
       } finally {
         temporaryRoot.deleteSync(recursive: true);
       }

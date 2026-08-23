@@ -211,7 +211,7 @@ final petSchema = Ack.discriminated(
   });
 
   test(
-    'rejects anonymous objects and generated member collisions with paths',
+    'rejects generated member collisions with paths',
     () async {
       final messages = <String>{};
       await _build(
@@ -567,5 +567,79 @@ final userSchema = Ack.object({'name': Ack.string()});
       },
     );
     expect(messages.single, contains(r'_$UserFromJson'));
+  });
+
+  test('rejects a cross-library unannotated schema variable', () async {
+    final messages = <String>{};
+    await _build(
+      {
+        'other.dart':
+            '''
+import 'package:ack/ack.dart';
+
+final payloadAny = Ack.any();
+''',
+        'user.dart':
+            '''
+$_imports
+import 'other.dart';
+part 'user.ack.dart';
+part 'user.g.dart';
+
+@AckType()
+final userSchema = Ack.object({
+  'payload': payloadAny,
+});
+''',
+      },
+      outputs: const {},
+      onLog: (log) {
+        if (log.level.name == 'SEVERE') messages.add(log.message);
+      },
+    );
+    expect(messages.single, contains('userSchema.payload'));
+    expect(messages.single, contains('payloadAny'));
+  });
+
+  test('rejects a cross-library discriminated branch with the path', () async {
+    final messages = <String>{};
+    await _build(
+      {
+        'cat.dart':
+            '''
+$_imports
+part 'cat.ack.dart';
+part 'cat.g.dart';
+
+@AckType()
+final catSchema = Ack.object({
+  'kind': Ack.literal('cat'),
+  'lives': Ack.integer(),
+});
+''',
+        'pet.dart':
+            '''
+$_imports
+import 'cat.dart';
+part 'pet.ack.dart';
+part 'pet.g.dart';
+
+@AckType()
+final petSchema = Ack.discriminated(
+  discriminatorKey: 'kind',
+  schemas: {'cat': catSchema},
+);
+''',
+      },
+      outputs: {
+        'test_pkg|lib/cat.ack.dart': decodedMatches(contains('final class Cat')),
+      },
+      onLog: (log) {
+        if (log.level.name == 'SEVERE') messages.add(log.message);
+      },
+    );
+    expect(messages, isNotEmpty);
+    expect(messages.join('\n'), contains('petSchema.cat'));
+    expect(messages.join('\n'), contains('cross-library'));
   });
 }

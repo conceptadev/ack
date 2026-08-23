@@ -288,10 +288,16 @@ Annotate a top-level schema variable or getter. The schema stays in your source 
 **Unsupported:** nullable roots, one-way transforms, `Ack.any()`, `Ack.anyOf()`, bare `Ack.instance<T>()`, and anonymous inline objects
 
 For `Ack.discriminated(...)` constraints with `@AckType`, see
-[Type-safe Schemas](../core-concepts/typesafe-schemas.mdx#discriminated-schemas).
+[Type-safe Schemas](../core-concepts/typesafe-schemas.mdx#discriminated-unions).
 
 **Example:**
 ```dart
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+part 'user.ack.dart';
+part 'user.g.dart';
+
 @AckType()
 final userSchema = Ack.object({
   'name': Ack.string(),

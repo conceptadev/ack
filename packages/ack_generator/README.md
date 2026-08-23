@@ -57,7 +57,8 @@ are copied recursively into unmodifiable collections.
 
 Generation rejects shapes without a useful static, encodable model contract:
 
-- one-way `.transform()` calls; use `.codec()` with an encoder;
+- one-way `.transform()` calls, including `.trim()`, `.toLowerCase()`, and
+  `.toUpperCase()`; use `.codec()` with an encoder;
 - nullable roots;
 - `Ack.any()`, `Ack.anyOf()`, and bare `Ack.instance<T>()`;
 - anonymous inline object fields and unresolved dynamic schema factories;

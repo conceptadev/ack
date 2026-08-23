@@ -76,7 +76,10 @@ Generated models don't implement `Map`. Use `toJson()` when a map is needed.
 - same-library discriminated unions.
 
 One-way `.transform()` calls are rejected because a generated model must encode
-back to its boundary value. Replace them with `.codec(decode: ..., encode: ...)`.
+back to its boundary value. `.trim()`, `.toLowerCase()`, and `.toUpperCase()`
+are one-way wrappers around `transform()` and must become `.codec()` for
+`@AckType` schemas. Replace parse-only transforms with
+`.codec(decode: ..., encode: ...)`.
 
 The generator also rejects nullable roots, `Ack.any()`, `Ack.anyOf()`, bare
 `Ack.instance<T>()`, anonymous inline object fields, unresolved dynamic schema

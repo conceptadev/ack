@@ -100,7 +100,7 @@ final class AckModelEmitter {
               ..name = 'toJson'
               ..returns = refer(boundaryType)
               ..lambda = true
-              ..body = const Code(r'$ack.encode(this)'),
+              ..body = Code(_valueToJsonBody(node.boundaryType)),
           ),
           Method(
             (m) => m
@@ -755,6 +755,16 @@ return $helper(<String, dynamic>{
     AckMapTypeRef() => true,
     _ => false,
   };
+
+  String _valueToJsonBody(AckTypeRef boundaryType) {
+    return switch (boundaryType) {
+      AckListTypeRef(:final elementType) =>
+        'List<${_type(elementType)}>.of(\$ack.encode(this))',
+      AckSetTypeRef(:final elementType) =>
+        'Set<${_type(elementType)}>.of(\$ack.encode(this))',
+      _ => r'$ack.encode(this)',
+    };
+  }
 
   String _type(AckTypeRef type) {
     return switch (type) {

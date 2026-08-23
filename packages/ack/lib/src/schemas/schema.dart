@@ -203,9 +203,7 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
     // a programmer or runtime defect rather than invalid input. Preserve its
     // identity and original stack trace instead of disguising it as a failed
     // validation result.
-    if (error is Error) {
-      Error.throwWithStackTrace(error, stackTrace);
-    }
+    _rethrowIfError(error, stackTrace);
     return SchemaResult.fail(
       SchemaValidationError(
         message: message,
@@ -405,6 +403,7 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
     try {
       return SchemaResult.ok(map(validated));
     } catch (e, st) {
+      _rethrowIfError(e, st);
       return SchemaResult.fail(
         SchemaTransformError(
           message: 'Transformation failed: ${e.toString()}',
@@ -439,6 +438,7 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
     try {
       return encodeWithContext(value, context);
     } catch (e, st) {
+      _rethrowIfError(e, st);
       return SchemaResult.fail(
         SchemaEncodeError.encoderThrew(
           message: 'Encoder threw: ${e.toString()}',
@@ -447,6 +447,12 @@ abstract class AckSchema<Boundary extends Object, Runtime extends Object> {
           stackTrace: st,
         ),
       );
+    }
+  }
+
+  void _rethrowIfError(Object error, StackTrace stackTrace) {
+    if (error is Error) {
+      Error.throwWithStackTrace(error, stackTrace);
     }
   }
 
