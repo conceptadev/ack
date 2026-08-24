@@ -1,7 +1,8 @@
 # Ack Generator
 
-`ack_generator` turns top-level Ack schemas annotated with `@AckType()` into
-immutable Dart model classes.
+`ack_generator` supports two directions: `@AckType()` turns a top-level Ack
+schema into an immutable model, while `@AckModel()` derives an Ack codec schema
+from a hand-written class.
 
 ## Usage
 
@@ -87,6 +88,10 @@ part. Ack-only apps do not add `json_annotation` or `json_serializable`;
 
 `@AckType()` can annotate top-level schema variables and top-level schema
 getters. Classes, instance members, and local variables are rejected.
+
+`@AckModel()` annotates public, constructable classes. See the
+[class-first guide](../../docs/class-first-models.md) for field inference,
+sealed unions, passthrough properties, positioning, and build configuration.
 
 For design details and migration notes, see
 [`docs/architecture/acktype-model-generation.md`](../../docs/architecture/acktype-model-generation.md).

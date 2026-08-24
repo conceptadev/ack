@@ -14,6 +14,8 @@ immutable models with `@AckType()`. Annotated examples declare both
 - Cross-schema object models in `lib/pet.dart`, `lib/user_with_color.dart`,
   and `lib/additional_properties_example.dart`
 - Codecs (built-in and custom) in `lib/codecs_example.dart`
+- Hand-written class-first models and sealed unions in
+  `lib/class_first_models.dart`
 
 ## Running the examples
 

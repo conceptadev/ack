@@ -1,7 +1,7 @@
 # ack_annotations
 
-`ack_annotations` provides the `@AckType()` annotation used by
-`ack_generator`.
+`ack_annotations` provides the `@AckType()` schema-first and `@AckModel()`
+class-first annotations used by `ack_generator`.
 
 ## Installation
 
@@ -63,3 +63,7 @@ an intentional `Type` suffix is kept exactly.
 - Top-level schema getters
 
 `@AckType()` is not supported on classes or instance members.
+
+`@AckModel()` targets a public, constructable class and derives an Ack codec
+schema from its constructor-backed fields. See the
+[class-first guide](../../docs/class-first-models.md).

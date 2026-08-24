@@ -15,6 +15,7 @@ For AI agents: start at [`/llms.txt`](https://concepta.dev/documentation/ack/ref
 - **Single source of truth**: Define data structures and rules in one place
 - **Less boilerplate**: Minimize repetitive validation and JSON conversion code
 - **Type safety**: Generate immutable models for hand-written Ack schemas with `@AckType()`
+- **Class-first generation**: Derive validated codec schemas from hand-written Dart classes with `@AckModel()`
 
 ## Packages
 
@@ -156,6 +157,10 @@ print(user.toJson()); // {'name': 'Alice', 'email': 'alice@example.com'}
 `@AckType()` supports objects, primitives, lists, enums, bidirectional codecs,
 named recursion, and discriminated unions. One-way transforms are rejected
 because a generated model must be encodable. See the [TypeSafe Schemas guide](https://concepta.dev/documentation/ack/advanced/typesafe-schemas).
+
+Already own the model class? Use `@AckModel()` to derive a codec schema from
+constructor-backed fields while keeping the class hand-written. See the
+[class-first model guide](docs/class-first-models.md).
 
 ## Codecs
 
