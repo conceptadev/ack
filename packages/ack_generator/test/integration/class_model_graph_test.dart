@@ -342,6 +342,93 @@ final class Admin {
     );
   });
 
+  for (final collision in <({String name, String declaration})>[
+    (
+      name: r'_$UserFromRuntime',
+      declaration:
+          r'User _$UserFromRuntime(Map<String, Object?> value) => throw 0;',
+    ),
+    (
+      name: r'_$UserToRuntime',
+      declaration:
+          r'Map<String, Object?> _$UserToRuntime(User value) => throw 0;',
+    ),
+    (
+      name: '_ackUserFromRuntimeName',
+      declaration: 'String _ackUserFromRuntimeName(Object? value) => "";',
+    ),
+    (
+      name: '_ackUserToRuntimeName',
+      declaration: 'Object? _ackUserToRuntimeName(String value) => value;',
+    ),
+    (
+      name: r'_$UserFromJson',
+      declaration:
+          r'User _$UserFromJson(Map<String, dynamic> value) => throw 0;',
+    ),
+    (
+      name: r'_$UserToJson',
+      declaration: r'Map<String, dynamic> _$UserToJson(User value) => throw 0;',
+    ),
+    (name: 'UserAck', declaration: 'extension UserAck on User {}'),
+  ]) {
+    test('rejects local ${collision.name} helper collisions', () async {
+      await _expectFailure(
+        '''
+@AckModel()
+final class User {
+  const User({required this.name});
+
+  final String name;
+}
+
+${collision.declaration}
+''',
+        [collision.name, 'conflicts'],
+      );
+    });
+  }
+
+  test('rejects a local raw union object helper collision', () async {
+    await _expectFailure(
+      '''
+@AckModel(discriminatorKey: 'type')
+sealed class Pet {
+  const Pet();
+}
+
+final class Cat extends Pet {
+  const Cat();
+}
+
+final _catObject = Ack.object({});
+''',
+      ['_catObject', 'conflicts'],
+    );
+  });
+
+  test('rejects generated raw union object helper collisions', () async {
+    await _expectFailure(
+      '''
+@AckModel(discriminatorKey: 'type')
+sealed class Pet {
+  const Pet();
+}
+
+@AckModel(schemaName: 'upperCatSchema')
+final class Cat extends Pet {
+  const Cat();
+}
+
+@AckModel(schemaName: 'lowerCatSchema')
+final class cat extends Pet {
+  const cat();
+}
+''',
+      ['_catObject', 'conflicts'],
+    );
+  });
+
   test('rejects case-style key collisions', () async {
     await _expectFailure(
       '''

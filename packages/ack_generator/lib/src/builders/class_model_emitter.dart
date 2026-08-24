@@ -58,7 +58,7 @@ final class AckClassModelEmitter {
     AckObjectModelNode node,
   ) {
     final schemaName = _metadata(graph, node).schemaName;
-    final rawName = _rawObjectName(node.className);
+    final rawName = ackClassRawObjectName(node.className);
     output
       ..writeln('final $rawName = ${_objectSchema(node)};')
       ..writeln()
@@ -86,7 +86,7 @@ final class AckClassModelEmitter {
     for (final entry in node.branches.entries) {
       final branch = nodes[entry.value]!;
       schemaEntries.add(
-        '${_literal(entry.key)}: ${_rawObjectName(branch.className)}',
+        '${_literal(entry.key)}: ${ackClassRawObjectName(branch.className)}',
       );
       decodeCases.add(
         '${_literal(entry.key)} => '
@@ -212,7 +212,7 @@ Map<String, Object?> $function(${node.className} model) {
 
   String _extension(String className, String schemaName) =>
       '''
-extension ${className}Ack on $className {
+extension ${ackClassExtensionName(className)} on $className {
   Map<String, dynamic> toJson() =>
       Map<String, dynamic>.from($schemaName.encode(this)!);
 
@@ -324,9 +324,6 @@ extension ${className}Ack on $className {
     }
     return metadata;
   }
-
-  String _rawObjectName(String className) =>
-      '_${className[0].toLowerCase()}${className.substring(1)}Object';
 
   String _ack(String symbol) {
     final prefix = ackPrefix;

@@ -10,6 +10,7 @@ import 'package:analyzer/dart/element/type.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:source_gen/source_gen.dart';
 
+import '../json/helper_names.dart';
 import '../models/schema_model_graph.dart';
 
 typedef _ModelOptions = ({
@@ -236,7 +237,57 @@ final class ClassModelGraphBuilder {
       }
       await _buildObject(element, options: options);
     }
+    _validateGeneratedNames();
     return _graph;
+  }
+
+  void _validateGeneratedNames() {
+    final localNames = {
+      for (final element in library.allElements)
+        if (element.name case final name?) name,
+    };
+    final generatedOwners = <String, ClassElement>{};
+    final classes = {
+      for (final element in library.classes) element.name!: element,
+    };
+
+    void claim(String name, AckModelNode node) {
+      final element = classes[node.className]!;
+      final prior = generatedOwners[name];
+      if (prior != null && prior != element) {
+        throw InvalidGenerationSource(
+          'Generated helper "$name" for ${element.name} conflicts with '
+          '${prior.name}.',
+          element: element,
+        );
+      }
+      if (localNames.contains(name)) {
+        throw InvalidGenerationSource(
+          'Generated helper "$name" conflicts with a local declaration.',
+          element: element,
+        );
+      }
+      generatedOwners[name] = element;
+    }
+
+    for (final node in _graph.nodes) {
+      claim(ackClassExtensionName(node.className), node);
+      if (node is! AckObjectModelNode) continue;
+      claim(ackClassFromRuntimeName(node.className), node);
+      claim(ackClassToRuntimeName(node.className), node);
+      claim(jsonFromHelperName(node.className), node);
+      claim(jsonToHelperName(node.className), node);
+      if (node.unionId != null) {
+        claim(ackClassRawObjectName(node.className), node);
+      }
+      for (final fieldName in <String>[
+        for (final field in node.fields) field.dartName,
+        if (node.additionalProperties) 'additionalProperties',
+      ]) {
+        claim(ackClassFromRuntimeBridgeName(node.className, fieldName), node);
+        claim(ackClassToRuntimeBridgeName(node.className, fieldName), node);
+      }
+    }
   }
 
   void _validateAnnotatedClass(ClassElement element) {

@@ -27,6 +27,13 @@ String ackClassFromRuntimeName(String className) =>
 /// Runtime-map encoder for a hand-written class-first model.
 String ackClassToRuntimeName(String className) => '_\$${className}ToRuntime';
 
+/// Extension that exposes class-first JSON encoding methods.
+String ackClassExtensionName(String className) => '${className}Ack';
+
+/// Private object schema used as a discriminated-union branch.
+String ackClassRawObjectName(String className) =>
+    '_${className[0].toLowerCase()}${className.substring(1)}Object';
+
 /// json_serializable `fromJson` helper for a generated model class.
 String jsonFromHelperName(String className) => '_\$${className}FromJson';
 
