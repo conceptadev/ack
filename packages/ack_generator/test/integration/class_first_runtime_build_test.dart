@@ -68,10 +68,10 @@ dependency_overrides:
     path: ${p.join(projectRoot.path, 'packages', 'ack_annotations')}
 ''');
         File(p.join(temporary.path, 'lib', 'alpha.dart')).writeAsStringSync(
-          "final class Item { const Item(this.value); final String value; }\n",
+          'final class Item { const Item(this.value); final String value; }\n',
         );
         File(p.join(temporary.path, 'lib', 'beta.dart')).writeAsStringSync(
-          "final class Item { const Item(this.value); final int value; }\n",
+          'final class Item { const Item(this.value); final int value; }\n',
         );
         File(p.join(temporary.path, 'lib', 'models.dart')).writeAsStringSync(
           r'''

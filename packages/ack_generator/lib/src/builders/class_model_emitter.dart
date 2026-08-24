@@ -265,6 +265,9 @@ extension ${ackClassExtensionName(className)} on $className {
   }
 
   String _fromRuntime(AckTypeRef type, String expression) => switch (type) {
+    AckNullableTypeRef(:final inner)
+        when inner is AckScalarTypeRef || inner is AckExternalTypeRef =>
+      '$expression as ${_type(type)}',
     AckNullableTypeRef(:final inner) =>
       '$expression == null ? null : '
           '${_fromRuntime(inner, expression)}',
@@ -284,6 +287,9 @@ extension ${ackClassExtensionName(className)} on $className {
   };
 
   String _toRuntime(AckTypeRef type, String expression) => switch (type) {
+    AckNullableTypeRef(:final inner)
+        when inner is AckScalarTypeRef || inner is AckExternalTypeRef =>
+      expression,
     AckNullableTypeRef(:final inner) =>
       '$expression == null ? null : ${_toRuntime(inner, expression)}',
     AckModelTypeRef(:final visibleName) =>
