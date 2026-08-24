@@ -1,0 +1,41 @@
+import 'package:meta/meta_meta.dart';
+
+/// JSON field-name styles supported by class-first Ack generation.
+///
+/// This enum is deliberately closed because Ack's second generation phase
+/// delegates field mapping to json_serializable's closed `FieldRename` enum.
+/// Supporting an open-ended transform would require redesigning that phase.
+enum AckCaseStyle { none, snake, kebab, pascal, screamingSnake }
+
+/// Marks a hand-written class for Ack schema generation.
+///
+/// The declaring library must include both generated parts, for example
+/// `part 'user.ack.dart';` and `part 'user.g.dart';`.
+@Target({TargetKind.classType})
+final class AckModel {
+  /// Creates a class-first Ack model annotation.
+  const AckModel({
+    this.schemaName,
+    this.caseStyle = AckCaseStyle.none,
+    this.discriminatorKey,
+    this.discriminatorValue,
+    this.additionalProperties = false,
+  });
+
+  /// Exact generated schema name, or `null` to derive `<lowerCamel>Schema`.
+  final String? schemaName;
+
+  /// Naming convention applied to JSON field keys.
+  final AckCaseStyle caseStyle;
+
+  /// Required discriminator key for an annotated sealed union base.
+  final String? discriminatorKey;
+
+  /// Wire discriminator for a concrete union branch.
+  ///
+  /// When omitted, the verbatim class name is used.
+  final String? discriminatorValue;
+
+  /// Whether undeclared object properties are preserved.
+  final bool additionalProperties;
+}
