@@ -452,13 +452,7 @@ final class ClassModelGraphBuilder {
       ownerByJsonKey[jsonKey] = field;
 
       final nullable = _isNullable(field.type);
-      final presence = parameter == null
-          ? AckFieldPresence.required
-          : parameter.hasDefaultValue
-          ? AckFieldPresence.defaulted
-          : parameter.isRequired
-          ? AckFieldPresence.required
-          : AckFieldPresence.optional;
+      final presence = _fieldPresence(parameter);
       var schema = isDiscriminator && discriminatorValue != null
           ? '${_ack('Ack')}.literal(${_literal(discriminatorValue)})'
           : await _fieldSchema(field);
@@ -803,6 +797,14 @@ final class ClassModelGraphBuilder {
     return null;
   }
 
+  AckFieldPresence _fieldPresence(FormalParameterElement? parameter) {
+    if (parameter == null || parameter.isRequired) {
+      return AckFieldPresence.required;
+    }
+    if (parameter.hasDefaultValue) return AckFieldPresence.defaulted;
+    return AckFieldPresence.optional;
+  }
+
   bool _isExactAdditionalPropertiesType(DartType type) {
     if (type is! InterfaceType ||
         !type.isDartCoreMap ||
@@ -931,11 +933,8 @@ final class ClassModelGraphBuilder {
     final annotation = _ackModelChecker.firstAnnotationOfExact(element);
     if (annotation == null) return null;
     final reader = ConstantReader(annotation);
-    final caseIndex = reader
-        .read('caseStyle')
-        .objectValue
-        .getField('index')!
-        .toIntValue()!;
+    final caseStyle = reader.read('caseStyle').objectValue;
+    final caseIndex = caseStyle.getField('index')!.toIntValue()!;
     const styles = ['none', 'snake', 'kebab', 'pascal', 'screamingSnake'];
     return (
       schemaName: _nullableString(reader, 'schemaName'),
@@ -1015,7 +1014,6 @@ final class ClassModelGraphBuilder {
     final name = target.name;
     if (name == null) return null;
     String? prefixed;
-    var unprefixed = false;
     for (final import in library.element.firstFragment.libraryImports) {
       if (import.isSynthetic || (import.prefix?.isDeferred ?? false)) continue;
       final prefix = import.prefix?.element.name;
@@ -1023,13 +1021,11 @@ final class ClassModelGraphBuilder {
           ? import.namespace.get2(name)
           : import.namespace.getPrefixed2(prefix, name);
       if (candidate?.baseElement != target.baseElement) continue;
-      if (prefix == null || prefix.isEmpty) {
-        unprefixed = true;
-      } else {
+      if (prefix != null && prefix.isNotEmpty) {
         prefixed ??= prefix;
       }
     }
-    return prefixed ?? (unprefixed ? null : null);
+    return prefixed;
   }
 
   Future<ResolvedLibraryResult> _resolvedLibraryFor(
