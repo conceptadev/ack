@@ -224,6 +224,9 @@ extension ${ackClassExtensionName(className)} on $className {
     final output = StringBuffer();
     for (final field in node.fields) {
       final type = _type(field.runtimeRef);
+      final fromType = field.defaultExpression == null || field.nullable
+          ? type
+          : '$type?';
       final fromName = ackClassFromRuntimeBridgeName(
         node.className,
         field.dartName,
@@ -234,7 +237,7 @@ extension ${ackClassExtensionName(className)} on $className {
       );
       output
         ..writeln(
-          '$type $fromName(Object? value) => '
+          '$fromType $fromName(Object? value) => '
           '${_fromRuntime(field.runtimeRef, 'value')};',
         )
         ..writeln(
@@ -264,7 +267,7 @@ extension ${ackClassExtensionName(className)} on $className {
   String _fromRuntime(AckTypeRef type, String expression) => switch (type) {
     AckNullableTypeRef(:final inner) =>
       '$expression == null ? null : '
-          '${_fromRuntime(inner, '$expression!')}',
+          '${_fromRuntime(inner, expression)}',
     AckModelTypeRef(:final runtimeRef, :final visibleName) =>
       '$visibleName.\$ack.fromRuntime('
           '$expression as ${_type(runtimeRef)})',
@@ -282,7 +285,7 @@ extension ${ackClassExtensionName(className)} on $className {
 
   String _toRuntime(AckTypeRef type, String expression) => switch (type) {
     AckNullableTypeRef(:final inner) =>
-      '$expression == null ? null : ${_toRuntime(inner, '$expression!')}',
+      '$expression == null ? null : ${_toRuntime(inner, expression)}',
     AckModelTypeRef(:final visibleName) =>
       '$visibleName.\$ack.toRuntime($expression)',
     AckListTypeRef(:final elementType) =>
