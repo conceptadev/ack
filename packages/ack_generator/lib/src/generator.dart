@@ -8,6 +8,7 @@ import 'package:source_gen/source_gen.dart';
 
 import 'analyzer/class_model_graph_builder.dart';
 import 'analyzer/schema_model_graph_builder.dart';
+import 'builders/class_model_emitter.dart';
 import 'builders/model_emitter.dart';
 
 /// Generates immutable model classes for top-level schemas annotated with
@@ -77,32 +78,34 @@ final class AckSchemaGenerator extends Generator {
       annotated.isNotEmpty ? annotated.first : annotatedModels.first,
     );
 
-    final specs = <Spec>[];
+    final output = <String>[];
     if (annotated.isNotEmpty) {
       final graph = await SchemaModelGraphBuilder(library).build(annotated);
-      specs.addAll(
-        AckModelEmitter(
-          ackPrefix: _ackRuntimeQualifier(library, annotated.first),
-          ackTypePrefix: _ackTypeQualifier(library, annotated.first),
-        ).emit(graph),
+      final specs = AckModelEmitter(
+        ackPrefix: _ackRuntimeQualifier(library, annotated.first),
+        ackTypePrefix: _ackTypeQualifier(library, annotated.first),
+      ).emit(graph);
+      output.add(
+        Library((b) => b.body.addAll(specs))
+            .accept(
+              DartEmitter(
+                allocator: Allocator.none,
+                orderDirectives: true,
+                useNullSafetySyntax: true,
+              ),
+            )
+            .toString(),
       );
     }
     if (annotatedModels.isNotEmpty) {
-      await ClassModelGraphBuilder(
+      final ackPrefix = _classFirstAckQualifier(library, annotatedModels.first);
+      final graph = await ClassModelGraphBuilder(
         library,
-        ackPrefix: _classFirstAckQualifier(library, annotatedModels.first),
+        ackPrefix: ackPrefix,
       ).build(annotatedModels);
+      output.add(AckClassModelEmitter(ackPrefix: ackPrefix).emit(graph));
     }
-    if (specs.isEmpty) return '';
-    return Library((b) => b.body.addAll(specs))
-        .accept(
-          DartEmitter(
-            allocator: Allocator.none,
-            orderDirectives: true,
-            useNullSafetySyntax: true,
-          ),
-        )
-        .toString();
+    return output.where((chunk) => chunk.trim().isNotEmpty).join('\n\n');
   }
 
   String? _classFirstAckQualifier(

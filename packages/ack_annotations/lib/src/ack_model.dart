@@ -1,3 +1,4 @@
+import 'package:json_annotation/json_annotation.dart';
 import 'package:meta/meta_meta.dart';
 
 /// JSON field-name styles supported by class-first Ack generation.
@@ -20,7 +21,31 @@ final class AckModel {
     this.discriminatorKey,
     this.discriminatorValue,
     this.additionalProperties = false,
-  });
+  }) : // A switch expression is not const-evaluable in a const constructor.
+       jsonSerializable = caseStyle == AckCaseStyle.snake
+           ? const JsonSerializable(
+               includeIfNull: false,
+               fieldRename: FieldRename.snake,
+             )
+           : caseStyle == AckCaseStyle.kebab
+           ? const JsonSerializable(
+               includeIfNull: false,
+               fieldRename: FieldRename.kebab,
+             )
+           : caseStyle == AckCaseStyle.pascal
+           ? const JsonSerializable(
+               includeIfNull: false,
+               fieldRename: FieldRename.pascal,
+             )
+           : caseStyle == AckCaseStyle.screamingSnake
+           ? const JsonSerializable(
+               includeIfNull: false,
+               fieldRename: FieldRename.screamingSnake,
+             )
+           : const JsonSerializable(
+               includeIfNull: false,
+               fieldRename: FieldRename.none,
+             );
 
   /// Exact generated schema name, or `null` to derive `<lowerCamel>Schema`.
   final String? schemaName;
@@ -38,4 +63,10 @@ final class AckModel {
 
   /// Whether undeclared object properties are preserved.
   final bool additionalProperties;
+
+  /// Fixed phase-2 configuration consumed by `ack_generator`.
+  ///
+  /// This remains derived from [caseStyle], so users cannot independently
+  /// configure schema keys and JSON mapping.
+  final JsonSerializable jsonSerializable;
 }

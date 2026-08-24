@@ -11,6 +11,8 @@ void main() {
     expect(defaults.discriminatorKey, isNull);
     expect(defaults.discriminatorValue, isNull);
     expect(defaults.additionalProperties, isFalse);
+    expect(defaults.jsonSerializable.includeIfNull, isFalse);
+    expect(defaults.jsonSerializable.fieldRename!.name, 'none');
 
     const configured = AckModel(
       schemaName: 'wireUser',
@@ -24,6 +26,8 @@ void main() {
     expect(configured.discriminatorKey, 'type');
     expect(configured.discriminatorValue, 'user');
     expect(configured.additionalProperties, isTrue);
+    expect(configured.jsonSerializable.includeIfNull, isFalse);
+    expect(configured.jsonSerializable.fieldRename!.name, 'snake');
     expect(AckCaseStyle.values, const [
       AckCaseStyle.none,
       AckCaseStyle.snake,
@@ -31,6 +35,31 @@ void main() {
       AckCaseStyle.pascal,
       AckCaseStyle.screamingSnake,
     ]);
+  });
+
+  test('every case style maps to the pinned JSON phase configuration', () {
+    const models = [
+      AckModel(),
+      AckModel(caseStyle: AckCaseStyle.snake),
+      AckModel(caseStyle: AckCaseStyle.kebab),
+      AckModel(caseStyle: AckCaseStyle.pascal),
+      AckModel(caseStyle: AckCaseStyle.screamingSnake),
+    ];
+    final configs = {
+      for (final model in models) model.caseStyle: model.jsonSerializable,
+    };
+
+    expect(
+      configs.map((style, config) => MapEntry(style, config.fieldRename!.name)),
+      const {
+        AckCaseStyle.none: 'none',
+        AckCaseStyle.snake: 'snake',
+        AckCaseStyle.kebab: 'kebab',
+        AckCaseStyle.pascal: 'pascal',
+        AckCaseStyle.screamingSnake: 'screamingSnake',
+      },
+    );
+    expect(configs.values.every((config) => !config.includeIfNull!), isTrue);
   });
 
   test('AckField accepts a const top-level schema-function tear-off', () {

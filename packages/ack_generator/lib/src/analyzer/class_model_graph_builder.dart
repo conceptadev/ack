@@ -321,7 +321,15 @@ final class ClassModelGraphBuilder {
     final branches = <String, AckSchemaId>{};
     final valueOwners = <String, ClassElement>{};
     for (final branch in candidates) {
-      final branchOptions = _options(branch) ?? _defaultOptions;
+      final branchOptions =
+          _options(branch) ??
+          (
+            schemaName: null,
+            caseStyle: baseOptions.caseStyle,
+            discriminatorKey: null,
+            discriminatorValue: null,
+            additionalProperties: false,
+          );
       if (branchOptions.discriminatorKey != null) {
         throw InvalidGenerationSource(
           '${branch.name} is a union branch and cannot set discriminatorKey.',
@@ -1088,14 +1096,6 @@ final class ClassModelGraphBuilder {
   AckSchemaId _id(ClassElement element) => AckSchemaId(
     libraryUri: library.element.uri,
     declarationName: element.name!,
-  );
-
-  static const _defaultOptions = (
-    schemaName: null,
-    caseStyle: 'none',
-    discriminatorKey: null,
-    discriminatorValue: null,
-    additionalProperties: false,
   );
 
   static const AckTypeRef _jsonMapRef = AckMapTypeRef(

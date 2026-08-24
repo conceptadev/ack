@@ -1,4 +1,6 @@
+import 'package:ack_annotations/ack_annotations.dart' show AckModel;
 import 'package:ack_annotations/ack_generator_support.dart';
+import 'package:analyzer/dart/element/element.dart';
 import 'package:build/build.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:json_serializable/json_serializable.dart';
@@ -23,22 +25,74 @@ final class AckJsonSerializableGenerator extends Generator {
     AckGeneratedJson,
     inPackage: 'ack_annotations',
   );
+  static const _model = TypeChecker.typeNamed(
+    AckModel,
+    inPackage: 'ack_annotations',
+  );
 
   @override
   String generate(LibraryReader library, BuildStep buildStep) {
-    final annotated = library.annotatedWith(_marker).toList();
-    if (annotated.isEmpty) return '';
+    final requests = <({Element element, ConstantReader config})>[];
+    final claimed = <Element>{};
+    for (final item in library.annotatedWith(_marker)) {
+      requests.add((
+        element: item.element,
+        config: item.annotation.read('config'),
+      ));
+      claimed.add(item.element.baseElement);
+    }
+
+    for (final element in library.classes) {
+      final annotation = _model.firstAnnotationOfExact(element);
+      if (annotation == null) continue;
+      final reader = ConstantReader(annotation);
+      if (!element.isSealed) {
+        _addModelRequest(requests, claimed, element, reader);
+        continue;
+      }
+      for (final branch in library.classes) {
+        if (branch == element || branch.isAbstract || !branch.isConstructable) {
+          continue;
+        }
+        final isSubtype = branch.allSupertypes.any(
+          (type) => type.element.baseElement == element.baseElement,
+        );
+        if (!isSubtype) continue;
+        final branchAnnotation = _model.firstAnnotationOfExact(branch);
+        _addModelRequest(
+          requests,
+          claimed,
+          branch,
+          branchAnnotation == null ? reader : ConstantReader(branchAnnotation),
+        );
+      }
+    }
+
+    if (requests.isEmpty) return '';
 
     final output = <String>[];
-    for (final item in annotated) {
+    for (final request in requests) {
       output.addAll(
         _delegate.generateForAnnotatedElement(
-          item.element,
-          item.annotation.read('config'),
+          request.element,
+          request.config,
           buildStep,
         ),
       );
     }
     return output.join('\n\n');
+  }
+
+  void _addModelRequest(
+    List<({Element element, ConstantReader config})> requests,
+    Set<Element> claimed,
+    ClassElement element,
+    ConstantReader annotation,
+  ) {
+    if (!claimed.add(element.baseElement)) return;
+    requests.add((
+      element: element,
+      config: annotation.read('jsonSerializable'),
+    ));
   }
 }

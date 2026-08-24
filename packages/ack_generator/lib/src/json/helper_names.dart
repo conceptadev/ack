@@ -12,6 +12,21 @@ String ackFromRuntimeBridgeName(String fieldName) =>
 String ackToRuntimeBridgeName(String fieldName) =>
     '_ackToRuntime${ackBridgePascal(fieldName)}';
 
+/// Decode-side top-level bridge for a class-first stored field.
+String ackClassFromRuntimeBridgeName(String className, String fieldName) =>
+    '_ack${className}FromRuntime${ackBridgePascal(fieldName)}';
+
+/// Encode-side top-level bridge for a class-first stored field.
+String ackClassToRuntimeBridgeName(String className, String fieldName) =>
+    '_ack${className}ToRuntime${ackBridgePascal(fieldName)}';
+
+/// Runtime-map decoder for a hand-written class-first model.
+String ackClassFromRuntimeName(String className) =>
+    '_\$${className}FromRuntime';
+
+/// Runtime-map encoder for a hand-written class-first model.
+String ackClassToRuntimeName(String className) => '_\$${className}ToRuntime';
+
 /// json_serializable `fromJson` helper for a generated model class.
 String jsonFromHelperName(String className) => '_\$${className}FromJson';
 
