@@ -112,6 +112,8 @@ final class AckFieldNode {
     required this.nullable,
     required this.runtimeRef,
     this.description,
+    this.schemaExpression,
+    this.defaultExpression,
   });
 
   final String dartName;
@@ -121,7 +123,33 @@ final class AckFieldNode {
   final AckTypeRef runtimeRef;
   final String? description;
 
+  /// Source expression for a schema inferred from a hand-written field.
+  ///
+  /// Schema-first nodes leave this unset because the authored declaration is
+  /// already the schema source.
+  final String? schemaExpression;
+
+  /// Constructor default expression for a class-first field, when present.
+  final String? defaultExpression;
+
   bool get isRequired => presence != AckFieldPresence.optional;
+}
+
+/// Class-first-only metadata attached to a normalized model node.
+///
+/// Keeping this alongside [AckModelGraph] lets both generation directions use
+/// the same object/value/union node shapes without leaking analyzer elements
+/// into emitters.
+final class AckClassModelMetadata {
+  const AckClassModelMetadata({
+    required this.schemaName,
+    required this.caseStyle,
+    this.hasExplicitAnnotation = true,
+  });
+
+  final String schemaName;
+  final String caseStyle;
+  final bool hasExplicitAnnotation;
 }
 
 /// Base node for a generated class or value object.
@@ -202,6 +230,7 @@ final class AckModelGraph {
   final Map<AckSchemaId, AckModelNode> _nodes = {};
   final Map<AckSchemaId, AckResolutionState> _states = {};
   final List<AckSchemaId> _sourceOrder = [];
+  final Map<AckSchemaId, AckClassModelMetadata> _classMetadata = {};
 
   Iterable<AckModelNode> get nodes sync* {
     for (final id in _sourceOrder) {
@@ -236,6 +265,12 @@ final class AckModelGraph {
   }
 
   AckModelNode? nodeFor(AckSchemaId id) => _nodes[id];
+
+  AckClassModelMetadata? classMetadataFor(AckSchemaId id) => _classMetadata[id];
+
+  void setClassMetadata(AckSchemaId id, AckClassModelMetadata metadata) {
+    _classMetadata[id] = metadata;
+  }
 
   void replace(AckModelNode node) {
     if (stateOf(node.id) != AckResolutionState.resolved) {

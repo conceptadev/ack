@@ -1,11 +1,12 @@
 import 'package:ack_annotations/ack_annotations.dart';
-import 'package:ack/ack.dart' show AckModelAdapter, SchemaResult;
+import 'package:ack/ack.dart' show Ack, AckModelAdapter, SchemaResult;
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:build/build.dart';
 import 'package:code_builder/code_builder.dart';
 import 'package:source_gen/source_gen.dart';
 
+import 'analyzer/class_model_graph_builder.dart';
 import 'analyzer/schema_model_graph_builder.dart';
 import 'builders/model_emitter.dart';
 
@@ -16,6 +17,11 @@ final class AckSchemaGenerator extends Generator {
     AckType,
     inPackage: 'ack_annotations',
   );
+  static const _ackModelChecker = TypeChecker.typeNamed(
+    AckModel,
+    inPackage: 'ack_annotations',
+  );
+  static const _ackChecker = TypeChecker.typeNamed(Ack, inPackage: 'ack');
   static const _ackModelAdapterChecker = TypeChecker.typeNamed(
     AckModelAdapter,
     inPackage: 'ack',
@@ -28,6 +34,7 @@ final class AckSchemaGenerator extends Generator {
   @override
   Future<String> generate(LibraryReader library, BuildStep buildStep) async {
     final annotated = <Element>[];
+    final annotatedModels = <ClassElement>[];
 
     for (final element in library.allElements) {
       if (!_hasAckType(element)) continue;
@@ -51,6 +58,9 @@ final class AckSchemaGenerator extends Generator {
     }
 
     for (final classElement in library.classes) {
+      if (_ackModelChecker.hasAnnotationOfExact(classElement)) {
+        annotatedModels.add(classElement);
+      }
       for (final getter in classElement.getters) {
         if (_hasAckType(getter)) {
           throw InvalidGenerationSource(
@@ -61,14 +71,29 @@ final class AckSchemaGenerator extends Generator {
       }
     }
 
-    if (annotated.isEmpty) return '';
-    await _requirePartDirectives(buildStep, annotated.first);
+    if (annotated.isEmpty && annotatedModels.isEmpty) return '';
+    await _requirePartDirectives(
+      buildStep,
+      annotated.isNotEmpty ? annotated.first : annotatedModels.first,
+    );
 
-    final graph = await SchemaModelGraphBuilder(library).build(annotated);
-    final specs = AckModelEmitter(
-      ackPrefix: _ackRuntimeQualifier(library, annotated.first),
-      ackTypePrefix: _ackTypeQualifier(library, annotated.first),
-    ).emit(graph);
+    final specs = <Spec>[];
+    if (annotated.isNotEmpty) {
+      final graph = await SchemaModelGraphBuilder(library).build(annotated);
+      specs.addAll(
+        AckModelEmitter(
+          ackPrefix: _ackRuntimeQualifier(library, annotated.first),
+          ackTypePrefix: _ackTypeQualifier(library, annotated.first),
+        ).emit(graph),
+      );
+    }
+    if (annotatedModels.isNotEmpty) {
+      await ClassModelGraphBuilder(
+        library,
+        ackPrefix: _classFirstAckQualifier(library, annotatedModels.first),
+      ).build(annotatedModels);
+    }
+    if (specs.isEmpty) return '';
     return Library((b) => b.body.addAll(specs))
         .accept(
           DartEmitter(
@@ -79,6 +104,22 @@ final class AckSchemaGenerator extends Generator {
         )
         .toString();
   }
+
+  String? _classFirstAckQualifier(
+    LibraryReader library,
+    Element annotatedElement,
+  ) => _visibleQualifier(
+    library,
+    annotatedElement,
+    requiredTypes: const {
+      'Ack': _ackChecker,
+      'SchemaResult': _schemaResultChecker,
+    },
+    message:
+        'Generated @AckModel schemas require visible exact Ack and '
+        'SchemaResult imports in this library.',
+    todo: 'Import package:ack/ack.dart, directly or through a barrel.',
+  );
 
   bool _hasAckType(Element element) =>
       _ackTypeChecker.hasAnnotationOfExact(element);
