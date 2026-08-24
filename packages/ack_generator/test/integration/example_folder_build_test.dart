@@ -115,6 +115,8 @@ dependency_overrides:
         expect(first.keys, {
           'lib/additional_properties_example.ack.dart',
           'lib/additional_properties_example.g.dart',
+          'lib/class_first_models.ack.dart',
+          'lib/class_first_models.g.dart',
           'lib/pet.ack.dart',
           'lib/pet.g.dart',
           'lib/schema_types_discriminated.ack.dart',
@@ -131,15 +133,26 @@ dependency_overrides:
           'lib/user_with_color.g.dart',
         });
         for (final entry in first.entries) {
+          final isClassFirst = entry.key.contains('class_first_models');
           if (entry.key.endsWith('.ack.dart')) {
-            expect(entry.value, contains('class '));
-            expect(entry.value, contains('jsonSerializable'));
+            if (isClassFirst) {
+              expect(entry.value, contains('extension AccountAck'));
+              expect(entry.value, contains('final accountSchema'));
+            } else {
+              expect(entry.value, contains('class '));
+              expect(entry.value, contains('jsonSerializable'));
+            }
             expect(entry.value, isNot(contains('extension type')));
             expect(entry.value, isNot(contains('fromMap')));
             expect(entry.value, isNot(contains('toMap')));
           } else {
             expect(entry.value, contains('JsonSerializableGenerator'));
-            expect(entry.value, contains('_ackFromRuntime'));
+            expect(
+              entry.value,
+              contains(
+                isClassFirst ? '_ackAccountFromRuntime' : '_ackFromRuntime',
+              ),
+            );
           }
         }
 
