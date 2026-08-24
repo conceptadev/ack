@@ -83,6 +83,16 @@ final class AckSchemaGenerator extends Generator {
   bool _hasAckType(Element element) =>
       _ackTypeChecker.hasAnnotationOfExact(element);
 
+  /// Strips `./` segments so `part './user.ack.dart'` matches the file next to
+  /// the input, without treating `part 'sub/user.ack.dart'` as the same path.
+  String _normalizedPartUri(String uri) {
+    final segments = [
+      for (final segment in Uri.parse(uri).pathSegments)
+        if (segment.isNotEmpty && segment != '.') segment,
+    ];
+    return segments.join('/');
+  }
+
   Future<void> _requirePartDirectives(
     BuildStep buildStep,
     Element annotatedElement,
@@ -94,8 +104,7 @@ final class AckSchemaGenerator extends Generator {
     final unit = await buildStep.resolver.compilationUnitFor(buildStep.inputId);
     final parts = {
       for (final directive in unit.directives.whereType<PartDirective>())
-        if (directive.uri.stringValue case final uri?)
-          Uri.parse(uri).pathSegments.last,
+        if (directive.uri.stringValue case final uri?) _normalizedPartUri(uri),
     };
     if (parts.contains(expectedAckPart) && parts.contains(expectedJsonPart)) {
       return;

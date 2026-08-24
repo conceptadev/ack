@@ -125,6 +125,31 @@ final userSchema = Ack.object({'name': Ack.string()});
     expect(sawOurPartError, isFalse);
   });
 
+  test('rejects a part directive that points at a nested relative path', () async {
+    var sawError = false;
+    await _build(
+      '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+part 'sub/schema.ack.dart';
+part 'sub/schema.g.dart';
+
+@AckType()
+final userSchema = Ack.string();
+''',
+      outputs: const {},
+      onLog: (log) {
+        if (log.level.name == 'SEVERE' &&
+            log.message.contains("part 'schema.ack.dart';") &&
+            log.message.contains("part 'schema.g.dart';")) {
+          sawError = true;
+        }
+      },
+    );
+    expect(sawError, isTrue);
+  });
+
   test('rejects a JSON part that does not match the basename', () async {
     var sawError = false;
     await _build(

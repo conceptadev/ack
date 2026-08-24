@@ -601,6 +601,44 @@ final userSchema = Ack.object({
     expect(messages.single, contains('payloadAny'));
   });
 
+  test('rejects a cross-library @AckType alias root', () async {
+    final messages = <String>{};
+    await _build(
+      {
+        'user.dart':
+            '''
+$_imports
+part 'user.ack.dart';
+part 'user.g.dart';
+
+@AckType()
+final userSchema = Ack.object({'name': Ack.string()});
+''',
+        'admin.dart':
+            '''
+$_imports
+import 'user.dart' as other;
+part 'admin.ack.dart';
+part 'admin.g.dart';
+
+@AckType()
+final adminSchema = other.userSchema;
+''',
+      },
+      outputs: {
+        'test_pkg|lib/user.ack.dart': decodedMatches(
+          contains('final class User'),
+        ),
+      },
+      onLog: (log) {
+        if (log.level.name == 'SEVERE') messages.add(log.message);
+      },
+    );
+    expect(messages, isNotEmpty);
+    expect(messages.join('\n'), contains('adminSchema'));
+    expect(messages.join('\n'), contains('cross-library'));
+  });
+
   test('rejects a cross-library discriminated branch with the path', () async {
     final messages = <String>{};
     await _build(

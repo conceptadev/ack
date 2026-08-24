@@ -323,6 +323,13 @@ final class SchemaModelGraphBuilder {
     } else if (chain.reference != null &&
         _localDeclaration(chain.reference!) != null) {
       node = await _aliasNode(declaration, chain.reference!, path);
+    } else if (chain.reference != null &&
+        _isCrossLibraryAckType(chain.reference!)) {
+      throw InvalidGenerationSource(
+        '$path aliases a cross-library @AckType schema. Use the original '
+        'model directly.',
+        element: declaration.element,
+      );
     } else {
       const supportedValueRoots = {
         'string',
@@ -1035,6 +1042,13 @@ final class SchemaModelGraphBuilder {
   _Declaration? _localDeclaration(Expression expression) {
     final element = _referencedElement(expression);
     return element == null ? null : _declarationsByElement[element.baseElement];
+  }
+
+  bool _isCrossLibraryAckType(Expression expression) {
+    final element = _referencedElement(expression);
+    if (element == null) return false;
+    if (_declarationsByElement[element.baseElement] != null) return false;
+    return _hasAckType(element);
   }
 
   String? _expressionPrefix(Expression expression) {
