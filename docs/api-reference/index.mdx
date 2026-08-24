@@ -264,7 +264,11 @@ Schema reference for recursive object graphs.
 
 ## Code generation annotations
 
-Use the [`ack_generator`](https://pub.dev/packages/ack_generator) builder to turn annotated top-level schemas into immutable model classes. After adding the annotation plus matching `.ack.dart` and `.g.dart` part directives, run:
+Use the [`ack_generator`](https://pub.dev/packages/ack_generator) builders in
+either direction: `@AckType()` generates a model from a schema, and
+`@AckModel()` generates a schema from a class. `AckSchema` is the runtime
+schema type; there is no `@AckSchema()` annotation. After adding matching
+`.ack.dart` and `.g.dart` part directives, run:
 
 ```bash
 dart run build_runner build
@@ -288,7 +292,7 @@ Annotate a top-level schema variable or getter. The schema stays in your source 
 **Unsupported:** nullable roots, one-way transforms, `Ack.any()`, `Ack.anyOf()`, bare `Ack.instance<T>()`, and anonymous inline objects
 
 For `Ack.discriminated(...)` constraints with `@AckType`, see
-[Type-safe Schemas](../core-concepts/typesafe-schemas.mdx#discriminated-unions).
+[Model Code Generation](../core-concepts/typesafe-schemas.mdx#schema-first-unions).
 
 **Example:**
 ```dart
@@ -314,6 +318,55 @@ print(user.name);  // Type-safe String access
 print(user.email); // Type-safe String access
 print(user.toJson());
 ```
+
+### `@AckModel()`
+
+**Target**: Public, constructable classes
+
+**Generates**: An Ack codec schema, top-level JSON/runtime bridges, and
+`toJson` / `safeToJson` extension methods
+
+Ack infers schema fields from constructor-backed fields. Required parameters,
+nullable types, optional parameters, and constructor defaults determine field
+presence. Use `caseStyle` for model-wide JSON naming and `@JsonKey(name: ...)`
+for a field override.
+
+**Inferred field types:** strings, booleans, numeric types, `DateTime`, `Uri`,
+`Duration`, enums, nested lists, and sets
+
+**Constraint annotations:**
+
+- numeric: `@Min`, `@Max`, `@MultipleOf`, `@Positive`, `@Negative`
+- strings: `@MinLength`, `@MaxLength`, `@Pattern`, `@Email`, `@NotEmpty`
+- collections: `@MinItems`, `@MaxItems`, `@UniqueItems`
+
+Use `@AckField(schema: functionName)` with a top-level schema-function tear-off
+for a custom type or `Map<String, V>` field. A sealed base annotated with
+`@AckModel(discriminatorKey: ...)` generates a discriminated union from its
+same-library concrete branches.
+
+```dart
+@AckModel(caseStyle: AckCaseStyle.snake)
+final class Account {
+  const Account({required this.displayName, this.role = 'member'});
+
+  @MinLength(2)
+  final String displayName;
+  final String role;
+
+  factory Account.fromJson(Map<String, dynamic> json) =>
+      accountSchema.parse(json)!;
+}
+
+final account = accountSchema.parse({'display_name': 'Ada'})!;
+print(account.toJson());
+```
+
+`@AckModel()` cannot share a class with `@JsonSerializable()`. Class-first
+value roots and undiscriminated `anyOf` shapes are unsupported; use
+schema-first `@AckType()` for those cases. See
+[Model Code Generation](../core-concepts/typesafe-schemas.mdx) for the complete
+tutorial and comparison.
 
 ### `EnumSchema<T>`
 

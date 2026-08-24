@@ -22,8 +22,8 @@ For AI agents: start at [`/llms.txt`](https://concepta.dev/documentation/ack/ref
 This repository is a monorepo containing:
 
 - **[ack](./packages/ack)**: Core validation library with a fluent schema-building API, codecs, and JSON Schema export
-- **[ack_annotations](./packages/ack_annotations)**: The `@AckType()` annotation that marks schemas for code generation
-- **[ack_generator](./packages/ack_generator)**: Code generator that turns `@AckType()` schemas into immutable model classes
+- **[ack_annotations](./packages/ack_annotations)**: The `@AckType()` and `@AckModel()` code-generation annotations
+- **[ack_generator](./packages/ack_generator)**: Generates models from schemas and schemas from hand-written models
 - **[ack_firebase_ai](./packages/ack_firebase_ai)**: Firebase AI (Gemini) schema converter for structured-output generation
 - **[ack_json_schema_builder](./packages/ack_json_schema_builder)**: Converter to `json_schema_builder` schemas
 - **[example](./example)**: Example projects demonstrating usage of all packages
@@ -156,11 +156,12 @@ print(user.toJson()); // {'name': 'Alice', 'email': 'alice@example.com'}
 
 `@AckType()` supports objects, primitives, lists, enums, bidirectional codecs,
 named recursion, and discriminated unions. One-way transforms are rejected
-because a generated model must be encodable. See the [TypeSafe Schemas guide](https://concepta.dev/documentation/ack/advanced/typesafe-schemas).
+because a generated model must be encodable. See the
+[Model Code Generation guide](docs/core-concepts/typesafe-schemas.mdx).
 
 Already own the model class? Use `@AckModel()` to derive a codec schema from
 constructor-backed fields while keeping the class hand-written. See the
-[class-first model guide](docs/class-first-models.md).
+[Model Code Generation guide](docs/core-concepts/typesafe-schemas.mdx).
 
 ## Codecs
 

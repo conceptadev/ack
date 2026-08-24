@@ -58,7 +58,7 @@
       "pages": [
         { "title": "Codecs", "href": "/core-concepts/codecs" },
         {
-          "title": "TypeSafe Schemas",
+          "title": "Model Code Generation",
           "href": "/core-concepts/typesafe-schemas"
         },
         {

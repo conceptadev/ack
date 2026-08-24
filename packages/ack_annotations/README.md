@@ -66,4 +66,4 @@ an intentional `Type` suffix is kept exactly.
 
 `@AckModel()` targets a public, constructable class and derives an Ack codec
 schema from its constructor-backed fields. See the
-[class-first guide](../../docs/class-first-models.md).
+[Model Code Generation guide](../../docs/core-concepts/typesafe-schemas.mdx).

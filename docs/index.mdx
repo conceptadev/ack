@@ -28,7 +28,7 @@ if (result.isOk) {
 }
 ```
 
-On success, `getOrThrow()` returns your **validated data** as a `Map<String, Object?>`. Ack checks and shapes the data — opt into [code generation](/core-concepts/typesafe-schemas) when you'd rather have typed getters than map access.
+On success, `getOrThrow()` returns your **validated data** as a `Map<String, Object?>`. Ack checks and shapes the data — opt into [model code generation](/core-concepts/typesafe-schemas) when you'd rather have typed getters than map access or want a schema generated from an existing class.
 
 ## Why Ack?
 
@@ -44,7 +44,7 @@ On success, `getOrThrow()` returns your **validated data** as a `Map<String, Obj
 - **Make a field optional or nullable** — [Optional vs nullable](/core-concepts/schemas#optional-vs-nullable)
 - **Parse dates, URIs, and durations** — [Codecs](/core-concepts/codecs)
 - **Add custom validation logic** — [Custom Validation](/guides/custom-validation)
-- **Generate typed models (no manual casts)** — [TypeSafe Schemas](/core-concepts/typesafe-schemas)
+- **Generate models or schemas** — [Model Code Generation](/core-concepts/typesafe-schemas)
 - **Reuse and compose schemas** — [Common Recipes](/guides/common-recipes)
 
 ## Install

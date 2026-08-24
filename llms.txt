@@ -1,16 +1,17 @@
 # Ack
 
-> A schema validation library for Dart and Flutter with a fluent runtime API, bidirectional codecs, and `@AckType()`-driven immutable model generation.
+> A schema validation library for Dart and Flutter with a fluent runtime API, bidirectional codecs, and two-way model/schema code generation.
 
 Ack validates untrusted boundary data with schemas built through the `Ack`
-factory. Annotate a top-level schema variable or getter with `@AckType()` when
-you also want a generated immutable Dart model with stored typed fields.
+factory. Annotate a schema with `@AckType()` to generate a model, or annotate a
+hand-written class with `@AckModel()` to generate its schema and JSON helpers.
+There is no `@AckSchema()` annotation; `AckSchema` is the runtime schema type.
 
 ## Packages
 
 1. `ack`: core runtime validation, codecs, and generated-model support
-2. `ack_annotations`: exposes `@AckType()`
-3. `ack_generator`: generates immutable models from annotated schemas
+2. `ack_annotations`: exposes `@AckType()` and `@AckModel()`
+3. `ack_generator`: generates models from schemas and schemas from models
 4. `ack_firebase_ai`: converts Ack schemas to Firebase AI structured-output schemas
 5. `ack_json_schema_builder`: converts Ack schemas to `json_schema_builder` schemas
 
@@ -44,7 +45,10 @@ Codecs decode a boundary value into a runtime value and encode it back.
   rejected by generated models because they must encode back to the boundary.
 - A codec exports the JSON Schema of its boundary schema.
 
-## AckType generation
+## Model code generation
+
+Both directions use the same generated parts and build command. `@AckType()`
+is schema-first; `@AckModel()` is class-first.
 
 Every annotated library declares both generated parts:
 
@@ -79,11 +83,35 @@ Generated object models provide:
 - a public static `User.$ack` adapter for nested generated models;
 - an unmodifiable `additionalProperties` map for passthrough objects.
 
+For class-first generation:
+
+```dart
+@AckModel(caseStyle: AckCaseStyle.snake)
+final class Account {
+  const Account({required this.displayName, this.role = 'member'});
+
+  @MinLength(2)
+  final String displayName;
+  final String role;
+
+  factory Account.fromJson(Map<String, dynamic> json) =>
+      accountSchema.parse(json)!;
+}
+```
+
+This generates `accountSchema`, a codec schema whose runtime value is
+`Account`, plus `toJson` and `safeToJson` extension methods. Constructor
+parameters determine presence and defaults. Field types and constraint
+annotations determine the schema. Sealed classes use
+`@AckModel(discriminatorKey: ...)`; same-library concrete branches are included
+automatically. Use `@AckField` with a top-level schema-function tear-off for a
+custom field type or `Map<String, V>`.
+
 Generated models do not implement `Map`, `List`, or scalar interfaces. Scalar
 and collection roots are value models with a `.value` field. Use model fields
 and `toJson()` instead of treating a model as its old boundary representation.
 
-## Supported generated-model shapes
+## Supported schema-first generated-model shapes
 
 - objects and empty objects;
 - string, integer, double, number, boolean, list, literal, and enum roots;
@@ -98,6 +126,12 @@ Generation rejects nullable roots, one-way transforms, `Ack.any()`,
 `Ack.anyOf()`, bare `Ack.instance<T>()`, anonymous inline object fields,
 non-string map keys, unresolved dynamic factories, name collisions, and
 cross-library discriminated branches.
+
+Class-first generation supports object models, inferred scalar and enum
+fields, nested lists, sets through list codecs, custom `@AckField` schemas,
+constructor defaults, case styles, additional properties, and same-library
+sealed discriminated unions. It rejects `dynamic`, `Object?`, non-String map
+keys, class-first value roots, and undiscriminated `anyOf` models.
 
 ## Discriminated generated models
 

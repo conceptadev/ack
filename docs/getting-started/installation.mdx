@@ -23,9 +23,10 @@ dependencies:
   ack: ^1.0.0 # Replace with latest version
 ```
 
-## Code generator (`@AckType()`)
+## Optional code generator
 
-To generate immutable models for hand-written schemas, add the annotation and generator packages alongside `ack`:
+To generate models from Ack schemas or Ack schemas from hand-written models,
+add the annotation and generator packages alongside `ack`:
 
 ```bash
 dart pub add ack ack_annotations
@@ -44,9 +45,10 @@ dev_dependencies:
   build_runner: ^2.4.0
 ```
 
-`ack_generator` does not generate schemas from classes. It reads top-level Ack
-schema variables and getters annotated with `@AckType()` and emits immutable
-models with typed fields, parsing helpers, and JSON methods.
+The generator works in both directions. `@AckType()` marks a top-level schema
+and generates an immutable model. `@AckModel()` marks a hand-written class and
+generates its Ack codec schema and JSON helpers. There is no `@AckSchema()`
+annotation; `AckSchema` is the runtime schema type.
 
 ```dart
 import 'package:ack/ack.dart';
@@ -60,6 +62,12 @@ final userSchema = Ack.object({
   'name': Ack.string(),
   'email': Ack.string().email(),
 });
+
+@AckModel()
+final class Account {
+  const Account({required this.name});
+  final String name;
+}
 ```
 
 Run the generator:
@@ -68,7 +76,8 @@ Run the generator:
 dart run build_runner build
 ```
 
-See [TypeSafe Schemas](../core-concepts/typesafe-schemas.mdx) for more `@AckType` examples and supported schema shapes.
+See [Model Code Generation](../core-concepts/typesafe-schemas.mdx) for working
+tutorials, supported shapes, and guidance on choosing a direction.
 
 ## Next step
 

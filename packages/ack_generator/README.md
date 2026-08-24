@@ -90,8 +90,9 @@ part. Ack-only apps do not add `json_annotation` or `json_serializable`;
 getters. Classes, instance members, and local variables are rejected.
 
 `@AckModel()` annotates public, constructable classes. See the
-[class-first guide](../../docs/class-first-models.md) for field inference,
-sealed unions, passthrough properties, positioning, and build configuration.
+[Model Code Generation guide](../../docs/core-concepts/typesafe-schemas.mdx)
+for both directions, field inference, sealed unions, passthrough properties,
+and build configuration.
 
 For design details and migration notes, see
 [`docs/architecture/acktype-model-generation.md`](../../docs/architecture/acktype-model-generation.md).

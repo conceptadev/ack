@@ -55,6 +55,6 @@ Use `.optional()` when a field may be omitted entirely. Chain `.nullable()` if a
 
 ## Related Packages
 
-- [ack_generator](https://pub.dev/packages/ack_generator) — Code generator for immutable models from `@AckType()` schemas
+- [ack_generator](https://pub.dev/packages/ack_generator) — Generates models from `@AckType()` schemas and schemas from `@AckModel()` classes
 - [ack_firebase_ai](https://pub.dev/packages/ack_firebase_ai) — Firebase AI (Gemini) schema converter
 - [ack_json_schema_builder](https://pub.dev/packages/ack_json_schema_builder) — JSON Schema converter
