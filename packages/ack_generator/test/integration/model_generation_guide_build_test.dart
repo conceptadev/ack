@@ -108,6 +108,9 @@ void main() {
     expect(AccountSchema.safeEncode(account).isOk, isTrue);
     expect(AccountSchema.toJsonSchema()['type'], 'object');
     expect(AccountSchema.toSchemaModel(), isNotNull);
+    expect(AccountSchema.wireSchema, isNotNull);
+    expect(account.copyWith(role: 'admin').role, 'admin');
+    expect(account.copyWith().role, 'member');
   });
 }
 ''');

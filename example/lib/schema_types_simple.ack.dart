@@ -38,6 +38,32 @@ final class User {
 
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
 
+  User copyWith({String? name, int? age, bool? active}) => User(
+    name: name ?? this.name,
+    age: age ?? this.age,
+    active: active ?? this.active,
+  );
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is User &&
+          runtimeType == other.runtimeType &&
+          deepEquals(name, other.name) &&
+          deepEquals(age, other.age) &&
+          deepEquals(active, other.active));
+
+  @override
+  int get hashCode => Object.hashAll([
+    runtimeType,
+    deepHashCode(name),
+    deepHashCode(age),
+    deepHashCode(active),
+  ]);
+
+  @override
+  String toString() => 'User(name: $name, age: $age, active: $active)';
+
   static User _fromAckRuntime(Map<String, Object?> value) =>
       _$UserFromJson(Map<String, dynamic>.from(value));
 

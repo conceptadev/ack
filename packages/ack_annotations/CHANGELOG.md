@@ -1,4 +1,4 @@
-## Unreleased
+## 2.0.0
 
 ### Breaking
 
@@ -10,6 +10,12 @@
   live in this package.
 * Add class-first `@AckModel()` and field constraint annotations. Its
   `schemaName:` value is the exact public UpperCamelCase schema facade name.
+* Replace `@AckModel(additionalProperties: bool)` with
+  `AckAdditionalPropertiesMode` (`reject`, `discard`, `capture`) and optional
+  `additionalPropertiesField` (defaults to `additionalProperties`, may be
+  `args`).
+* Expand `@AckField` with optional `schema` and `AckFieldPresence`. A no-op
+  `@AckField()` is rejected.
 
 ## 1.1.0
 

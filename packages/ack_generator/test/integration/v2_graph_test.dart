@@ -195,9 +195,11 @@ final userSchema = Ack.object({
     );
   });
 
-  test('rejects a local one-way transform field and names the variable', () async {
-    await _expectFailure(
-      '''
+  test(
+    'rejects a local one-way transform field and names the variable',
+    () async {
+      await _expectFailure(
+        '''
 $_head
 final ageFromString = Ack.string().transform(int.parse);
 
@@ -206,9 +208,10 @@ final userSchema = Ack.object({
   'age': ageFromString,
 });
 ''',
-      ['userSchema.age', 'ageFromString', '.transform()'],
-    );
-  });
+        ['userSchema.age', 'ageFromString', '.transform()'],
+      );
+    },
+  );
 
   test('rejects a local one-way transform used as an annotated root', () async {
     await _expectFailure(
@@ -368,8 +371,7 @@ final profileSchema = Ack.object({
   });
 
   test('generates codec fields whose outputSchema is InstanceSchema', () async {
-    await _expectOutput(
-      '''
+    await _expectOutput('''
 $_head
 final class Color {
   const Color(this.value);
@@ -383,9 +385,7 @@ final userSchema = Ack.object({
     encode: (c) => c.value,
   ),
 });
-''',
-      allOf([contains('required this.color'), contains('final Color color')]),
-    );
+''', allOf([contains('required this.color'), contains('final Color color')]));
   });
 
   test('rejects ordinary alias cycles', () async {

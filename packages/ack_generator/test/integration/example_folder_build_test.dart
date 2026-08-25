@@ -136,7 +136,7 @@ dependency_overrides:
           final isClassFirst = entry.key.contains('class_first_models');
           if (entry.key.endsWith('.ack.dart')) {
             if (isClassFirst) {
-              expect(entry.value, contains('extension AccountAck'));
+              expect(entry.value, contains(r'mixin _$AccountAck'));
               expect(entry.value, contains('final _accountSchema'));
               expect(
                 entry.value,

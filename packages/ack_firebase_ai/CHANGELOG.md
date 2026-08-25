@@ -1,3 +1,9 @@
+## 2.0.0
+
+### Breaking
+
+* Require Ack 2.0 and align this adapter with the coordinated Ack 2.0 release.
+
 ## 1.1.0
 
 * See [release notes](https://github.com/btwld/ack/releases/tag/v1.1.0) for details.

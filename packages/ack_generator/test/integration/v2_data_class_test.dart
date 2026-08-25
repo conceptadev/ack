@@ -1,0 +1,233 @@
+import 'package:ack_generator/src/builder.dart';
+import 'package:build/build.dart';
+import 'package:build_test/build_test.dart';
+import 'package:logging/logging.dart';
+import 'package:test/test.dart';
+
+Future<void> _build(
+  String source, {
+  required Map<String, Object> outputs,
+}) async {
+  final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
+  await readerWriter.testing.loadIsolateSources();
+  await testBuilder(
+    ackGenerator(BuilderOptions.empty),
+    {'test_pkg|lib/model.dart': source},
+    generateFor: const {'test_pkg|lib/model.dart'},
+    readerWriter: readerWriter,
+    outputs: outputs,
+  );
+}
+
+Future<void> _expectFailure(String body, List<String> messages) async {
+  final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
+  await readerWriter.testing.loadIsolateSources();
+  final seen = <String>{};
+  await testBuilder(
+    ackGenerator(BuilderOptions.empty),
+    {'test_pkg|lib/model.dart': '$_imports\n$body'},
+    generateFor: const {'test_pkg|lib/model.dart'},
+    readerWriter: readerWriter,
+    onLog: (LogRecord log) {
+      if (log.level.name != 'SEVERE') return;
+      for (final message in messages) {
+        if (log.message.contains(message)) seen.add(message);
+      }
+    },
+  );
+  expect(seen, containsAll(messages));
+}
+
+const _imports = '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+part 'model.ack.dart';
+part 'model.g.dart';
+''';
+
+void main() {
+  test(
+    'class-first mixin reconstructs positional and named parameters',
+    () async {
+      await _build(
+        '''
+$_imports
+@AckModel()
+final class Point with _\$PointAck {
+  const Point(this.x, {required this.y, this.label = 'origin'});
+  final int x;
+  final int y;
+  final String label;
+}
+''',
+        outputs: {
+          'test_pkg|lib/model.ack.dart': decodedMatches(
+            allOf([
+              contains(r'mixin _$PointAck'),
+              contains('Point copyWith('),
+              contains('x ?? self.x'),
+              contains('y: y ?? self.y'),
+              contains('label: label ?? self.label'),
+              contains('get wireSchema'),
+              contains('_pointObject'),
+            ]),
+          ),
+        },
+      );
+    },
+  );
+
+  test('unknown-property modes emit reject, discard, and args capture', () async {
+    await _build(
+      '''
+$_imports
+@AckModel()
+final class Strict with _\$StrictAck {
+  const Strict({required this.name});
+  final String name;
+}
+
+@AckModel(additionalProperties: AckAdditionalPropertiesMode.discard)
+final class Loose with _\$LooseAck {
+  const Loose({required this.name});
+  final String name;
+}
+
+@AckModel(
+  additionalProperties: AckAdditionalPropertiesMode.capture,
+  additionalPropertiesField: 'args',
+)
+final class Bag with _\$BagAck {
+  const Bag({required this.name, this.args = const {}});
+  final String name;
+  final Map<String, Object?> args;
+}
+''',
+      outputs: {
+        'test_pkg|lib/model.ack.dart': decodedMatches(
+          allOf([
+            contains('final _strictObject = Ack.object({'),
+            isNot(
+              contains(
+                "final _strictObject = Ack.object({'name': Ack.string()}, additionalProperties: true)",
+              ),
+            ),
+            contains('additionalProperties: true'),
+            contains("'args': Map<String, Object?>.fromEntries"),
+            contains('result.remove(\'args\')'),
+            contains('model.args.entries'),
+            contains('self.args'),
+          ]),
+        ),
+      },
+    );
+  });
+
+  test(
+    'presence overrides and required mixin collisions are diagnosed',
+    () async {
+      await _expectFailure(
+        '''
+@AckModel()
+final class User with _\$UserAck {
+  const User({required this.name});
+  User copyWith({String? name}) => User(name: name ?? this.name);
+  final String name;
+}
+''',
+        ['User.copyWith', 'override'],
+      );
+    },
+  );
+
+  test(
+    'presence overrides and super parameters reconstruct in order',
+    () async {
+      await _build(
+        '''
+$_imports
+@AckModel()
+final class User with _\$UserAck {
+  const User({this.nickname});
+  @AckField(presence: AckFieldPresence.required)
+  final String? nickname;
+}
+
+@AckModel(discriminatorKey: 'type')
+sealed class Pet with _\$PetAck {
+  const Pet({required this.id});
+  final String id;
+}
+
+final class Cat extends Pet with _\$CatAck {
+  const Cat({required super.id, required this.lives});
+  final int lives;
+}
+''',
+        outputs: {
+          'test_pkg|lib/model.ack.dart': decodedMatches(
+            allOf([
+              contains("'nickname': Ack.string().nullable()"),
+              isNot(contains("'nickname': Ack.string().nullable().optional()")),
+              contains('Cat copyWith({'),
+              contains('id: id ?? self.id'),
+              contains('lives: lives ?? self.lives'),
+            ]),
+          ),
+        },
+      );
+    },
+  );
+
+  test(
+    'optional presence accepts a required nullable normalization input',
+    () async {
+      await _build(
+        '''
+$_imports
+@AckModel()
+final class Normalized with _\$NormalizedAck {
+  const Normalized(String? value) : value = value ?? '';
+
+  @AckField(presence: AckFieldPresence.optional)
+  final String value;
+}
+''',
+        outputs: {
+          'test_pkg|lib/model.ack.dart': decodedMatches(
+            allOf([
+              contains("'value': Ack.string().optional()"),
+              contains('Normalized copyWith({String? value})'),
+              contains('Normalized(value ?? self.value)'),
+            ]),
+          ),
+        },
+      );
+    },
+  );
+
+  test('schema-first models emit copy, equality, and string members', () async {
+    await _build(
+      '''
+$_imports
+@AckType()
+final userSchema = Ack.object({
+  'name': Ack.string(),
+  'tags': Ack.list(Ack.string()),
+});
+''',
+      outputs: {
+        'test_pkg|lib/model.ack.dart': decodedMatches(
+          allOf([
+            contains('User copyWith({'),
+            contains('deepEquals(name, other.name)'),
+            contains('deepHashCode(tags)'),
+            contains("toString() => 'User("),
+            isNot(contains('class UserType')),
+          ]),
+        ),
+      },
+    );
+  });
+}

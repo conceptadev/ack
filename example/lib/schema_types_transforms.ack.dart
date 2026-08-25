@@ -35,6 +35,21 @@ final class ColorModel {
 
   SchemaResult<String> safeToJson() => $ack.safeEncode(this);
 
+  ColorModel copyWith({Color? value}) => ColorModel(value ?? this.value);
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ColorModel &&
+          runtimeType == other.runtimeType &&
+          deepEquals(value, other.value));
+
+  @override
+  int get hashCode => Object.hashAll([runtimeType, deepHashCode(value)]);
+
+  @override
+  String toString() => 'ColorModel(value: $value)';
+
   static ColorModel _fromAckRuntime(Color value) =>
       _$ColorModelFromJson(<String, dynamic>{'value': value});
 
@@ -108,6 +123,69 @@ final class Profile {
   Map<String, dynamic> toJson() => Map<String, dynamic>.from($ack.encode(this));
 
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
+
+  Profile copyWith({
+    Uri? homepage,
+    DateTime? birthday,
+    DateTime? lastLogin,
+    Duration? timeout,
+    List<Uri>? links,
+    Color? favoriteColor,
+    String? slug,
+    ColorModel? accent,
+    List<ColorModel>? colors,
+    List<Color>? customColors,
+    TagList? tagList,
+  }) => Profile(
+    homepage: homepage ?? this.homepage,
+    birthday: birthday ?? this.birthday,
+    lastLogin: lastLogin ?? this.lastLogin,
+    timeout: timeout ?? this.timeout,
+    links: links ?? this.links,
+    favoriteColor: favoriteColor ?? this.favoriteColor,
+    slug: slug ?? this.slug,
+    accent: accent ?? this.accent,
+    colors: colors ?? this.colors,
+    customColors: customColors ?? this.customColors,
+    tagList: tagList ?? this.tagList,
+  );
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Profile &&
+          runtimeType == other.runtimeType &&
+          deepEquals(homepage, other.homepage) &&
+          deepEquals(birthday, other.birthday) &&
+          deepEquals(lastLogin, other.lastLogin) &&
+          deepEquals(timeout, other.timeout) &&
+          deepEquals(links, other.links) &&
+          deepEquals(favoriteColor, other.favoriteColor) &&
+          deepEquals(slug, other.slug) &&
+          deepEquals(accent, other.accent) &&
+          deepEquals(colors, other.colors) &&
+          deepEquals(customColors, other.customColors) &&
+          deepEquals(tagList, other.tagList));
+
+  @override
+  int get hashCode => Object.hashAll([
+    runtimeType,
+    deepHashCode(homepage),
+    deepHashCode(birthday),
+    deepHashCode(lastLogin),
+    deepHashCode(timeout),
+    deepHashCode(links),
+    deepHashCode(favoriteColor),
+    deepHashCode(slug),
+    deepHashCode(accent),
+    deepHashCode(colors),
+    deepHashCode(customColors),
+    deepHashCode(tagList),
+  ]);
+
+  @override
+  String toString() =>
+      'Profile(homepage: $homepage, birthday: $birthday, lastLogin: $lastLogin, timeout: $timeout, links: $links, favoriteColor: $favoriteColor, slug: $slug, accent: $accent, colors: $colors, customColors: $customColors, tagList: $tagList)';
 
   static Profile _fromAckRuntime(Map<String, Object?> value) =>
       _$ProfileFromJson(Map<String, dynamic>.from(value));

@@ -1,4 +1,11 @@
-## Unreleased
+## 2.0.0
+
+### Breaking
+
+* Export `deepEquals` and `deepHashCode` as the shared collection equality
+  helpers used by generated Ack data classes.
+* Compare collection contents independently of growable/unmodifiable wrapper
+  implementations while preserving distinct scalar runtime types.
 
 ### Added
 

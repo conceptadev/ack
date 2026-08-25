@@ -5,7 +5,7 @@ part 'class_first_models.ack.dart';
 part 'class_first_models.g.dart';
 
 @AckModel(caseStyle: AckCaseStyle.snake)
-final class Account {
+final class Account with _$AccountAck {
   const Account({
     required this.displayName,
     this.website,
@@ -21,14 +21,14 @@ final class Account {
 }
 
 @AckModel(discriminatorKey: 'type')
-sealed class Pet {
+sealed class Pet with _$PetAck {
   const Pet({required this.id});
 
   final String id;
 }
 
 @AckModel(discriminatorValue: 'cat')
-final class Cat extends Pet {
+final class Cat extends Pet with _$CatAck {
   const Cat({required super.id, required this.lives});
 
   @Min(1)
@@ -36,7 +36,7 @@ final class Cat extends Pet {
   final int lives;
 }
 
-final class Dog extends Pet {
+final class Dog extends Pet with _$DogAck {
   const Dog({required super.id, required this.breed});
 
   final String breed;

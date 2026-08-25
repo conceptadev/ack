@@ -55,10 +55,7 @@ void main() {
     });
 
     test('required nullable encodes null and optional null is omitted', () {
-      final modifier = Modifier(
-        requiredField: 'value',
-        nullableField: null,
-      );
+      final modifier = Modifier(requiredField: 'value', nullableField: null);
       final json = modifier.toJson();
 
       expect(json.containsKey('nullableField'), isTrue);

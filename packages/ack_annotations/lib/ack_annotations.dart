@@ -2,6 +2,10 @@
 ///
 /// Import this library to use `@AckType()` on top-level schema declarations or
 /// `@AckModel()` on hand-written model classes processed by `ack_generator`.
+///
+/// Class-first models apply the generated `_$ClassAck` mixin and may use
+/// [AckAdditionalPropertiesMode] and [AckFieldPresence] to describe wire
+/// extras and field presence.
 library;
 
 export 'package:json_annotation/json_annotation.dart' show JsonKey;

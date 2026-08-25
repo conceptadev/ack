@@ -44,6 +44,37 @@ final class UserConfig {
 
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
 
+  UserConfig copyWith({
+    String? username,
+    String? email,
+    Map<String, Object?>? additionalProperties,
+  }) => UserConfig(
+    username: username ?? this.username,
+    email: email ?? this.email,
+    additionalProperties: additionalProperties ?? this.additionalProperties,
+  );
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is UserConfig &&
+          runtimeType == other.runtimeType &&
+          deepEquals(username, other.username) &&
+          deepEquals(email, other.email) &&
+          deepEquals(additionalProperties, other.additionalProperties));
+
+  @override
+  int get hashCode => Object.hashAll([
+    runtimeType,
+    deepHashCode(username),
+    deepHashCode(email),
+    deepHashCode(additionalProperties),
+  ]);
+
+  @override
+  String toString() =>
+      'UserConfig(username: $username, email: $email, additionalProperties: $additionalProperties)';
+
   static UserConfig _fromAckRuntime(Map<String, Object?> value) {
     const declared = <String>{'username', 'email'};
     return _$UserConfigFromJson(<String, dynamic>{
@@ -118,6 +149,37 @@ final class ApiRequest {
   Map<String, dynamic> toJson() => Map<String, dynamic>.from($ack.encode(this));
 
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
+
+  ApiRequest copyWith({
+    String? method,
+    String? url,
+    Map<String, Object?>? additionalProperties,
+  }) => ApiRequest(
+    method: method ?? this.method,
+    url: url ?? this.url,
+    additionalProperties: additionalProperties ?? this.additionalProperties,
+  );
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ApiRequest &&
+          runtimeType == other.runtimeType &&
+          deepEquals(method, other.method) &&
+          deepEquals(url, other.url) &&
+          deepEquals(additionalProperties, other.additionalProperties));
+
+  @override
+  int get hashCode => Object.hashAll([
+    runtimeType,
+    deepHashCode(method),
+    deepHashCode(url),
+    deepHashCode(additionalProperties),
+  ]);
+
+  @override
+  String toString() =>
+      'ApiRequest(method: $method, url: $url, additionalProperties: $additionalProperties)';
 
   static ApiRequest _fromAckRuntime(Map<String, Object?> value) {
     const declared = <String>{'method', 'url'};
@@ -194,6 +256,37 @@ final class FeatureFlags {
 
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
 
+  FeatureFlags copyWith({
+    String? appVersion,
+    String? environment,
+    Map<String, Object?>? additionalProperties,
+  }) => FeatureFlags(
+    appVersion: appVersion ?? this.appVersion,
+    environment: environment ?? this.environment,
+    additionalProperties: additionalProperties ?? this.additionalProperties,
+  );
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is FeatureFlags &&
+          runtimeType == other.runtimeType &&
+          deepEquals(appVersion, other.appVersion) &&
+          deepEquals(environment, other.environment) &&
+          deepEquals(additionalProperties, other.additionalProperties));
+
+  @override
+  int get hashCode => Object.hashAll([
+    runtimeType,
+    deepHashCode(appVersion),
+    deepHashCode(environment),
+    deepHashCode(additionalProperties),
+  ]);
+
+  @override
+  String toString() =>
+      'FeatureFlags(appVersion: $appVersion, environment: $environment, additionalProperties: $additionalProperties)';
+
   static FeatureFlags _fromAckRuntime(Map<String, Object?> value) {
     const declared = <String>{'appVersion', 'environment'};
     return _$FeatureFlagsFromJson(<String, dynamic>{
@@ -261,6 +354,26 @@ final class DynamicData {
   Map<String, dynamic> toJson() => Map<String, dynamic>.from($ack.encode(this));
 
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
+
+  DynamicData copyWith({Map<String, Object?>? additionalProperties}) =>
+      DynamicData(
+        additionalProperties: additionalProperties ?? this.additionalProperties,
+      );
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DynamicData &&
+          runtimeType == other.runtimeType &&
+          deepEquals(additionalProperties, other.additionalProperties));
+
+  @override
+  int get hashCode =>
+      Object.hashAll([runtimeType, deepHashCode(additionalProperties)]);
+
+  @override
+  String toString() =>
+      'DynamicData(additionalProperties: $additionalProperties)';
 
   static DynamicData _fromAckRuntime(Map<String, Object?> value) {
     const declared = <String>{};

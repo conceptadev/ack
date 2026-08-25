@@ -210,14 +210,12 @@ final petSchema = Ack.discriminated(
     );
   });
 
-  test(
-    'rejects generated member collisions with paths',
-    () async {
-      final messages = <String>{};
-      await _build(
-        {
-          'bad.dart':
-              '''
+  test('rejects generated member collisions with paths', () async {
+    final messages = <String>{};
+    await _build(
+      {
+        'bad.dart':
+            '''
 $_imports
 part 'bad.ack.dart';
 part 'bad.g.dart';
@@ -225,15 +223,14 @@ part 'bad.g.dart';
 @AckType()
 final badSchema = Ack.object({'toJson': Ack.string()});
 ''',
-        },
-        outputs: const {},
-        onLog: (log) {
-          if (log.level.name == 'SEVERE') messages.add(log.message);
-        },
-      );
-      expect(messages.single, contains('badSchema.toJson'));
-    },
-  );
+      },
+      outputs: const {},
+      onLog: (log) {
+        if (log.level.name == 'SEVERE') messages.add(log.message);
+      },
+    );
+    expect(messages.single, contains('badSchema.toJson'));
+  });
 
   test('rejects Dart keywords used as generated field names', () async {
     final messages = <String>{};
@@ -573,8 +570,7 @@ final userSchema = Ack.object({'name': Ack.string()});
     final messages = <String>{};
     await _build(
       {
-        'other.dart':
-            '''
+        'other.dart': '''
 import 'package:ack/ack.dart';
 
 final payloadAny = Ack.any();
@@ -670,7 +666,9 @@ final petSchema = Ack.discriminated(
 ''',
       },
       outputs: {
-        'test_pkg|lib/cat.ack.dart': decodedMatches(contains('final class Cat')),
+        'test_pkg|lib/cat.ack.dart': decodedMatches(
+          contains('final class Cat'),
+        ),
       },
       onLog: (log) {
         if (log.level.name == 'SEVERE') messages.add(log.message);

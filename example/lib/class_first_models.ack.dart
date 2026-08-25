@@ -8,7 +8,7 @@ part of 'class_first_models.dart';
 // **************************************************************************
 
 final _catObject = Ack.object({
-  'type': Ack.literal('cat'),
+  'type': Ack.literal('cat').optional(),
   'id': Ack.string(),
   'lives': Ack.integer().min(1).max(9),
 });
@@ -20,6 +20,9 @@ final _catSchema = _catObject.codec<Cat>(
 
 abstract final class CatSchema {
   static AckSchema<Map<String, Object?>, Cat> get schema => _catSchema;
+
+  static AckSchema<Map<String, Object?>, Map<String, Object?>> get wireSchema =>
+      _catObject;
 
   static Cat parse(Object? value, {String? debugName}) =>
       _catSchema.parse(value, debugName: debugName)!;
@@ -51,11 +54,41 @@ Map<String, Object?> _$CatToRuntime(Cat model) {
   return <String, Object?>{...result, 'type': 'cat'};
 }
 
-extension CatAck on Cat {
-  Map<String, dynamic> toJson() =>
-      Map<String, dynamic>.from(CatSchema.encode(this));
+mixin _$CatAck {
+  Cat copyWith({String? id, int? lives}) {
+    final self = this as Cat;
+    return Cat(id: id ?? self.id, lives: lives ?? self.lives);
+  }
 
-  SchemaResult<Map<String, Object?>> safeToJson() => CatSchema.safeEncode(this);
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! Cat || runtimeType != other.runtimeType) return false;
+    final self = this as Cat;
+    return deepEquals(self.id, other.id) && deepEquals(self.lives, other.lives);
+  }
+
+  @override
+  int get hashCode {
+    final self = this as Cat;
+    return Object.hashAll([
+      runtimeType,
+      deepHashCode(self.id),
+      deepHashCode(self.lives),
+    ]);
+  }
+
+  @override
+  String toString() {
+    final self = this as Cat;
+    return 'Cat(id: ${self.id}, lives: ${self.lives})';
+  }
+
+  Map<String, dynamic> toJson() =>
+      Map<String, dynamic>.from(CatSchema.encode(this as Cat));
+
+  SchemaResult<Map<String, Object?>> safeToJson() =>
+      CatSchema.safeEncode(this as Cat);
 }
 
 String _ackCatFromRuntimeId(Object? value) => value as String;
@@ -64,7 +97,7 @@ int _ackCatFromRuntimeLives(Object? value) => value as int;
 Object? _ackCatToRuntimeLives(int value) => value;
 
 final _dogObject = Ack.object({
-  'type': Ack.literal('Dog'),
+  'type': Ack.literal('Dog').optional(),
   'id': Ack.string(),
   'breed': Ack.string(),
 });
@@ -76,6 +109,9 @@ final _dogSchema = _dogObject.codec<Dog>(
 
 abstract final class DogSchema {
   static AckSchema<Map<String, Object?>, Dog> get schema => _dogSchema;
+
+  static AckSchema<Map<String, Object?>, Map<String, Object?>> get wireSchema =>
+      _dogObject;
 
   static Dog parse(Object? value, {String? debugName}) =>
       _dogSchema.parse(value, debugName: debugName)!;
@@ -107,11 +143,41 @@ Map<String, Object?> _$DogToRuntime(Dog model) {
   return <String, Object?>{...result, 'type': 'Dog'};
 }
 
-extension DogAck on Dog {
-  Map<String, dynamic> toJson() =>
-      Map<String, dynamic>.from(DogSchema.encode(this));
+mixin _$DogAck {
+  Dog copyWith({String? id, String? breed}) {
+    final self = this as Dog;
+    return Dog(id: id ?? self.id, breed: breed ?? self.breed);
+  }
 
-  SchemaResult<Map<String, Object?>> safeToJson() => DogSchema.safeEncode(this);
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! Dog || runtimeType != other.runtimeType) return false;
+    final self = this as Dog;
+    return deepEquals(self.id, other.id) && deepEquals(self.breed, other.breed);
+  }
+
+  @override
+  int get hashCode {
+    final self = this as Dog;
+    return Object.hashAll([
+      runtimeType,
+      deepHashCode(self.id),
+      deepHashCode(self.breed),
+    ]);
+  }
+
+  @override
+  String toString() {
+    final self = this as Dog;
+    return 'Dog(id: ${self.id}, breed: ${self.breed})';
+  }
+
+  Map<String, dynamic> toJson() =>
+      Map<String, dynamic>.from(DogSchema.encode(this as Dog));
+
+  SchemaResult<Map<String, Object?>> safeToJson() =>
+      DogSchema.safeEncode(this as Dog);
 }
 
 String _ackDogFromRuntimeId(Object? value) => value as String;
@@ -119,24 +185,28 @@ Object? _ackDogToRuntimeId(String value) => value;
 String _ackDogFromRuntimeBreed(Object? value) => value as String;
 Object? _ackDogToRuntimeBreed(String value) => value;
 
-final _petSchema =
-    Ack.discriminated(
-      discriminatorKey: 'type',
-      schemas: {'cat': _catObject, 'Dog': _dogObject},
-    ).codec<Pet>(
-      decode: (value) => switch (value['type']) {
-        'cat' => _$CatFromRuntime(value),
-        'Dog' => _$DogFromRuntime(value),
-        final unknown => throw StateError('Unknown type: $unknown'),
-      },
-      encode: (model) => switch (model) {
-        Cat() => _$CatToRuntime(model),
-        Dog() => _$DogToRuntime(model),
-      },
-    );
+final _petObject = Ack.discriminated(
+  discriminatorKey: 'type',
+  schemas: {'cat': _catObject, 'Dog': _dogObject},
+);
+
+final _petSchema = _petObject.codec<Pet>(
+  decode: (value) => switch (value['type']) {
+    'cat' => _$CatFromRuntime(value),
+    'Dog' => _$DogFromRuntime(value),
+    final unknown => throw StateError('Unknown type: $unknown'),
+  },
+  encode: (model) => switch (model) {
+    Cat() => _$CatToRuntime(model),
+    Dog() => _$DogToRuntime(model),
+  },
+);
 
 abstract final class PetSchema {
   static AckSchema<Map<String, Object?>, Pet> get schema => _petSchema;
+
+  static AckSchema<Map<String, Object?>, Map<String, Object?>> get wireSchema =>
+      _petObject;
 
   static Pet parse(Object? value, {String? debugName}) =>
       _petSchema.parse(value, debugName: debugName)!;
@@ -160,21 +230,30 @@ abstract final class PetSchema {
       AckSchemaModelExtension(_petSchema).toSchemaModel();
 }
 
-extension PetAck on Pet {
+mixin _$PetAck {
   Map<String, dynamic> toJson() =>
-      Map<String, dynamic>.from(PetSchema.encode(this));
+      Map<String, dynamic>.from(PetSchema.encode(this as Pet));
 
-  SchemaResult<Map<String, Object?>> safeToJson() => PetSchema.safeEncode(this);
+  SchemaResult<Map<String, Object?>> safeToJson() =>
+      PetSchema.safeEncode(this as Pet);
 }
 
-final _accountSchema = Ack.object({
+final _accountObject = Ack.object({
   'display_name': Ack.string().minLength(2),
   'website': Ack.uri().optional(),
   'role': Ack.string().withDefault('member'),
-}).codec<Account>(decode: _$AccountFromRuntime, encode: _$AccountToRuntime);
+});
+
+final _accountSchema = _accountObject.codec<Account>(
+  decode: _$AccountFromRuntime,
+  encode: _$AccountToRuntime,
+);
 
 abstract final class AccountSchema {
   static AckSchema<Map<String, Object?>, Account> get schema => _accountSchema;
+
+  static AckSchema<Map<String, Object?>, Map<String, Object?>> get wireSchema =>
+      _accountObject;
 
   static Account parse(Object? value, {String? debugName}) =>
       _accountSchema.parse(value, debugName: debugName)!;
@@ -205,12 +284,48 @@ Map<String, Object?> _$AccountToRuntime(Account model) => <String, Object?>{
   ..._$AccountToJson(model),
 };
 
-extension AccountAck on Account {
+mixin _$AccountAck {
+  Account copyWith({String? displayName, Uri? website, String? role}) {
+    final self = this as Account;
+    return Account(
+      displayName: displayName ?? self.displayName,
+      website: website ?? self.website,
+      role: role ?? self.role,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! Account || runtimeType != other.runtimeType) return false;
+    final self = this as Account;
+    return deepEquals(self.displayName, other.displayName) &&
+        deepEquals(self.website, other.website) &&
+        deepEquals(self.role, other.role);
+  }
+
+  @override
+  int get hashCode {
+    final self = this as Account;
+    return Object.hashAll([
+      runtimeType,
+      deepHashCode(self.displayName),
+      deepHashCode(self.website),
+      deepHashCode(self.role),
+    ]);
+  }
+
+  @override
+  String toString() {
+    final self = this as Account;
+    return 'Account(displayName: ${self.displayName}, website: ${self.website}, role: ${self.role})';
+  }
+
   Map<String, dynamic> toJson() =>
-      Map<String, dynamic>.from(AccountSchema.encode(this));
+      Map<String, dynamic>.from(AccountSchema.encode(this as Account));
 
   SchemaResult<Map<String, Object?>> safeToJson() =>
-      AccountSchema.safeEncode(this);
+      AccountSchema.safeEncode(this as Account);
 }
 
 String _ackAccountFromRuntimeDisplayName(Object? value) => value as String;

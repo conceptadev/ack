@@ -74,7 +74,7 @@ part 'address.ack.dart';
 part 'address.g.dart';
 
 @AckModel(schemaName: 'PostalAddressSchema')
-final class Address {
+final class Address with _$AddressAck {
   const Address({required this.city});
 
   final String city;
@@ -83,7 +83,7 @@ final class Address {
 }
 
 @AckModel()
-final class AddressBook {
+final class AddressBook with _$AddressBookAck {
   const AddressBook({required this.primary, this.secondary});
 
   final Address primary;
@@ -102,7 +102,7 @@ part 'customer.ack.dart';
 part 'customer.g.dart';
 
 @AckModel()
-final class Customer {
+final class Customer with _$CustomerAck {
   const Customer({
     this.primary = const Address(city: 'Default City'),
     this.secondary,
@@ -127,7 +127,7 @@ part 'parcel.ack.dart';
 part 'parcel.g.dart';
 
 @AckModel()
-final class Parcel {
+final class Parcel with _$ParcelAck {
   const Parcel({required this.destination});
 
   final models.Address destination;
@@ -142,7 +142,7 @@ part 'north.ack.dart';
 part 'north.g.dart';
 
 @AckModel()
-final class Place {
+final class Place with _$PlaceAck {
   const Place({required this.name});
 
   final String name;
@@ -156,7 +156,7 @@ part 'south.ack.dart';
 part 'south.g.dart';
 
 @AckModel()
-final class Place {
+final class Place with _$PlaceAck {
   const Place({required this.name});
 
   final String name;
@@ -174,7 +174,7 @@ part 'itinerary.ack.dart';
 part 'itinerary.g.dart';
 
 @AckModel()
-final class Itinerary {
+final class Itinerary with _$ItineraryAck {
   const Itinerary({required this.start, required this.finish});
 
   final north.Place start;
@@ -190,13 +190,13 @@ part 'pet.ack.dart';
 part 'pet.g.dart';
 
 @AckModel(discriminatorKey: 'type')
-sealed class Pet {
+sealed class Pet with _$PetAck {
   const Pet({required this.id});
 
   final String id;
 }
 
-final class Cat extends Pet {
+final class Cat extends Pet with _$CatAck {
   const Cat({required super.id, required this.lives});
 
   final int lives;
@@ -213,7 +213,7 @@ part 'order.ack.dart';
 part 'order.g.dart';
 
 @AckModel()
-final class Order {
+final class Order with _$OrderAck {
   const Order({
     required this.shipping,
     required this.history,
@@ -252,7 +252,7 @@ part 'holder.ack.dart';
 part 'holder.g.dart';
 
 @AckModel()
-final class Holder {
+final class Holder with _$HolderAck {
   const Holder({
     required this.primary,
     this.optional,

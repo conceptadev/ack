@@ -55,7 +55,7 @@ final orderSchema = Ack.object({
 
 // Class-first: write Account; Ack generates AccountSchema.
 @AckModel(caseStyle: AckCaseStyle.snake)
-final class Account {
+final class Account with _$AccountAck {
   const Account({
     required this.displayName,
     required this.email,
@@ -120,6 +120,7 @@ Generated models provide:
 - an unchecked constructor with stored typed fields;
 - `User.parse` and `User.safeParse` for validated input;
 - `User.fromJson`, `toJson`, and `safeToJson` for the JSON boundary;
+- generated `copyWith`, deep collection-aware `==`/`hashCode`, and `toString`;
 - a public `User.$ack` adapter used by nested generated models.
 
 The generator supports object and value roots, literals, enums, lists, sets,
@@ -174,9 +175,16 @@ entry point:
 - `ProfileSchema.encode` and `safeEncode` validate while encoding;
 - `ProfileSchema.toJsonSchema()` exports the boundary JSON Schema;
 - `ProfileSchema.toSchemaModel()` exports Ack's canonical schema model;
-- `ProfileSchema.schema` returns the real `AckSchema` for composition.
+- `ProfileSchema.schema` is the typed model codec used for composition;
+- `ProfileSchema.wireSchema` is the raw structural `Map` schema.
 
-Generated `toJson()` and `safeToJson()` extensions delegate through that same
+Every instantiable `@AckModel` class and implicit sealed-union branch must
+apply its generated `_$ClassAck` mixin. The mixin supplies `toJson()`,
+`safeToJson()`, a typed `copyWith` that treats `null` as "keep the current
+value", and deep collection-aware `==`, `hashCode`, and `toString`. A sealed
+abstract base receives union serialization only.
+
+Generated `toJson()` and `safeToJson()` methods delegate through that same
 facade. Ack cannot inject a constructor into a hand-written class, so the
 recommended conventional entry point is an inferred static tear-off:
 
@@ -229,8 +237,9 @@ wire key once and uses it for both validation and JSON mapping.
 
 ### Custom field schemas
 
-Use `@AckField` when inference is not enough. Its argument is a const tear-off
-of a top-level function returning an `AckSchema`:
+Use `@AckField` when inference is not enough. `schema` is a const tear-off of a
+top-level function returning an `AckSchema`. `presence` overrides constructor
+inference. At least one of those arguments is required:
 
 ```dart
 final class Color {
@@ -244,7 +253,7 @@ AckSchema<String, Color> colorSchema() => Ack.string().codec<Color>(
 );
 
 @AckModel()
-final class Theme {
+final class Theme with _$ThemeAck {
   const Theme({required this.primary});
 
   @AckField(schema: colorSchema)
@@ -264,18 +273,18 @@ super parameters:
 
 ```dart
 @AckModel(discriminatorKey: 'type')
-sealed class Pet {
+sealed class Pet with _$PetAck {
   const Pet({required this.id});
   final String id;
 }
 
 @AckModel(discriminatorValue: 'cat')
-final class Cat extends Pet {
+final class Cat extends Pet with _$CatAck {
   const Cat({required super.id, required this.lives});
   final int lives;
 }
 
-final class Dog extends Pet {
+final class Dog extends Pet with _$DogAck {
   const Dog({required super.id, required this.breed});
   final String breed;
 }
@@ -291,10 +300,21 @@ use schema-first generation for those shapes.
 
 ### Additional properties
 
-`@AckModel(additionalProperties: true)` requires a declared
-`Map<String, Object?> additionalProperties` field initialized by the
-constructor. Unknown keys are stored there. Encoding writes extras first, so a
-declared field or discriminator cannot be replaced by an extra value.
+`@AckModel` uses `AckAdditionalPropertiesMode`:
+
+- `reject` (default) fails validation on unknown properties;
+- `discard` accepts unknown properties but does not store them;
+- `capture` stores them in `additionalPropertiesField`, which defaults to
+  `additionalProperties` and may be `args`.
+
+Capture requires a declared `Map<String, Object?>` field initialized by the
+constructor. Encoding writes extras first, so a declared field or
+discriminator cannot be replaced by an extra value.
+
+`@AckField` can override inferred presence with `AckFieldPresence.required` or
+`optional`. A no-op `@AckField()` is rejected. `optional` is allowed only when
+the constructor can accept a missing value, with a discriminator exception for
+union branches.
 
 ### Reusing generated schemas
 
@@ -304,7 +324,7 @@ Nested class-first fields compose through the target facade automatically:
 import 'address.dart' as address;
 
 @AckModel()
-final class Order {
+final class Order with _$OrderAck {
   const Order({required this.shipping});
   final address.Address shipping;
 }

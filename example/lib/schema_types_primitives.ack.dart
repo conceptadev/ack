@@ -35,6 +35,21 @@ final class Password {
 
   SchemaResult<String> safeToJson() => $ack.safeEncode(this);
 
+  Password copyWith({String? value}) => Password(value ?? this.value);
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Password &&
+          runtimeType == other.runtimeType &&
+          deepEquals(value, other.value));
+
+  @override
+  int get hashCode => Object.hashAll([runtimeType, deepHashCode(value)]);
+
+  @override
+  String toString() => 'Password(value: $value)';
+
   static Password _fromAckRuntime(String value) =>
       _$PasswordFromJson(<String, dynamic>{'value': value});
 
@@ -71,6 +86,21 @@ final class Age {
   int toJson() => $ack.encode(this);
 
   SchemaResult<int> safeToJson() => $ack.safeEncode(this);
+
+  Age copyWith({int? value}) => Age(value ?? this.value);
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Age &&
+          runtimeType == other.runtimeType &&
+          deepEquals(value, other.value));
+
+  @override
+  int get hashCode => Object.hashAll([runtimeType, deepHashCode(value)]);
+
+  @override
+  String toString() => 'Age(value: $value)';
 
   static Age _fromAckRuntime(int value) =>
       _$AgeFromJson(<String, dynamic>{'value': value});
@@ -109,6 +139,21 @@ final class Price {
 
   SchemaResult<double> safeToJson() => $ack.safeEncode(this);
 
+  Price copyWith({double? value}) => Price(value ?? this.value);
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Price &&
+          runtimeType == other.runtimeType &&
+          deepEquals(value, other.value));
+
+  @override
+  int get hashCode => Object.hashAll([runtimeType, deepHashCode(value)]);
+
+  @override
+  String toString() => 'Price(value: $value)';
+
   static Price _fromAckRuntime(double value) =>
       _$PriceFromJson(<String, dynamic>{'value': value});
 
@@ -145,6 +190,21 @@ final class Active {
   bool toJson() => $ack.encode(this);
 
   SchemaResult<bool> safeToJson() => $ack.safeEncode(this);
+
+  Active copyWith({bool? value}) => Active(value ?? this.value);
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Active &&
+          runtimeType == other.runtimeType &&
+          deepEquals(value, other.value));
+
+  @override
+  int get hashCode => Object.hashAll([runtimeType, deepHashCode(value)]);
+
+  @override
+  String toString() => 'Active(value: $value)';
 
   static Active _fromAckRuntime(bool value) =>
       _$ActiveFromJson(<String, dynamic>{'value': value});
@@ -183,6 +243,21 @@ final class Tags {
   List<String> toJson() => List<String>.of($ack.encode(this));
 
   SchemaResult<List<String>> safeToJson() => $ack.safeEncode(this);
+
+  Tags copyWith({List<String>? value}) => Tags(value ?? this.value);
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Tags &&
+          runtimeType == other.runtimeType &&
+          deepEquals(value, other.value));
+
+  @override
+  int get hashCode => Object.hashAll([runtimeType, deepHashCode(value)]);
+
+  @override
+  String toString() => 'Tags(value: $value)';
 
   static Tags _fromAckRuntime(List<String> value) =>
       _$TagsFromJson(<String, dynamic>{'value': value});
@@ -224,6 +299,21 @@ final class Scores {
 
   SchemaResult<List<int>> safeToJson() => $ack.safeEncode(this);
 
+  Scores copyWith({List<int>? value}) => Scores(value ?? this.value);
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Scores &&
+          runtimeType == other.runtimeType &&
+          deepEquals(value, other.value));
+
+  @override
+  int get hashCode => Object.hashAll([runtimeType, deepHashCode(value)]);
+
+  @override
+  String toString() => 'Scores(value: $value)';
+
   static Scores _fromAckRuntime(List<int> value) =>
       _$ScoresFromJson(<String, dynamic>{'value': value});
 
@@ -264,6 +354,21 @@ final class StatusLiteral {
 
   SchemaResult<String> safeToJson() => $ack.safeEncode(this);
 
+  StatusLiteral copyWith({String? value}) => StatusLiteral(value ?? this.value);
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is StatusLiteral &&
+          runtimeType == other.runtimeType &&
+          deepEquals(value, other.value));
+
+  @override
+  int get hashCode => Object.hashAll([runtimeType, deepHashCode(value)]);
+
+  @override
+  String toString() => 'StatusLiteral(value: $value)';
+
   static StatusLiteral _fromAckRuntime(String value) =>
       _$StatusLiteralFromJson(<String, dynamic>{'value': value});
 
@@ -300,6 +405,21 @@ final class Role {
   String toJson() => $ack.encode(this);
 
   SchemaResult<String> safeToJson() => $ack.safeEncode(this);
+
+  Role copyWith({String? value}) => Role(value ?? this.value);
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Role &&
+          runtimeType == other.runtimeType &&
+          deepEquals(value, other.value));
+
+  @override
+  int get hashCode => Object.hashAll([runtimeType, deepHashCode(value)]);
+
+  @override
+  String toString() => 'Role(value: $value)';
 
   static Role _fromAckRuntime(String value) =>
       _$RoleFromJson(<String, dynamic>{'value': value});
@@ -339,6 +459,22 @@ final class UserRoleModel {
 
   SchemaResult<String> safeToJson() => $ack.safeEncode(this);
 
+  UserRoleModel copyWith({UserRole? value}) =>
+      UserRoleModel(value ?? this.value);
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is UserRoleModel &&
+          runtimeType == other.runtimeType &&
+          deepEquals(value, other.value));
+
+  @override
+  int get hashCode => Object.hashAll([runtimeType, deepHashCode(value)]);
+
+  @override
+  String toString() => 'UserRoleModel(value: $value)';
+
   static UserRoleModel _fromAckRuntime(UserRole value) =>
       _$UserRoleModelFromJson(<String, dynamic>{'value': value});
 
@@ -376,6 +512,21 @@ final class StatusEnum {
   String toJson() => $ack.encode(this);
 
   SchemaResult<String> safeToJson() => $ack.safeEncode(this);
+
+  StatusEnum copyWith({Status? value}) => StatusEnum(value ?? this.value);
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is StatusEnum &&
+          runtimeType == other.runtimeType &&
+          deepEquals(value, other.value));
+
+  @override
+  int get hashCode => Object.hashAll([runtimeType, deepHashCode(value)]);
+
+  @override
+  String toString() => 'StatusEnum(value: $value)';
 
   static StatusEnum _fromAckRuntime(Status value) =>
       _$StatusEnumFromJson(<String, dynamic>{'value': value});
@@ -415,6 +566,22 @@ final class OptionalStatus {
 
   SchemaResult<String> safeToJson() => $ack.safeEncode(this);
 
+  OptionalStatus copyWith({String? value}) =>
+      OptionalStatus(value ?? this.value);
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is OptionalStatus &&
+          runtimeType == other.runtimeType &&
+          deepEquals(value, other.value));
+
+  @override
+  int get hashCode => Object.hashAll([runtimeType, deepHashCode(value)]);
+
+  @override
+  String toString() => 'OptionalStatus(value: $value)';
+
   static OptionalStatus _fromAckRuntime(String value) =>
       _$OptionalStatusFromJson(<String, dynamic>{'value': value});
 
@@ -452,6 +619,22 @@ final class DefaultedEnum {
   String toJson() => $ack.encode(this);
 
   SchemaResult<String> safeToJson() => $ack.safeEncode(this);
+
+  DefaultedEnum copyWith({UserRole? value}) =>
+      DefaultedEnum(value ?? this.value);
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DefaultedEnum &&
+          runtimeType == other.runtimeType &&
+          deepEquals(value, other.value));
+
+  @override
+  int get hashCode => Object.hashAll([runtimeType, deepHashCode(value)]);
+
+  @override
+  String toString() => 'DefaultedEnum(value: $value)';
 
   static DefaultedEnum _fromAckRuntime(UserRole value) =>
       _$DefaultedEnumFromJson(<String, dynamic>{'value': value});
@@ -491,6 +674,22 @@ final class ChainedEnumString {
 
   SchemaResult<String> safeToJson() => $ack.safeEncode(this);
 
+  ChainedEnumString copyWith({String? value}) =>
+      ChainedEnumString(value ?? this.value);
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ChainedEnumString &&
+          runtimeType == other.runtimeType &&
+          deepEquals(value, other.value));
+
+  @override
+  int get hashCode => Object.hashAll([runtimeType, deepHashCode(value)]);
+
+  @override
+  String toString() => 'ChainedEnumString(value: $value)';
+
   static ChainedEnumString _fromAckRuntime(String value) =>
       _$ChainedEnumStringFromJson(<String, dynamic>{'value': value});
 
@@ -528,6 +727,21 @@ final class RefinedAge {
   int toJson() => $ack.encode(this);
 
   SchemaResult<int> safeToJson() => $ack.safeEncode(this);
+
+  RefinedAge copyWith({int? value}) => RefinedAge(value ?? this.value);
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is RefinedAge &&
+          runtimeType == other.runtimeType &&
+          deepEquals(value, other.value));
+
+  @override
+  int get hashCode => Object.hashAll([runtimeType, deepHashCode(value)]);
+
+  @override
+  String toString() => 'RefinedAge(value: $value)';
 
   static RefinedAge _fromAckRuntime(int value) =>
       _$RefinedAgeFromJson(<String, dynamic>{'value': value});

@@ -132,11 +132,13 @@ final class AckSchemaGenerator extends Generator {
     requiredElements: const {
       'AckSchemaModelExtension':
           'package:ack/src/schema_model/ack_schema_model_builder.dart',
+      'deepEquals': 'package:ack/src/utils/collection_utils.dart',
+      'deepHashCode': 'package:ack/src/utils/collection_utils.dart',
     },
     message:
         'Generated @AckModel schemas require visible exact Ack, AckSchema, '
-        'AckSchemaModel, AckSchemaModelExtension, and SchemaResult imports in '
-        'this library.',
+        'AckSchemaModel, AckSchemaModelExtension, SchemaResult, deepEquals, '
+        'and deepHashCode imports in this library.',
     todo: 'Import package:ack/ack.dart, directly or through a barrel.',
   );
 
@@ -193,12 +195,17 @@ final class AckSchemaGenerator extends Generator {
       'AckModelAdapter': _ackModelAdapterChecker,
       'SchemaResult': _schemaResultChecker,
     },
+    requiredElements: const {
+      'deepEquals': 'package:ack/src/utils/collection_utils.dart',
+      'deepHashCode': 'package:ack/src/utils/collection_utils.dart',
+    },
     message:
-        'Generated Ack models require visible exact AckModelAdapter and '
-        'SchemaResult imports in this library.',
+        'Generated Ack models require visible exact AckModelAdapter, '
+        'SchemaResult, deepEquals, and deepHashCode imports in this library.',
     todo:
         'Import package:ack/ack.dart, directly or through a barrel, and '
-        'ensure AckModelAdapter and SchemaResult are exposed.',
+        'ensure AckModelAdapter, SchemaResult, deepEquals, and deepHashCode '
+        'are exposed.',
   );
 
   /// Resolves the visible `AckType` qualifier for generated JSON markers.

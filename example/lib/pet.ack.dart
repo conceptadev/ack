@@ -69,6 +69,21 @@ final class Cat extends Pet {
   @override
   String get type => 'cat';
 
+  Cat copyWith({int? lives}) => Cat(lives: lives ?? this.lives);
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Cat &&
+          runtimeType == other.runtimeType &&
+          deepEquals(lives, other.lives));
+
+  @override
+  int get hashCode => Object.hashAll([runtimeType, deepHashCode(lives)]);
+
+  @override
+  String toString() => 'Cat(lives: $lives)';
+
   static Cat _fromAckRuntime(Map<String, Object?> value) =>
       _$CatFromJson(Map<String, dynamic>.from(value));
 
@@ -108,6 +123,21 @@ final class Dog extends Pet {
 
   @override
   String get type => 'dog';
+
+  Dog copyWith({String? breed}) => Dog(breed: breed ?? this.breed);
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Dog &&
+          runtimeType == other.runtimeType &&
+          deepEquals(breed, other.breed));
+
+  @override
+  int get hashCode => Object.hashAll([runtimeType, deepHashCode(breed)]);
+
+  @override
+  String toString() => 'Dog(breed: $breed)';
 
   static Dog _fromAckRuntime(Map<String, Object?> value) =>
       _$DogFromJson(Map<String, dynamic>.from(value));

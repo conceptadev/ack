@@ -35,6 +35,7 @@ final class User {
   factory User.fromJson(Map<String, dynamic> json);
   Map<String, dynamic> toJson();
   SchemaResult<Map<String, Object?>> safeToJson();
+  User copyWith({String? name, String? email});
 
   static final $ack = AckModelAdapter(/* ... */);
 }
@@ -96,8 +97,10 @@ and build configuration.
 
 For a hand-written `Account`, class-first generation exposes an
 `AccountSchema` facade backed by a private `_accountSchema` codec. The facade
-provides parsing, safe parsing, encoding, JSON Schema/schema-model export, and
-the `schema` getter used for composition. Add
+provides parsing, safe parsing, encoding, JSON Schema/schema-model export,
+typed `schema`, and raw `wireSchema`. Instantiable models apply the generated
+`_$AccountAck` mixin, which supplies `toJson`, `copyWith` (null means keep the
+current value), and deep collection-aware equality. Add
 `static final fromJson = AccountSchema.fromJson;` when the class should expose
 the conventional one-argument entry point. Imported nested models compose as
 `prefix.AddressSchema.schema`; `show`/`hide` combinators must expose both the

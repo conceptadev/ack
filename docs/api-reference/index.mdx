@@ -323,13 +323,17 @@ print(user.toJson());
 
 **Target**: Public, constructable classes
 
-**Generates**: A public `<ClassName>Schema` facade backed by a private codec,
-top-level JSON/runtime bridges, and `toJson` / `safeToJson` extension methods
+**Generates**: A public `<ClassName>Schema` facade backed by a private raw
+`wireSchema` and typed codec, plus the `_$ClassAck` mixin for `toJson`,
+`safeToJson`, `copyWith`, and deep collection-aware `==` / `hashCode` /
+`toString`
 
 Ack infers schema fields from constructor-backed fields. Required parameters,
 nullable types, optional parameters, and constructor defaults determine field
 presence. Use `caseStyle` for model-wide JSON naming and `@JsonKey(name: ...)`
-for a field override.
+for a field override. Instantiable models and implicit union branches must
+apply the generated mixin. `copyWith` treats `null` as "keep the current
+value."
 
 **Inferred field types:** strings, booleans, numeric types, `DateTime`, `Uri`,
 `Duration`, enums, nested lists, and sets
@@ -340,14 +344,15 @@ for a field override.
 - strings: `@MinLength`, `@MaxLength`, `@Pattern`, `@Email`, `@NotEmpty`
 - collections: `@MinItems`, `@MaxItems`, `@UniqueItems`
 
-Use `@AckField(schema: functionName)` with a top-level schema-function tear-off
-for a custom type or `Map<String, V>` field. A sealed base annotated with
+Use `@AckField` to override `schema` and/or `AckFieldPresence`. A no-op
+`@AckField()` is rejected. A sealed base annotated with
 `@AckModel(discriminatorKey: ...)` generates a discriminated union from its
-same-library concrete branches.
+same-library concrete branches. Unknown properties use
+`AckAdditionalPropertiesMode` (`reject` by default; `discard` or `capture`).
 
 ```dart
 @AckModel(caseStyle: AckCaseStyle.snake)
-final class Account {
+final class Account with _$AccountAck {
   const Account({required this.displayName, this.role = 'member'});
 
   @MinLength(2)
@@ -362,10 +367,11 @@ print(account.toJson());
 print(AccountSchema.toJsonSchema());
 ```
 
-The facade exposes `schema`, `parse`, `safeParse`, `fromJson`, `encode`,
-`safeEncode`, `toJsonSchema`, and `toSchemaModel`. The backing `_accountSchema`
-is library-private and no public lower-camel alias is generated. Set
-`schemaName: 'WireAccountSchema'` to choose the exact facade class name.
+The facade exposes `schema`, `wireSchema`, `parse`, `safeParse`, `fromJson`,
+`encode`, `safeEncode`, `toJsonSchema`, and `toSchemaModel`. The backing
+`_accountSchema` is library-private and no public lower-camel alias is
+generated. Set `schemaName: 'WireAccountSchema'` to choose the exact facade
+class name.
 
 Nested class-first fields compose through `AddressSchema.schema`. Imports with
 combinators must expose both names (`show Address, AddressSchema`). A

@@ -10,7 +10,8 @@ void main() {
     expect(defaults.caseStyle, AckCaseStyle.none);
     expect(defaults.discriminatorKey, isNull);
     expect(defaults.discriminatorValue, isNull);
-    expect(defaults.additionalProperties, isFalse);
+    expect(defaults.additionalProperties, AckAdditionalPropertiesMode.reject);
+    expect(defaults.additionalPropertiesField, 'additionalProperties');
     expect(defaults.jsonSerializable.includeIfNull, isFalse);
     expect(defaults.jsonSerializable.fieldRename!.name, 'none');
 
@@ -19,13 +20,18 @@ void main() {
       caseStyle: AckCaseStyle.snake,
       discriminatorKey: 'type',
       discriminatorValue: 'user',
-      additionalProperties: true,
+      additionalProperties: AckAdditionalPropertiesMode.capture,
+      additionalPropertiesField: 'args',
     );
     expect(configured.schemaName, 'WireUserSchema');
     expect(configured.caseStyle, AckCaseStyle.snake);
     expect(configured.discriminatorKey, 'type');
     expect(configured.discriminatorValue, 'user');
-    expect(configured.additionalProperties, isTrue);
+    expect(
+      configured.additionalProperties,
+      AckAdditionalPropertiesMode.capture,
+    );
+    expect(configured.additionalPropertiesField, 'args');
     expect(configured.jsonSerializable.includeIfNull, isFalse);
     expect(configured.jsonSerializable.fieldRename!.name, 'snake');
     expect(AckCaseStyle.values, const [
@@ -34,6 +40,11 @@ void main() {
       AckCaseStyle.kebab,
       AckCaseStyle.pascal,
       AckCaseStyle.screamingSnake,
+    ]);
+    expect(AckAdditionalPropertiesMode.values, const [
+      AckAdditionalPropertiesMode.reject,
+      AckAdditionalPropertiesMode.discard,
+      AckAdditionalPropertiesMode.capture,
     ]);
   });
 
@@ -62,9 +73,19 @@ void main() {
     expect(configs.values.every((config) => !config.includeIfNull!), isTrue);
   });
 
-  test('AckField accepts a const top-level schema-function tear-off', () {
-    const field = AckField(schema: _customSchema);
-    expect(field.schema, same(_customSchema));
+  test('AckField accepts a schema tear-off and a presence override', () {
+    const inferred = AckField(schema: _customSchema);
+    expect(inferred.schema, same(_customSchema));
+    expect(inferred.presence, AckFieldPresence.inferred);
+
+    const optional = AckField(presence: AckFieldPresence.optional);
+    expect(optional.schema, isNull);
+    expect(optional.presence, AckFieldPresence.optional);
+    expect(AckFieldPresence.values, const [
+      AckFieldPresence.inferred,
+      AckFieldPresence.required,
+      AckFieldPresence.optional,
+    ]);
   });
 
   test('constraint sugar annotations are const data', () {

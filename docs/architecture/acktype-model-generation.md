@@ -49,19 +49,37 @@ JSON part without duplicate Ack helpers.
 used exactly.
 
 Object models have an unchecked public constructor, stored typed fields,
-`parse`, `safeParse`, `fromJson`, `toJson`, `safeToJson`, and a public static
-`$ack` adapter. They don't implement `Map` and don't provide `fromMap` or
-`toMap` aliases. Scalar and collection roots generate value models whose
-`fromJson` and `toJson` signatures use the schema's boundary type.
+`parse`, `safeParse`, `fromJson`, `toJson`, `safeToJson`, generated `copyWith`,
+deep collection-aware `==`/`hashCode`/`toString`, and a public static `$ack`
+adapter. They don't implement `Map` and don't provide `fromMap` or `toMap`
+aliases. Scalar and collection roots generate value models whose `fromJson` and
+`toJson` signatures use the schema's boundary type. `copyWith` treats a `null`
+argument as "keep the current value"; reconstruct the model to clear a
+nullable field.
 
 ## Class-first facade contract
 
-For a hand-written `Account`, `@AckModel()` emits a private `_accountSchema`
-codec and a public `AccountSchema` abstract-final facade. The facade delegates
-`parse`, `safeParse`, `fromJson`, `encode`, `safeEncode`, `toJsonSchema`, and
-`toSchemaModel` to the codec. Its `schema` getter is the public composition
-boundary. Generated `toJson` and `safeToJson` extensions also use the facade,
-so every public path shares validation behavior.
+For a hand-written `Account`, `@AckModel()` emits a private `_accountObject`
+wire schema, a private `_accountSchema` codec, and a public `AccountSchema`
+abstract-final facade. Instantiable models and implicit union branches must
+apply the generated `_$AccountAck` mixin, which supplies `toJson`,
+`safeToJson`, `copyWith`, and deep collection-aware `==`, `hashCode`, and
+`toString`. A sealed abstract base receives union serialization only.
+
+The facade delegates `parse`, `safeParse`, `fromJson`, `encode`, `safeEncode`,
+`toJsonSchema`, and `toSchemaModel` to the codec. `schema` is the typed model
+codec used for composition; `wireSchema` is the raw structural `Map` schema.
+Generated mixin JSON methods use the facade, so every public path shares
+validation behavior.
+
+`@AckModel.additionalProperties` is `AckAdditionalPropertiesMode.reject` by
+default. `discard` accepts unknown properties without storing them. `capture`
+stores them in `additionalPropertiesField` (defaults to `additionalProperties`,
+may be `args`). Declared fields and discriminators win on encode.
+
+`@AckField` may override `schema` and/or `AckFieldPresence`. A no-op
+`@AckField()` is rejected. `optional` is allowed only when the constructor can
+accept a missing value, with a discriminator exception for union branches.
 
 The source class may expose the conventional callable with an inferred static
 tear-off:
@@ -109,7 +127,12 @@ Analysis produces one graph consumed directly by the emitter. Nodes carry:
 - structural boundary and runtime type references;
 - object, value, and discriminated-union shape;
 - field presence separately from nullability;
+- constructor parameter order, kind, field mapping, and super parameters;
+- unknown-property policy and capture-field name;
 - named model references.
+
+The internal graph presence enum is `AckSchemaFieldPresence` so it does not
+collide with the public `AckFieldPresence` annotation.
 
 All annotated declarations are registered before resolution. Resolution uses
 `unseen`, `visiting`, and `resolved` states: named `Ack.lazy` edges may point to
@@ -118,9 +141,10 @@ includes the library URI and declaration name, so equal names in different
 libraries remain distinct.
 
 The analyzer uses current `Element`, `PropertyAccessorElement`, and
-`TopLevelVariableElement` APIs. AST inspection is limited to syntax that generic
-`AckSchema<Boundary, Runtime>` types can't express on their own: object fields,
-collection elements, modifiers, codecs, lazy callbacks, and union branches.
+`TopLevelVariableElement` APIs on Analyzer `>=10.0.0 <11.0.0`. AST inspection
+is limited to syntax that generic `AckSchema<Boundary, Runtime>` types can't
+express on their own: object fields, collection elements, modifiers, codecs,
+lazy callbacks, and union branches.
 
 ## Field and collection semantics
 
@@ -132,9 +156,13 @@ schema defaults can't become Dart parameter defaults safely.
 Every represented list, set, and map is recursively copied into an unmodifiable
 collection by the public constructor. Generated map runtime types must use
 `String` keys because the generator's structural map contract is string-keyed.
-Passthrough objects store unknown values in an unmodifiable
-`additionalProperties` map. Encoding writes additional entries first and
-declared fields second, so unknown data can't replace a declared property.
+Class-first unknown properties follow `AckAdditionalPropertiesMode`: reject
+fails validation, discard accepts extras without storing them, and capture
+stores them in an unmodifiable capture field. Encoding writes captured extras
+first and declared fields second, so unknown data can't replace a declared
+property. Schema-first passthrough objects still use
+`Ack.object(..., additionalProperties: true)` and store extras in
+`additionalProperties`.
 `toJson()` returns a fresh top-level collection; nested values are the
 schema's encode output.
 
@@ -210,3 +238,6 @@ For unreleased class-first facade users, replace the temporary branch API:
 | `accountSchema.toJsonSchema()` | `AccountSchema.toJsonSchema()` |
 | nested `accountSchema` | `AccountSchema.schema` |
 | `schemaName: 'wireAccountSchema'` | `schemaName: 'WireAccountSchema'` |
+| `extension AccountAck on Account` | `mixin _$AccountAck` on the source class |
+| `additionalProperties: true` | `AckAdditionalPropertiesMode.capture` |
+| generated `*Type` class names | the exact `@AckType` name, no suffix |

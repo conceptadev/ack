@@ -1,4 +1,4 @@
-## Unreleased
+## 2.0.0
 
 ### Breaking
 
@@ -14,6 +14,18 @@
 * Replace the provisional public lower-camel class-first schema variable with
   an UpperCamelCase facade (`accountSchema` becomes `AccountSchema`). The
   codec backing is private and no compatibility alias is emitted.
+* Require instantiable `@AckModel` classes and implicit union branches to apply
+  the generated `_$ClassAck` mixin. The mixin supplies `toJson`, `safeToJson`,
+  `copyWith` (null means keep the current value), and deep collection-aware
+  `==`, `hashCode`, and `toString`.
+* Replace class-first `additionalProperties: bool` with
+  `AckAdditionalPropertiesMode` and expose `wireSchema` beside typed `schema`.
+* Narrow the Analyzer constraint to `>=10.0.0 <11.0.0`.
+
+### Fixed
+
+* Permit optional wire fields backed by required nullable normalization
+  parameters, and preserve custom capture fields under `caseStyle` renaming.
 
 ### Added
 

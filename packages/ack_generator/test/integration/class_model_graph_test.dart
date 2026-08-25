@@ -48,7 +48,7 @@ void main() {
     await _expectFailure(
       '''
 @AckModel()
-final class User {
+final class User with _\$UserAck {
   const User({required this.name});
 
   @Min(1)
@@ -63,7 +63,7 @@ final class User {
     await _expectFailure(
       '''
 @AckModel()
-final class User {
+final class User with _\$UserAck {
   const User({required this.age});
 
   @MinLength(1)
@@ -78,7 +78,7 @@ final class User {
     await _expectFailure(
       '''
 @AckModel()
-final class User {
+final class User with _\$UserAck {
   const User({required this.name});
 
   @UniqueItems()
@@ -97,7 +97,7 @@ final class Schemas {
 }
 
 @AckModel()
-final class User {
+final class User with _\$UserAck {
   const User({required this.name});
 
   @AckField(schema: Schemas.name)
@@ -114,7 +114,7 @@ final class User {
 String nameSchema() => 'not a schema';
 
 @AckModel()
-final class User {
+final class User with _\$UserAck {
   const User({required this.name});
 
   @AckField(schema: nameSchema)
@@ -129,7 +129,7 @@ final class User {
     await _expectFailure(
       '''
 @AckModel()
-final class Stats {
+final class Stats with _\$StatsAck {
   const Stats({required this.scores});
 
   final Map<String, int> scores;
@@ -143,7 +143,7 @@ final class Stats {
     await _expectFailure(
       '''
 @AckModel()
-final class Stats {
+final class Stats with _\$StatsAck {
   const Stats({required this.scores});
 
   final Map<int, String> scores;
@@ -158,7 +158,7 @@ final class Stats {
       await _expectFailure(
         '''
 @AckModel()
-final class Payload {
+final class Payload with _\$PayloadAck {
   const Payload({required this.value});
 
   final $unsupported value;
@@ -187,7 +187,7 @@ final class _User {
     await _expectFailure(
       '''
 @AckModel()
-final class User {
+final class User with _\$UserAck {
   const User({required this._secret});
 
   final String _secret;
@@ -200,8 +200,8 @@ final class User {
   test('requires the additionalProperties field when enabled', () async {
     await _expectFailure(
       '''
-@AckModel(additionalProperties: true)
-final class Config {
+@AckModel(additionalProperties: AckAdditionalPropertiesMode.capture)
+final class Config with _\$ConfigAck {
   const Config({required this.name});
 
   final String name;
@@ -214,8 +214,8 @@ final class Config {
   test('requires the exact additionalProperties field type', () async {
     await _expectFailure(
       '''
-@AckModel(additionalProperties: true)
-final class Config {
+@AckModel(additionalProperties: AckAdditionalPropertiesMode.capture)
+final class Config with _\$ConfigAck {
   const Config({required this.additionalProperties});
 
   final Map<String, Object> additionalProperties;
@@ -229,11 +229,11 @@ final class Config {
     await _expectFailure(
       '''
 @AckModel()
-sealed class Pet {
+sealed class Pet with _\$PetAck {
   const Pet();
 }
 
-final class Cat extends Pet {
+final class Cat extends Pet with _\$CatAck {
   const Cat();
 }
 ''',
@@ -245,17 +245,17 @@ final class Cat extends Pet {
     await _expectFailure(
       '''
 @AckModel(discriminatorKey: 'type')
-sealed class Pet {
+sealed class Pet with _\$PetAck {
   const Pet();
 }
 
 @AckModel(discriminatorValue: 'pet')
-final class Cat extends Pet {
+final class Cat extends Pet with _\$CatAck {
   const Cat();
 }
 
 @AckModel(discriminatorValue: 'pet')
-final class Dog extends Pet {
+final class Dog extends Pet with _\$DogAck {
   const Dog();
 }
 ''',
@@ -267,7 +267,7 @@ final class Dog extends Pet {
     await _expectFailure(
       '''
 @AckModel(discriminatorKey: 'type')
-sealed class Pet {
+sealed class Pet with _\$PetAck {
   const Pet();
 }
 
@@ -287,11 +287,11 @@ final class Cat extends Mammal {
     await _expectFailure(
       '''
 @AckModel(discriminatorKey: 'type')
-sealed class Pet {
+sealed class Pet with _\$PetAck {
   const Pet();
 }
 
-final class Cat extends Pet {
+final class Cat extends Pet with _\$CatAck {
   const Cat();
 
   int get type => 1;
@@ -305,12 +305,12 @@ final class Cat extends Pet {
     await _expectFailure(
       '''
 @AckModel(discriminatorKey: 'type')
-sealed class Pet {
+sealed class Pet with _\$PetAck {
   const Pet();
 }
 
 @AckModel(discriminatorValue: 'cat')
-final class Cat extends Pet {
+final class Cat extends Pet with _\$CatAck {
   const Cat();
 
   String get type => 'dog';
@@ -325,7 +325,7 @@ final class Cat extends Pet {
       '''
 @AckModel()
 @JsonSerializable()
-final class User {
+final class User with _\$UserAck {
   const User({required this.name});
 
   final String name;
@@ -339,7 +339,7 @@ final class User {
     await _expectFailure(
       '''
 @AckModel()
-final class User {
+final class User with _\$UserAck {
   const User();
 }
 ''',
@@ -359,12 +359,12 @@ part 'model.g.dart';
     await _expectFailure(
       '''
 @AckModel(schemaName: 'PersonSchema')
-final class User {
+final class User with _\$UserAck {
   const User();
 }
 
 @AckModel(schemaName: 'PersonSchema')
-final class Admin {
+final class Admin with _\$AdminAck {
   const Admin();
 }
 ''',
@@ -376,7 +376,7 @@ final class Admin {
     await _expectFailure(
       '''
 @AckModel(schemaName: 'personSchema')
-final class User {
+final class User with _\$UserAck {
   const User();
 }
 ''',
@@ -388,7 +388,7 @@ final class User {
     await _expectFailure(
       '''
 @AckModel()
-final class User {
+final class User with _\$UserAck {
   const User();
 }
 
@@ -402,7 +402,7 @@ abstract final class UserSchema {}
     await _expectFailure(
       '''
 @AckModel()
-final class User {
+final class User with _\$UserAck {
   const User();
 }
 
@@ -416,11 +416,11 @@ final _userSchema = Ack.string();
     await _expectFailure(
       '''
 @AckModel(discriminatorKey: 'type')
-sealed class Pet {
+sealed class Pet with _\$PetAck {
   const Pet();
 }
 
-final class Cat extends Pet {
+final class Cat extends Pet with _\$CatAck {
   const Cat();
 }
 
@@ -458,13 +458,14 @@ abstract final class CatSchema {}
       name: r'_$UserToJson',
       declaration: r'Map<String, dynamic> _$UserToJson(User value) => throw 0;',
     ),
-    (name: 'UserAck', declaration: 'extension UserAck on User {}'),
+    (name: r'_$UserAck', declaration: r'mixin _$UserAck {}'),
+    (name: r'_userObject', declaration: r'final _userObject = Ack.object({});'),
   ]) {
     test('rejects local ${collision.name} helper collisions', () async {
       await _expectFailure(
         '''
 @AckModel()
-final class User {
+final class User with _\$UserAck {
   const User({required this.name});
 
   final String name;
@@ -481,11 +482,11 @@ ${collision.declaration}
     await _expectFailure(
       '''
 @AckModel(discriminatorKey: 'type')
-sealed class Pet {
+sealed class Pet with _\$PetAck {
   const Pet();
 }
 
-final class Cat extends Pet {
+final class Cat extends Pet with _\$CatAck {
   const Cat();
 }
 
@@ -499,17 +500,17 @@ final _catObject = Ack.object({});
     await _expectFailure(
       '''
 @AckModel(discriminatorKey: 'type')
-sealed class Pet {
+sealed class Pet with _\$PetAck {
   const Pet();
 }
 
 @AckModel(schemaName: 'UpperCatSchema')
-final class Cat extends Pet {
+final class Cat extends Pet with _\$CatAck {
   const Cat();
 }
 
 @AckModel(schemaName: 'LowerCatSchema')
-final class cat extends Pet {
+final class cat extends Pet with _\$catAck {
   const cat();
 }
 ''',
@@ -521,7 +522,7 @@ final class cat extends Pet {
     await _expectFailure(
       '''
 @AckModel()
-final class Node {
+final class Node with _\$NodeAck {
   const Node({this.child});
 
   final Node? child;
@@ -535,14 +536,14 @@ final class Node {
     await _expectFailure(
       '''
 @AckModel()
-final class Parent {
+final class Parent with _\$ParentAck {
   const Parent({required this.child});
 
   final Child child;
 }
 
 @AckModel()
-final class Child {
+final class Child with _\$ChildAck {
   const Child({required this.parent});
 
   final Parent parent;
@@ -558,7 +559,7 @@ final class Child {
       await _expectFailure(
         '''
 @AckModel()
-final class Order {
+final class Order with _\$OrderAck {
   const Order({required this.address});
 
   final Address address;
@@ -582,7 +583,7 @@ part 'address.ack.dart';
 part 'address.g.dart';
 
 @AckModel()
-final class Address {
+final class Address with _\$AddressAck {
   const Address({required this.city});
 
   final String city;
@@ -600,7 +601,7 @@ final class Address {
     await _expectFailure(
       '''
 @AckModel(caseStyle: AckCaseStyle.snake)
-final class Collision {
+final class Collision with _\$CollisionAck {
   const Collision({required this.fooBar, required this.foo_bar});
 
   final String fooBar;
@@ -608,6 +609,68 @@ final class Collision {
 }
 ''',
       ['Collision.foo_bar', 'foo_bar', 'JSON key'],
+    );
+  });
+
+  test('rejects a missing generated mixin', () async {
+    await _expectFailure(
+      '''
+@AckModel()
+final class User {
+  const User({required this.name});
+
+  final String name;
+}
+''',
+      ['User', r'_$UserAck'],
+    );
+  });
+
+  test('rejects a no-op AckField', () async {
+    await _expectFailure(
+      '''
+@AckModel()
+final class User with _\$UserAck {
+  const User({required this.name});
+
+  @AckField()
+  final String name;
+}
+''',
+      ['User.name', '@AckField()', 'no-op'],
+    );
+  });
+
+  test(
+    'rejects optional presence on a required constructor parameter',
+    () async {
+      await _expectFailure(
+        '''
+@AckModel()
+final class User with _\$UserAck {
+  const User({required this.name});
+
+  @AckField(presence: AckFieldPresence.optional)
+  final String name;
+}
+''',
+        ['User.name', 'optional', 'constructor'],
+      );
+    },
+  );
+
+  test('rejects an unmapped constructor parameter', () async {
+    await _expectFailure(
+      '''
+@AckModel()
+final class User with _\$UserAck {
+  const User(this.name, String extra) : label = extra;
+
+  final String name;
+  final String label;
+}
+''',
+      ['User', 'extra', 'mapped'],
     );
   });
 }

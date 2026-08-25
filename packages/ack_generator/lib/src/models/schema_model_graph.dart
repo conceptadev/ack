@@ -19,11 +19,38 @@ final class AckSchemaId {
   String toString() => '$libraryUri::$declarationName';
 }
 
-/// Input-presence semantics for an object field.
+/// Input-presence semantics for an object field in the normalized graph.
 ///
-/// Presence and nullability are deliberately separate. A field can be required
-/// and nullable, optional and non-nullable, or defaulted by the schema.
-enum AckFieldPresence { required, optional, defaulted }
+/// This is distinct from the public `AckFieldPresence` annotation, which only
+/// expresses an override (`inferred` / `required` / `optional`). Presence and
+/// nullability stay separate: a field can be required and nullable, optional
+/// and non-nullable, or defaulted by the schema.
+enum AckSchemaFieldPresence { required, optional, defaulted }
+
+/// How an object model treats undeclared properties.
+enum AckUnknownPropertyPolicy { reject, discard, capture }
+
+/// Whether a reconstructed constructor argument is positional or named.
+enum AckConstructorParameterKind { positional, named }
+
+/// A constructor parameter used to reconstruct a class-first model.
+final class AckConstructorParameter {
+  const AckConstructorParameter({
+    required this.name,
+    required this.kind,
+    required this.fieldName,
+    required this.typeRef,
+    this.isSuper = false,
+    this.defaultExpression,
+  });
+
+  final String name;
+  final AckConstructorParameterKind kind;
+  final String fieldName;
+  final AckTypeRef typeRef;
+  final bool isSuper;
+  final String? defaultExpression;
+}
 
 /// A normalized Dart/runtime type used by generation.
 ///
@@ -118,7 +145,7 @@ final class AckFieldNode {
 
   final String dartName;
   final String jsonKey;
-  final AckFieldPresence presence;
+  final AckSchemaFieldPresence presence;
   final bool nullable;
   final AckTypeRef runtimeRef;
   final String? description;
@@ -132,7 +159,7 @@ final class AckFieldNode {
   /// Constructor default expression for a class-first field, when present.
   final String? defaultExpression;
 
-  bool get isRequired => presence != AckFieldPresence.optional;
+  bool get isRequired => presence != AckSchemaFieldPresence.optional;
 }
 
 /// Class-first-only metadata attached to a normalized model node.
@@ -179,18 +206,33 @@ final class AckObjectModelNode extends AckModelNode {
     required super.boundaryType,
     required super.runtimeRef,
     required Iterable<AckFieldNode> fields,
-    this.additionalProperties = false,
+    Iterable<AckConstructorParameter> constructorParameters = const [],
+    this.unknownPropertyPolicy = AckUnknownPropertyPolicy.reject,
+    this.captureFieldName,
+    this.captureJsonKey,
     this.unionId,
     this.discriminatorKey,
     this.discriminatorValue,
     super.description,
-  }) : fields = List.unmodifiable(fields);
+  }) : fields = List.unmodifiable(fields),
+       constructorParameters = List.unmodifiable(constructorParameters);
 
   final List<AckFieldNode> fields;
-  final bool additionalProperties;
+  final List<AckConstructorParameter> constructorParameters;
+  final AckUnknownPropertyPolicy unknownPropertyPolicy;
+  final String? captureFieldName;
+  final String? captureJsonKey;
   final AckSchemaId? unionId;
   final String? discriminatorKey;
   final String? discriminatorValue;
+
+  /// Schema-first and class-first capture both store unknown properties.
+  bool get additionalProperties =>
+      unknownPropertyPolicy == AckUnknownPropertyPolicy.capture;
+
+  /// Unknown properties are valid on the wire for discard and capture.
+  bool get allowsUnknownProperties =>
+      unknownPropertyPolicy != AckUnknownPropertyPolicy.reject;
 }
 
 /// A value class generated from primitive, codec, list, or map root schemas.

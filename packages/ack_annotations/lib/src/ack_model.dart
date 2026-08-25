@@ -8,10 +8,21 @@ import 'package:meta/meta_meta.dart';
 /// Supporting an open-ended transform would require redesigning that phase.
 enum AckCaseStyle { none, snake, kebab, pascal, screamingSnake }
 
+/// How a class-first object treats properties that are not declared fields.
+///
+/// [reject] is the default: unknown properties fail validation.
+/// [discard] accepts unknown properties during validation but does not store
+/// them on the model.
+/// [capture] stores unknown properties in [AckModel.additionalPropertiesField]
+/// and flattens them back onto the wire during encoding. Declared fields and
+/// union discriminators always win over captured extras.
+enum AckAdditionalPropertiesMode { reject, discard, capture }
+
 /// Marks a hand-written class for Ack schema generation.
 ///
 /// The declaring library must include both generated parts, for example
-/// `part 'user.ack.dart';` and `part 'user.g.dart';`.
+/// `part 'user.ack.dart';` and `part 'user.g.dart';`. Instantiable models and
+/// implicit sealed-union branches must apply the generated `_$ClassAck` mixin.
 @Target({TargetKind.classType})
 final class AckModel {
   /// Creates a class-first Ack model annotation.
@@ -20,7 +31,8 @@ final class AckModel {
     this.caseStyle = AckCaseStyle.none,
     this.discriminatorKey,
     this.discriminatorValue,
-    this.additionalProperties = false,
+    this.additionalProperties = AckAdditionalPropertiesMode.reject,
+    this.additionalPropertiesField = 'additionalProperties',
   }) : // A switch expression is not const-evaluable in a const constructor.
        jsonSerializable = caseStyle == AckCaseStyle.snake
            ? const JsonSerializable(
@@ -64,8 +76,15 @@ final class AckModel {
   /// When omitted, the verbatim class name is used.
   final String? discriminatorValue;
 
-  /// Whether undeclared object properties are preserved.
-  final bool additionalProperties;
+  /// Policy for undeclared object properties.
+  final AckAdditionalPropertiesMode additionalProperties;
+
+  /// Dart field that stores captured unknown properties.
+  ///
+  /// Used only when [additionalProperties] is
+  /// [AckAdditionalPropertiesMode.capture]. Defaults to
+  /// `additionalProperties` and may be `args`.
+  final String additionalPropertiesField;
 
   /// Fixed phase-2 configuration consumed by `ack_generator`.
   ///

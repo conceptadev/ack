@@ -48,6 +48,41 @@ final class Product {
 
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
 
+  Product copyWith({
+    String? name,
+    List<String>? tags,
+    List<int>? scores,
+    List<bool>? flags,
+  }) => Product(
+    name: name ?? this.name,
+    tags: tags ?? this.tags,
+    scores: scores ?? this.scores,
+    flags: flags ?? this.flags,
+  );
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Product &&
+          runtimeType == other.runtimeType &&
+          deepEquals(name, other.name) &&
+          deepEquals(tags, other.tags) &&
+          deepEquals(scores, other.scores) &&
+          deepEquals(flags, other.flags));
+
+  @override
+  int get hashCode => Object.hashAll([
+    runtimeType,
+    deepHashCode(name),
+    deepHashCode(tags),
+    deepHashCode(scores),
+    deepHashCode(flags),
+  ]);
+
+  @override
+  String toString() =>
+      'Product(name: $name, tags: $tags, scores: $scores, flags: $flags)';
+
   static Product _fromAckRuntime(Map<String, Object?> value) =>
       _$ProductFromJson(Map<String, dynamic>.from(value));
 
@@ -110,6 +145,24 @@ final class Grid {
 
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
 
+  Grid copyWith({String? name, List<List<int>>? matrix}) =>
+      Grid(name: name ?? this.name, matrix: matrix ?? this.matrix);
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Grid &&
+          runtimeType == other.runtimeType &&
+          deepEquals(name, other.name) &&
+          deepEquals(matrix, other.matrix));
+
+  @override
+  int get hashCode =>
+      Object.hashAll([runtimeType, deepHashCode(name), deepHashCode(matrix)]);
+
+  @override
+  String toString() => 'Grid(name: $name, matrix: $matrix)';
+
   static Grid _fromAckRuntime(Map<String, Object?> value) =>
       _$GridFromJson(Map<String, dynamic>.from(value));
 
@@ -168,6 +221,41 @@ final class Address {
   Map<String, dynamic> toJson() => Map<String, dynamic>.from($ack.encode(this));
 
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
+
+  Address copyWith({
+    String? street,
+    String? city,
+    String? zipCode,
+    String? country,
+  }) => Address(
+    street: street ?? this.street,
+    city: city ?? this.city,
+    zipCode: zipCode ?? this.zipCode,
+    country: country ?? this.country,
+  );
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Address &&
+          runtimeType == other.runtimeType &&
+          deepEquals(street, other.street) &&
+          deepEquals(city, other.city) &&
+          deepEquals(zipCode, other.zipCode) &&
+          deepEquals(country, other.country));
+
+  @override
+  int get hashCode => Object.hashAll([
+    runtimeType,
+    deepHashCode(street),
+    deepHashCode(city),
+    deepHashCode(zipCode),
+    deepHashCode(country),
+  ]);
+
+  @override
+  String toString() =>
+      'Address(street: $street, city: $city, zipCode: $zipCode, country: $country)';
 
   static Address _fromAckRuntime(Map<String, Object?> value) =>
       _$AddressFromJson(Map<String, dynamic>.from(value));
@@ -230,6 +318,37 @@ final class Person {
   Map<String, dynamic> toJson() => Map<String, dynamic>.from($ack.encode(this));
 
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
+
+  Person copyWith({String? name, String? email, Address? address, int? age}) =>
+      Person(
+        name: name ?? this.name,
+        email: email ?? this.email,
+        address: address ?? this.address,
+        age: age ?? this.age,
+      );
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Person &&
+          runtimeType == other.runtimeType &&
+          deepEquals(name, other.name) &&
+          deepEquals(email, other.email) &&
+          deepEquals(address, other.address) &&
+          deepEquals(age, other.age));
+
+  @override
+  int get hashCode => Object.hashAll([
+    runtimeType,
+    deepHashCode(name),
+    deepHashCode(email),
+    deepHashCode(address),
+    deepHashCode(age),
+  ]);
+
+  @override
+  String toString() =>
+      'Person(name: $name, email: $email, address: $address, age: $age)';
 
   static Person _fromAckRuntime(Map<String, Object?> value) =>
       _$PersonFromJson(Map<String, dynamic>.from(value));
@@ -295,6 +414,41 @@ final class Employee {
   Map<String, dynamic> toJson() => Map<String, dynamic>.from($ack.encode(this));
 
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
+
+  Employee copyWith({
+    String? name,
+    String? employeeId,
+    Address? homeAddress,
+    Address? workAddress,
+  }) => Employee(
+    name: name ?? this.name,
+    employeeId: employeeId ?? this.employeeId,
+    homeAddress: homeAddress ?? this.homeAddress,
+    workAddress: workAddress ?? this.workAddress,
+  );
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Employee &&
+          runtimeType == other.runtimeType &&
+          deepEquals(name, other.name) &&
+          deepEquals(employeeId, other.employeeId) &&
+          deepEquals(homeAddress, other.homeAddress) &&
+          deepEquals(workAddress, other.workAddress));
+
+  @override
+  int get hashCode => Object.hashAll([
+    runtimeType,
+    deepHashCode(name),
+    deepHashCode(employeeId),
+    deepHashCode(homeAddress),
+    deepHashCode(workAddress),
+  ]);
+
+  @override
+  String toString() =>
+      'Employee(name: $name, employeeId: $employeeId, homeAddress: $homeAddress, workAddress: $workAddress)';
 
   static Employee _fromAckRuntime(Map<String, Object?> value) =>
       _$EmployeeFromJson(Map<String, dynamic>.from(value));
@@ -365,6 +519,45 @@ final class Modifier {
   Map<String, dynamic> toJson() => Map<String, dynamic>.from($ack.encode(this));
 
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
+
+  Modifier copyWith({
+    String? requiredField,
+    String? optionalField,
+    String? nullableField,
+    String? optionalNullable,
+    String? nullableOptional,
+  }) => Modifier(
+    requiredField: requiredField ?? this.requiredField,
+    optionalField: optionalField ?? this.optionalField,
+    nullableField: nullableField ?? this.nullableField,
+    optionalNullable: optionalNullable ?? this.optionalNullable,
+    nullableOptional: nullableOptional ?? this.nullableOptional,
+  );
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Modifier &&
+          runtimeType == other.runtimeType &&
+          deepEquals(requiredField, other.requiredField) &&
+          deepEquals(optionalField, other.optionalField) &&
+          deepEquals(nullableField, other.nullableField) &&
+          deepEquals(optionalNullable, other.optionalNullable) &&
+          deepEquals(nullableOptional, other.nullableOptional));
+
+  @override
+  int get hashCode => Object.hashAll([
+    runtimeType,
+    deepHashCode(requiredField),
+    deepHashCode(optionalField),
+    deepHashCode(nullableField),
+    deepHashCode(optionalNullable),
+    deepHashCode(nullableOptional),
+  ]);
+
+  @override
+  String toString() =>
+      'Modifier(requiredField: $requiredField, optionalField: $optionalField, nullableField: $nullableField, optionalNullable: $optionalNullable, nullableOptional: $nullableOptional)';
 
   static Modifier _fromAckRuntime(Map<String, Object?> value) =>
       _$ModifierFromJson(Map<String, dynamic>.from(value));
@@ -455,6 +648,41 @@ final class TaggedItem {
 
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
 
+  TaggedItem copyWith({
+    String? name,
+    List<String>? requiredTags,
+    List<String>? optionalTags,
+    List<String>? nullableTags,
+  }) => TaggedItem(
+    name: name ?? this.name,
+    requiredTags: requiredTags ?? this.requiredTags,
+    optionalTags: optionalTags ?? this.optionalTags,
+    nullableTags: nullableTags ?? this.nullableTags,
+  );
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TaggedItem &&
+          runtimeType == other.runtimeType &&
+          deepEquals(name, other.name) &&
+          deepEquals(requiredTags, other.requiredTags) &&
+          deepEquals(optionalTags, other.optionalTags) &&
+          deepEquals(nullableTags, other.nullableTags));
+
+  @override
+  int get hashCode => Object.hashAll([
+    runtimeType,
+    deepHashCode(name),
+    deepHashCode(requiredTags),
+    deepHashCode(optionalTags),
+    deepHashCode(nullableTags),
+  ]);
+
+  @override
+  String toString() =>
+      'TaggedItem(name: $name, requiredTags: $requiredTags, optionalTags: $optionalTags, nullableTags: $nullableTags)';
+
   static TaggedItem _fromAckRuntime(Map<String, Object?> value) =>
       _$TaggedItemFromJson(Map<String, dynamic>.from(value));
 
@@ -536,6 +764,29 @@ final class ContactList {
 
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
 
+  ContactList copyWith({String? name, List<Address>? addresses}) => ContactList(
+    name: name ?? this.name,
+    addresses: addresses ?? this.addresses,
+  );
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ContactList &&
+          runtimeType == other.runtimeType &&
+          deepEquals(name, other.name) &&
+          deepEquals(addresses, other.addresses));
+
+  @override
+  int get hashCode => Object.hashAll([
+    runtimeType,
+    deepHashCode(name),
+    deepHashCode(addresses),
+  ]);
+
+  @override
+  String toString() => 'ContactList(name: $name, addresses: $addresses)';
+
   static ContactList _fromAckRuntime(Map<String, Object?> value) =>
       _$ContactListFromJson(Map<String, dynamic>.from(value));
 
@@ -581,6 +832,19 @@ final class Empty {
 
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
 
+  Empty copyWith() => Empty();
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Empty && runtimeType == other.runtimeType);
+
+  @override
+  int get hashCode => Object.hashAll([runtimeType]);
+
+  @override
+  String toString() => 'Empty()';
+
   static Empty _fromAckRuntime(Map<String, Object?> value) =>
       _$EmptyFromJson(Map<String, dynamic>.from(value));
 
@@ -616,6 +880,21 @@ final class Minimal {
   Map<String, dynamic> toJson() => Map<String, dynamic>.from($ack.encode(this));
 
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
+
+  Minimal copyWith({String? id}) => Minimal(id: id ?? this.id);
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Minimal &&
+          runtimeType == other.runtimeType &&
+          deepEquals(id, other.id));
+
+  @override
+  int get hashCode => Object.hashAll([runtimeType, deepHashCode(id)]);
+
+  @override
+  String toString() => 'Minimal(id: $id)';
 
   static Minimal _fromAckRuntime(Map<String, Object?> value) =>
       _$MinimalFromJson(Map<String, dynamic>.from(value));
@@ -657,6 +936,21 @@ final class NamedItem {
 
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
 
+  NamedItem copyWith({String? name}) => NamedItem(name: name ?? this.name);
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is NamedItem &&
+          runtimeType == other.runtimeType &&
+          deepEquals(name, other.name));
+
+  @override
+  int get hashCode => Object.hashAll([runtimeType, deepHashCode(name)]);
+
+  @override
+  String toString() => 'NamedItem(name: $name)';
+
   static NamedItem _fromAckRuntime(Map<String, Object?> value) =>
       _$NamedItemFromJson(Map<String, dynamic>.from(value));
 
@@ -695,6 +989,21 @@ final class Item {
   Map<String, dynamic> toJson() => Map<String, dynamic>.from($ack.encode(this));
 
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
+
+  Item copyWith({String? id}) => Item(id: id ?? this.id);
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Item &&
+          runtimeType == other.runtimeType &&
+          deepEquals(id, other.id));
+
+  @override
+  int get hashCode => Object.hashAll([runtimeType, deepHashCode(id)]);
+
+  @override
+  String toString() => 'Item(id: $id)';
 
   static Item _fromAckRuntime(Map<String, Object?> value) =>
       _$ItemFromJson(Map<String, dynamic>.from(value));
@@ -735,6 +1044,22 @@ final class MyCustomSchema123 {
   Map<String, dynamic> toJson() => Map<String, dynamic>.from($ack.encode(this));
 
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
+
+  MyCustomSchema123 copyWith({String? value}) =>
+      MyCustomSchema123(value: value ?? this.value);
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MyCustomSchema123 &&
+          runtimeType == other.runtimeType &&
+          deepEquals(value, other.value));
+
+  @override
+  int get hashCode => Object.hashAll([runtimeType, deepHashCode(value)]);
+
+  @override
+  String toString() => 'MyCustomSchema123(value: $value)';
 
   static MyCustomSchema123 _fromAckRuntime(Map<String, Object?> value) =>
       _$MyCustomSchema123FromJson(Map<String, dynamic>.from(value));

@@ -18,7 +18,8 @@ typedef _ModelOptions = ({
   String caseStyle,
   String? discriminatorKey,
   String? discriminatorValue,
-  bool additionalProperties,
+  annotations.AckAdditionalPropertiesMode additionalProperties,
+  String additionalPropertiesField,
 });
 
 typedef _FutureGeneratedType = ({
@@ -43,10 +44,20 @@ final class ClassModelGraphBuilder {
     'fromJson',
     'toJson',
     'safeToJson',
+    'copyWith',
     'additionalProperties',
     'hashCode',
     'noSuchMethod',
     'runtimeType',
+  };
+
+  static const _generatedSerializationMembers = {'toJson', 'safeToJson'};
+
+  static const _generatedValueMembers = {
+    'copyWith',
+    'toString',
+    'hashCode',
+    '==',
   };
 
   static const _dartKeywords = {
@@ -291,18 +302,16 @@ final class ClassModelGraphBuilder {
       }
       claim(metadata.facadeName, node);
       claim(metadata.backingName, node);
-      claim(ackClassExtensionName(node.className), node);
+      claim(ackClassMixinName(node.className), node);
+      claim(ackClassRawObjectName(node.className), node);
       if (node is! AckObjectModelNode) continue;
       claim(ackClassFromRuntimeName(node.className), node);
       claim(ackClassToRuntimeName(node.className), node);
       claim(jsonFromHelperName(node.className), node);
       claim(jsonToHelperName(node.className), node);
-      if (node.unionId != null) {
-        claim(ackClassRawObjectName(node.className), node);
-      }
       for (final fieldName in <String>[
         for (final field in node.fields) field.dartName,
-        if (node.additionalProperties) 'additionalProperties',
+        if (node.captureFieldName case final capture?) capture,
       ]) {
         claim(ackClassFromRuntimeBridgeName(node.className, fieldName), node);
         claim(ackClassToRuntimeBridgeName(node.className, fieldName), node);
@@ -349,6 +358,8 @@ final class ClassModelGraphBuilder {
   }
 
   Future<void> _buildUnion(ClassElement base) async {
+    _requireMixin(base);
+    _rejectGeneratedMemberCollisions(base, includeValueMembers: false);
     final baseOptions = _options(base)!;
     final discriminatorKey = baseOptions.discriminatorKey!;
     _rejectInvalidMemberName(discriminatorKey, base);
@@ -399,7 +410,9 @@ final class ClassModelGraphBuilder {
             caseStyle: baseOptions.caseStyle,
             discriminatorKey: null,
             discriminatorValue: null,
-            additionalProperties: false,
+            additionalProperties:
+                annotations.AckAdditionalPropertiesMode.reject,
+            additionalPropertiesField: 'additionalProperties',
           );
       if (branchOptions.discriminatorKey != null) {
         throw InvalidGenerationSource(
@@ -458,38 +471,93 @@ final class ClassModelGraphBuilder {
         element: element,
       );
     }
+    _requireMixin(element);
+    _rejectGeneratedMemberCollisions(element, includeValueMembers: true);
 
     final fields = _instanceFields(element);
+    final captureFieldName =
+        options.additionalProperties ==
+            annotations.AckAdditionalPropertiesMode.capture
+        ? options.additionalPropertiesField
+        : null;
+    if (options.additionalProperties !=
+            annotations.AckAdditionalPropertiesMode.capture &&
+        options.additionalPropertiesField != 'additionalProperties') {
+      throw InvalidGenerationSource(
+        '${element.name}.additionalPropertiesField is only valid with '
+        'AckAdditionalPropertiesMode.capture.',
+        element: element,
+      );
+    }
+    if (captureFieldName != null) {
+      _rejectInvalidMemberName(captureFieldName, element);
+    }
+
+    final futureTypes = <String, _FutureGeneratedType>{};
+    for (final field in fields.values) {
+      final name = field.name;
+      if (name == null || !_containsInvalidType(field.type)) continue;
+      final futureType = await _futureGeneratedType(field);
+      if (futureType != null) {
+        futureTypes[name] = futureType;
+      }
+    }
+
     final parameters = <String, FormalParameterElement>{};
+    final constructorParameters = <AckConstructorParameter>[];
     for (final parameter in constructor.formalParameters) {
       final field = _parameterField(parameter) ?? fields[parameter.name];
       final fieldName = field?.name;
-      if (fieldName != null) parameters[fieldName] = parameter;
+      if (fieldName == null) {
+        throw InvalidGenerationSource(
+          '${element.name} constructor parameter "${parameter.name}" is not '
+          'mapped to a constructor-initialized field.',
+          element: parameter,
+        );
+      }
+      parameters[fieldName] = parameter;
+      constructorParameters.add(
+        AckConstructorParameter(
+          name: parameter.name!,
+          kind: parameter.isNamed
+              ? AckConstructorParameterKind.named
+              : AckConstructorParameterKind.positional,
+          fieldName: fieldName,
+          typeRef:
+              futureTypes[fieldName]?.runtimeRef ??
+              _typeRef(field!.type, field),
+          isSuper: parameter is SuperFormalParameterElement,
+          defaultExpression: parameter.defaultValueCode,
+        ),
+      );
     }
 
-    if (options.additionalProperties) {
-      final extras = fields['additionalProperties'];
+    String? captureJsonKey;
+    if (captureFieldName != null) {
+      final extras = fields[captureFieldName];
       if (extras == null || !_isExactAdditionalPropertiesType(extras.type)) {
         throw InvalidGenerationSource(
-          '${element.name}.additionalProperties must be declared as '
-          'Map<String, Object?> when additionalProperties is true.',
+          '${element.name}.$captureFieldName must be declared as '
+          'Map<String, Object?> when additional properties are captured.',
           element: extras ?? element,
         );
       }
-      if (!parameters.containsKey('additionalProperties')) {
+      if (!parameters.containsKey(captureFieldName)) {
         throw InvalidGenerationSource(
-          '${element.name}.additionalProperties must be initialized by the '
+          '${element.name}.$captureFieldName must be initialized by the '
           'unnamed constructor.',
           element: extras,
         );
       }
+      captureJsonKey =
+          _jsonKey(extras) ?? _rename(captureFieldName, options.caseStyle);
     }
 
     final nodes = <AckFieldNode>[];
     final ownerByJsonKey = <String, FieldElement>{};
     for (final field in fields.values) {
       final name = field.name;
-      if (name == null || name == 'additionalProperties') continue;
+      if (name == null || name == captureFieldName) continue;
       if (name.startsWith('_')) {
         if (parameters.containsKey(name)) {
           throw InvalidGenerationSource(
@@ -512,9 +580,7 @@ final class ClassModelGraphBuilder {
 
       _rejectUnsupportedStaticType(field, field.type);
       _validateMapKey(field, field.type);
-      final futureType = _containsInvalidType(field.type)
-          ? await _futureGeneratedType(field)
-          : null;
+      final futureType = futureTypes[name];
       _recordClassFirstDependencies(element, field.type, field);
       final jsonKey = _jsonKey(field) ?? _rename(name, options.caseStyle);
       final prior = ownerByJsonKey[jsonKey];
@@ -525,10 +591,10 @@ final class ClassModelGraphBuilder {
           element: field,
         );
       }
-      if (options.additionalProperties && jsonKey == 'additionalProperties') {
+      if (captureJsonKey != null && jsonKey == captureJsonKey) {
         throw InvalidGenerationSource(
           '${element.name}.$name produces reserved JSON key '
-          '"additionalProperties".',
+          '"$captureJsonKey".',
           element: field,
         );
       }
@@ -537,7 +603,11 @@ final class ClassModelGraphBuilder {
       final nullable =
           futureType?.runtimeRef is AckNullableTypeRef ||
           _isNullable(field.type);
-      final presence = _fieldPresence(parameter);
+      final presence = _effectivePresence(
+        field,
+        parameter: parameter,
+        isDiscriminator: isDiscriminator,
+      );
       var schema = isDiscriminator && discriminatorValue != null
           ? '${_ack('Ack')}.literal(${_literal(discriminatorValue)})'
           : await _fieldSchema(field, futureType: futureType);
@@ -566,7 +636,17 @@ final class ClassModelGraphBuilder {
       boundaryType: _jsonMapRef,
       runtimeRef: AckExternalTypeRef(name: element.name!),
       fields: nodes,
-      additionalProperties: options.additionalProperties,
+      constructorParameters: constructorParameters,
+      unknownPropertyPolicy: switch (options.additionalProperties) {
+        annotations.AckAdditionalPropertiesMode.reject =>
+          AckUnknownPropertyPolicy.reject,
+        annotations.AckAdditionalPropertiesMode.discard =>
+          AckUnknownPropertyPolicy.discard,
+        annotations.AckAdditionalPropertiesMode.capture =>
+          AckUnknownPropertyPolicy.capture,
+      },
+      captureFieldName: captureFieldName,
+      captureJsonKey: captureJsonKey,
       unionId: unionId,
       discriminatorKey: discriminatorKey,
       discriminatorValue: discriminatorValue,
@@ -630,11 +710,11 @@ final class ClassModelGraphBuilder {
   }) async {
     final override = _ackFieldChecker.firstAnnotationOfExact(field);
     if (override != null) {
-      final base = await _escapeHatchExpression(
-        field,
-        ConstantReader(override),
-      );
-      return _applySugar(base, field);
+      final reader = ConstantReader(override);
+      if (!reader.read('schema').isNull) {
+        final base = await _escapeHatchExpression(field, reader);
+        return _applySugar(base, field);
+      }
     }
     if (futureType != null) {
       final setListSchema = futureType.setListSchema;
@@ -1164,12 +1244,56 @@ final class ClassModelGraphBuilder {
     return null;
   }
 
-  AckFieldPresence _fieldPresence(FormalParameterElement? parameter) {
+  AckSchemaFieldPresence _fieldPresence(FormalParameterElement? parameter) {
     if (parameter == null || parameter.isRequired) {
-      return AckFieldPresence.required;
+      return AckSchemaFieldPresence.required;
     }
-    if (parameter.hasDefaultValue) return AckFieldPresence.defaulted;
-    return AckFieldPresence.optional;
+    if (parameter.hasDefaultValue) return AckSchemaFieldPresence.defaulted;
+    return AckSchemaFieldPresence.optional;
+  }
+
+  AckSchemaFieldPresence _effectivePresence(
+    FieldElement field, {
+    required FormalParameterElement? parameter,
+    required bool isDiscriminator,
+  }) {
+    final inferred = _fieldPresence(parameter);
+    final annotation = _ackFieldChecker.firstAnnotationOfExact(field);
+    if (annotation == null) return inferred;
+    final reader = ConstantReader(annotation);
+    final schemaMissing = reader.read('schema').isNull;
+    final presenceIndex = reader
+        .read('presence')
+        .objectValue
+        .getField('index')!
+        .toIntValue()!;
+    final presence = annotations.AckFieldPresence.values[presenceIndex];
+    if (schemaMissing && presence == annotations.AckFieldPresence.inferred) {
+      throw InvalidGenerationSource(
+        '${field.enclosingElement.name}.${field.name} @AckField() is a no-op; '
+        'set schema or presence.',
+        element: field,
+      );
+    }
+    return switch (presence) {
+      annotations.AckFieldPresence.inferred => inferred,
+      annotations.AckFieldPresence.required => AckSchemaFieldPresence.required,
+      annotations.AckFieldPresence.optional => () {
+        final canBeOptional =
+            isDiscriminator ||
+            (parameter != null &&
+                (!parameter.isRequired || _isNullable(parameter.type)));
+        if (!canBeOptional) {
+          throw InvalidGenerationSource(
+            '${field.enclosingElement.name}.${field.name} cannot be '
+            '@AckField(presence: optional) because the constructor cannot '
+            'accept a missing value.',
+            element: field,
+          );
+        }
+        return AckSchemaFieldPresence.optional;
+      }(),
+    };
   }
 
   bool _isExactAdditionalPropertiesType(DartType type) {
@@ -1253,6 +1377,59 @@ final class ClassModelGraphBuilder {
     return null;
   }
 
+  void _requireMixin(ClassElement element) {
+    final mixinName = ackClassMixinName(element.name!);
+    if (_declaresMixin(element, mixinName)) return;
+    throw InvalidGenerationSource(
+      '${element.name} must apply mixin $mixinName.',
+      element: element,
+      todo: 'Add `with $mixinName` to ${element.name}.',
+    );
+  }
+
+  bool _declaresMixin(ClassElement element, String mixinName) {
+    if (element.mixins.any((type) => type.element.name == mixinName)) {
+      return true;
+    }
+    final resolved = _inputResolved;
+    if (resolved == null) return false;
+    final node = resolved.getFragmentDeclaration(element.firstFragment)?.node;
+    if (node is! ClassDeclaration) return false;
+    final withClause = node.withClause;
+    if (withClause == null) return false;
+    return withClause.mixinTypes.any((type) => type.name.lexeme == mixinName);
+  }
+
+  void _rejectGeneratedMemberCollisions(
+    ClassElement element, {
+    required bool includeValueMembers,
+  }) {
+    final blocked = {
+      ..._generatedSerializationMembers,
+      if (includeValueMembers) ..._generatedValueMembers,
+    };
+    for (final method in element.methods) {
+      if (method.isStatic) continue;
+      final name = method.name;
+      if (name != null && blocked.contains(name)) {
+        throw InvalidGenerationSource(
+          '${element.name}.$name would silently override a generated member.',
+          element: method,
+        );
+      }
+    }
+    for (final getter in element.getters) {
+      if (getter.isStatic) continue;
+      final name = getter.name;
+      if (name != null && blocked.contains(name)) {
+        throw InvalidGenerationSource(
+          '${element.name}.$name would silently override a generated member.',
+          element: getter,
+        );
+      }
+    }
+  }
+
   void _registerMetadata(
     ClassElement element,
     _ModelOptions options,
@@ -1302,7 +1479,15 @@ final class ClassModelGraphBuilder {
       caseStyle: styles[caseIndex],
       discriminatorKey: _nullableString(reader, 'discriminatorKey'),
       discriminatorValue: _nullableString(reader, 'discriminatorValue'),
-      additionalProperties: reader.read('additionalProperties').boolValue,
+      additionalProperties:
+          annotations.AckAdditionalPropertiesMode.values[reader
+              .read('additionalProperties')
+              .objectValue
+              .getField('index')!
+              .toIntValue()!],
+      additionalPropertiesField: reader
+          .read('additionalPropertiesField')
+          .stringValue,
     );
   }
 
@@ -1353,15 +1538,15 @@ final class ClassModelGraphBuilder {
 
   String _applyPresence(
     String schema, {
-    required AckFieldPresence presence,
+    required AckSchemaFieldPresence presence,
     required bool nullable,
     required String? defaultCode,
   }) {
     return switch (presence) {
-      AckFieldPresence.defaulted => '$schema.withDefault($defaultCode)',
-      AckFieldPresence.optional => '$schema.optional()',
-      AckFieldPresence.required when nullable => '$schema.nullable()',
-      AckFieldPresence.required => schema,
+      AckSchemaFieldPresence.defaulted => '$schema.withDefault($defaultCode)',
+      AckSchemaFieldPresence.optional => '$schema.optional()',
+      AckSchemaFieldPresence.required when nullable => '$schema.nullable()',
+      AckSchemaFieldPresence.required => schema,
     };
   }
 

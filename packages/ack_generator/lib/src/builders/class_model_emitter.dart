@@ -1,11 +1,15 @@
 import '../json/helper_names.dart';
 import '../models/schema_model_graph.dart';
+import 'data_class_emitter.dart';
 
 /// Emits class-first schema codecs and top-level JSON/runtime glue.
 final class AckClassModelEmitter {
   const AckClassModelEmitter({this.ackPrefix});
 
   final String? ackPrefix;
+
+  AckDataClassEmitter get _dataClasses =>
+      AckDataClassEmitter(ackPrefix: ackPrefix);
 
   String emit(AckModelGraph graph) {
     final nodes = {for (final node in graph.nodes) node.id: node};
@@ -39,19 +43,7 @@ final class AckClassModelEmitter {
     AckModelGraph graph,
     AckObjectModelNode node,
   ) {
-    final metadata = _metadata(graph, node);
-    output
-      ..writeln(_codecSchema(node, backingName: metadata.backingName))
-      ..writeln()
-      ..writeln(_facade(node.className, metadata))
-      ..writeln()
-      ..writeln(_fromRuntimeFunction(node))
-      ..writeln()
-      ..writeln(_toRuntimeFunction(node))
-      ..writeln()
-      ..writeln(_extension(node.className, metadata.facadeName))
-      ..writeln()
-      ..writeln(_fieldBridges(node));
+    _emitConcrete(output, graph, node, includeValueMembers: true);
   }
 
   void _emitBranch(
@@ -59,6 +51,15 @@ final class AckClassModelEmitter {
     AckModelGraph graph,
     AckObjectModelNode node,
   ) {
+    _emitConcrete(output, graph, node, includeValueMembers: true);
+  }
+
+  void _emitConcrete(
+    StringBuffer output,
+    AckModelGraph graph,
+    AckObjectModelNode node, {
+    required bool includeValueMembers,
+  }) {
     final metadata = _metadata(graph, node);
     final rawName = ackClassRawObjectName(node.className);
     output
@@ -68,13 +69,22 @@ final class AckClassModelEmitter {
         _codecSchema(node, backingName: metadata.backingName, input: rawName),
       )
       ..writeln()
-      ..writeln(_facade(node.className, metadata))
+      ..writeln(_facade(node.className, metadata, rawName: rawName))
       ..writeln()
       ..writeln(_fromRuntimeFunction(node))
       ..writeln()
       ..writeln(_toRuntimeFunction(node))
       ..writeln()
-      ..writeln(_extension(node.className, metadata.facadeName))
+      ..writeln(
+        _dataClasses.mixin(
+          className: node.className,
+          facadeName: metadata.facadeName,
+          fields: node.fields,
+          constructorParameters: node.constructorParameters,
+          includeValueMembers: includeValueMembers,
+          captureFieldName: node.captureFieldName,
+        ),
+      )
       ..writeln()
       ..writeln(_fieldBridges(node));
   }
@@ -103,12 +113,15 @@ final class AckClassModelEmitter {
         '${ackClassToRuntimeName(branch.className)}(model)',
       );
     }
+    final rawName = ackClassRawObjectName(node.className);
     output
       ..writeln('''
-final ${metadata.backingName} = ${_ack('Ack')}.discriminated(
+final $rawName = ${_ack('Ack')}.discriminated(
   discriminatorKey: ${_literal(node.discriminatorKey)},
   schemas: {${schemaEntries.join(', ')}},
-).codec<${node.className}>(
+);
+
+final ${metadata.backingName} = $rawName.codec<${node.className}>(
   decode: (value) => switch (value[${_literal(node.discriminatorKey)}]) {
     ${decodeCases.join(',\n    ')},
     final unknown => throw StateError(
@@ -120,9 +133,17 @@ final ${metadata.backingName} = ${_ack('Ack')}.discriminated(
   },
 );''')
       ..writeln()
-      ..writeln(_facade(node.className, metadata))
+      ..writeln(_facade(node.className, metadata, rawName: rawName))
       ..writeln()
-      ..writeln(_extension(node.className, metadata.facadeName))
+      ..writeln(
+        _dataClasses.mixin(
+          className: node.className,
+          facadeName: metadata.facadeName,
+          fields: const [],
+          constructorParameters: const [],
+          includeValueMembers: false,
+        ),
+      )
       ..writeln();
   }
 
@@ -139,11 +160,18 @@ final $backingName = $expression.codec<${node.className}>(
 );''';
   }
 
-  String _facade(String className, AckClassModelMetadata metadata) =>
+  String _facade(
+    String className,
+    AckClassModelMetadata metadata, {
+    required String rawName,
+  }) =>
       '''
 abstract final class ${metadata.facadeName} {
   static ${_ack('AckSchema')}<Map<String, Object?>, $className> get schema =>
       ${metadata.backingName};
+
+  static ${_ack('AckSchema')}<Map<String, Object?>, Map<String, Object?>>
+      get wireSchema => $rawName;
 
   static $className parse(Object? value, {String? debugName}) =>
       ${metadata.backingName}.parse(value, debugName: debugName)!;
@@ -177,11 +205,11 @@ abstract final class ${metadata.facadeName} {
       if (node.discriminatorKey case final key?)
         if (node.discriminatorValue case final value?)
           if (!node.fields.any((field) => field.jsonKey == key))
-            '${_literal(key)}: ${_ack('Ack')}.literal(${_literal(value)})',
+            '${_literal(key)}: ${_ack('Ack')}.literal(${_literal(value)}).optional()',
       for (final field in node.fields)
         '${_literal(field.jsonKey)}: ${field.schemaExpression}',
     ];
-    final additional = node.additionalProperties
+    final additional = node.allowsUnknownProperties
         ? ', additionalProperties: true'
         : '';
     return '${_ack('Ack')}.object({${entries.join(', ')}}$additional)';
@@ -190,18 +218,20 @@ abstract final class ${metadata.facadeName} {
   String _fromRuntimeFunction(AckObjectModelNode node) {
     final helper = jsonFromHelperName(node.className);
     final function = ackClassFromRuntimeName(node.className);
-    if (!node.additionalProperties) {
+    if (node.captureFieldName == null) {
       return '''
 ${node.className} $function(Map<String, Object?> value) =>
     $helper(Map<String, dynamic>.from(value));''';
     }
     final declared = _declaredKeys(node);
+    final capture = node.captureFieldName!;
+    final captureJsonKey = node.captureJsonKey ?? capture;
     return '''
 ${node.className} $function(Map<String, Object?> value) {
   const declared = ${_keySet(declared)};
   return $helper(<String, dynamic>{
     ...value,
-    'additionalProperties': Map<String, Object?>.fromEntries(
+    ${_literal(captureJsonKey)}: Map<String, Object?>.fromEntries(
       value.entries.where((entry) => !declared.contains(entry.key)),
     ),
   });
@@ -217,10 +247,10 @@ ${node.className} $function(Map<String, Object?> value) {
     ];
     final discriminatorKey = node.discriminatorKey;
     final discriminatorValue = node.discriminatorValue;
+    final capture = node.captureFieldName;
+    final captureJsonKey = node.captureJsonKey ?? capture;
     final needsBlock =
-        node.additionalProperties ||
-        requiredNulls.isNotEmpty ||
-        discriminatorKey != null;
+        capture != null || requiredNulls.isNotEmpty || discriminatorKey != null;
     if (!needsBlock) {
       return '''
 Map<String, Object?> $function(${node.className} model) =>
@@ -228,21 +258,22 @@ Map<String, Object?> $function(${node.className} model) =>
     }
 
     final lines = <String>[];
-    if (node.additionalProperties) {
+    if (capture != null) {
       lines.add('const declared = ${_keySet(_declaredKeys(node))};');
     }
     lines
       ..add('final result = <String, Object?>{...$jsonHelper(model)};')
       ..addAll([
-        if (node.additionalProperties) "result.remove('additionalProperties');",
+        if (captureJsonKey != null)
+          'result.remove(${_literal(captureJsonKey)});',
         for (final field in requiredNulls)
           'if (model.${field.dartName} == null) { '
               'result[${_literal(field.jsonKey)}] = null; }',
       ]);
 
     final entries = <String>[
-      if (node.additionalProperties)
-        'for (final entry in model.additionalProperties.entries)\n'
+      if (capture != null)
+        'for (final entry in model.$capture.entries)\n'
             '    if (!declared.contains(entry.key)) entry.key: entry.value',
       '...result',
       if (discriminatorKey != null && discriminatorValue != null)
@@ -254,16 +285,6 @@ Map<String, Object?> $function(${node.className} model) {
   ${lines.join('\n  ')}
 }''';
   }
-
-  String _extension(String className, String facadeName) =>
-      '''
-extension ${ackClassExtensionName(className)} on $className {
-  Map<String, dynamic> toJson() =>
-      Map<String, dynamic>.from($facadeName.encode(this));
-
-  ${_ack('SchemaResult')}<Map<String, Object?>> safeToJson() =>
-      $facadeName.safeEncode(this);
-}''';
 
   String _fieldBridges(AckObjectModelNode node) {
     final output = StringBuffer();
@@ -290,15 +311,9 @@ extension ${ackClassExtensionName(className)} on $className {
           '${_toRuntime(field.runtimeRef, 'value')};',
         );
     }
-    if (node.additionalProperties) {
-      final fromName = ackClassFromRuntimeBridgeName(
-        node.className,
-        'additionalProperties',
-      );
-      final toName = ackClassToRuntimeBridgeName(
-        node.className,
-        'additionalProperties',
-      );
+    if (node.captureFieldName case final capture?) {
+      final fromName = ackClassFromRuntimeBridgeName(node.className, capture);
+      final toName = ackClassToRuntimeBridgeName(node.className, capture);
       output
         ..writeln(
           'Map<String, Object?>? $fromName(Object? value) => '

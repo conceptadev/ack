@@ -55,7 +55,7 @@ List<T>? _findDuplicates<T>(List<T> value) {
   final groupsInOrder = <_DuplicateGroup<T>>[];
 
   for (final item in value) {
-    final hash = _deepHashCode(item);
+    final hash = deepHashCode(item);
     final bucket = groupsByHash.putIfAbsent(hash, () => <_DuplicateGroup<T>>[]);
     var matched = false;
     for (final group in bucket) {
@@ -80,63 +80,6 @@ List<T>? _findDuplicates<T>(List<T> value) {
   }
 
   return duplicates.isEmpty ? null : duplicates;
-}
-
-/// Computes a hash code for [value] that is consistent with [deepEquals].
-///
-/// **Note**: This function assumes acyclic inputs (e.g., JSON-derived data).
-/// Cyclic structures will cause stack overflow.
-int _deepHashCode(Object? value) {
-  if (value == null) return Object.hash(null, null);
-
-  if (value is! Iterable && value is! Map) {
-    return Object.hash(value.runtimeType, value);
-  }
-
-  if (value is List) {
-    var hash = Object.hash(value.runtimeType, value.length);
-    for (final item in value) {
-      hash = Object.hash(hash, _deepHashCode(item));
-    }
-
-    return hash;
-  }
-
-  if (value is Set) {
-    // Use XOR with bit mixing for order-independent hashing with better
-    // collision resistance than simple sum.
-    var combined = 0;
-    for (final item in value) {
-      final h = _deepHashCode(item);
-      combined ^= h ^ (h >>> 16);
-    }
-
-    return Object.hash(value.runtimeType, value.length, combined);
-  }
-
-  if (value is Map) {
-    // Use XOR with bit mixing for order-independent hashing.
-    var combined = 0;
-    for (final entry in value.entries) {
-      final keyHash = _deepHashCode(entry.key);
-      final valueHash = _deepHashCode(entry.value);
-      final entryHash = Object.hash(keyHash, valueHash);
-      combined ^= entryHash ^ (entryHash >>> 16);
-    }
-
-    return Object.hash(value.runtimeType, value.length, combined);
-  }
-
-  if (value is Iterable) {
-    var hash = Object.hash(value.runtimeType, 0);
-    for (final item in value) {
-      hash = Object.hash(hash, _deepHashCode(item));
-    }
-
-    return hash;
-  }
-
-  return Object.hash(value.runtimeType, value.hashCode);
 }
 
 class _DuplicateGroup<T> {

@@ -27,8 +27,8 @@ String ackClassFromRuntimeName(String className) =>
 /// Runtime-map encoder for a hand-written class-first model.
 String ackClassToRuntimeName(String className) => '_\$${className}ToRuntime';
 
-/// Extension that exposes class-first JSON encoding methods.
-String ackClassExtensionName(String className) => '${className}Ack';
+/// Generated mixin that exposes class-first JSON and value members.
+String ackClassMixinName(String className) => '_\$${className}Ack';
 
 /// Public static facade generated for a class-first schema.
 String ackClassSchemaFacadeName(String className, {String? override}) =>

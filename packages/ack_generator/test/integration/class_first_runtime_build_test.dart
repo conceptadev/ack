@@ -88,6 +88,12 @@ part 'models.g.dart';
 final class Color {
   const Color(this.hex);
   final String hex;
+
+  @override
+  bool operator ==(Object other) => other is Color && other.hex == hex;
+
+  @override
+  int get hashCode => hex.hashCode;
 }
 
 AckSchema<String, Color> colorSchema() => Ack.string().codec<Color>(
@@ -102,7 +108,7 @@ AckSchema<int, beta.Item> betaItemSchema() => Ack.integer()
     .codec<beta.Item>(decode: beta.Item.new, encode: (item) => item.value);
 
 @AckModel()
-final class Profile {
+final class Profile with _$ProfileAck {
   const Profile({
     required this.name,
     this.website,
@@ -125,7 +131,7 @@ final class Profile {
 }
 
 @AckModel(caseStyle: AckCaseStyle.snake)
-final class Account {
+final class Account with _$AccountAck {
   const Account({required this.firstName, required this.imageUrl});
   final String firstName;
   @JsonKey(name: 'avatar')
@@ -134,8 +140,8 @@ final class Account {
   static final fromJson = AccountSchema.fromJson;
 }
 
-@AckModel(additionalProperties: true)
-final class Config {
+@AckModel(additionalProperties: AckAdditionalPropertiesMode.capture)
+final class Config with _$ConfigAck {
   const Config({
     required this.name,
     this.additionalProperties = const {},
@@ -144,8 +150,28 @@ final class Config {
   final Map<String, Object?> additionalProperties;
 }
 
+@AckModel(
+  caseStyle: AckCaseStyle.snake,
+  additionalProperties: AckAdditionalPropertiesMode.capture,
+  additionalPropertiesField: 'extraValues',
+)
+final class CaseStyledExtras with _$CaseStyledExtrasAck {
+  const CaseStyledExtras({
+    required this.displayName,
+    this.extraValues = const {},
+  });
+  final String displayName;
+  final Map<String, Object?> extraValues;
+}
+
+@AckModel(additionalProperties: AckAdditionalPropertiesMode.discard)
+final class Loose with _$LooseAck {
+  const Loose({required this.name});
+  final String name;
+}
+
 @AckModel()
-final class ImportedPair {
+final class ImportedPair with _$ImportedPairAck {
   const ImportedPair({required this.left, required this.right});
   @AckField(schema: alphaItemSchema)
   final alpha.Item left;
@@ -154,18 +180,18 @@ final class ImportedPair {
 }
 
 @AckModel(discriminatorKey: 'type')
-sealed class Pet {
+sealed class Pet with _$PetAck {
   const Pet({required this.id});
   final String id;
 }
 
 @AckModel(discriminatorValue: 'cat')
-final class Cat extends Pet {
+final class Cat extends Pet with _$CatAck {
   const Cat({required super.id, required this.lives});
   final int lives;
 }
 
-final class Dog extends Pet {
+final class Dog extends Pet with _$DogAck {
   const Dog({required super.id, required this.breed});
   final String breed;
   String get type => 'Dog';
@@ -246,6 +272,54 @@ void main() {
     expect(spoofed.toJson(), {'theme': 'dark', 'name': 'declared'});
   });
 
+  test('custom capture fields honor the configured case style', () {
+    final model = CaseStyledExtrasSchema.parse({
+      'display_name': 'Ada',
+      'theme': 'dark',
+    });
+    expect(model.extraValues, {'theme': 'dark'});
+    expect(model.toJson(), {'theme': 'dark', 'display_name': 'Ada'});
+  });
+
+  test('discard accepts extras without storing them', () {
+    final loose = LooseSchema.parse({'name': 'n', 'extra': true});
+    expect(loose.toJson(), {'name': 'n'});
+    expect(
+      () => ProfileSchema.parse({
+        'name': 'Ada',
+        'nickname': null,
+        'tags': ['schema'],
+        'color': '#fff',
+        'extra': true,
+      }),
+      throwsA(anything),
+    );
+  });
+
+  test('copyWith treats null as retain and equality is deep', () {
+    final profile = Profile.fromJson({
+      'name': 'Ada',
+      'nickname': null,
+      'tags': ['schema', 'dart'],
+      'color': '#fff',
+    });
+    final renamed = profile.copyWith(name: 'Grace');
+    expect(renamed.name, 'Grace');
+    expect(renamed.role, 'member');
+    expect(renamed.tags, {'schema', 'dart'});
+    expect(profile.copyWith(), profile);
+    expect(profile.hashCode, profile.copyWith().hashCode);
+    expect(
+      Profile.fromJson({
+        'name': 'Ada',
+        'nickname': null,
+        'tags': ['schema', 'dart'],
+        'color': '#fff',
+      }),
+      profile,
+    );
+  });
+
   test('sealed unions use super parameters and discriminator rules', () {
     final cat = PetSchema.parse({'type': 'cat', 'id': 'c1', 'lives': 9});
     expect(cat, isA<Cat>());
@@ -253,6 +327,10 @@ void main() {
     final dog = PetSchema.parse({'type': 'Dog', 'id': 'd1', 'breed': 'lab'});
     expect(dog, isA<Dog>());
     expect(dog.toJson(), {'type': 'Dog', 'id': 'd1', 'breed': 'lab'});
+    expect((cat as Cat).copyWith(lives: 8).id, 'c1');
+    final direct = CatSchema.parse({'id': 'c2', 'lives': 7});
+    expect(direct.toJson(), {'type': 'cat', 'id': 'c2', 'lives': 7});
+    expect(PetSchema.safeParse({'id': 'c2', 'lives': 7}).isFail, isTrue);
   });
 
   test('prefixed same-named imported types preserve identity', () {
@@ -291,7 +369,7 @@ void main() {
         expect(generated['lib/models.ack.dart'], contains('class Legacy'));
         expect(
           generated['lib/models.ack.dart'],
-          contains('extension ProfileAck'),
+          contains(r'mixin _$ProfileAck'),
         );
         expect(
           generated['lib/models.ack.dart'],

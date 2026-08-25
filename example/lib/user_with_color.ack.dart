@@ -35,6 +35,21 @@ final class ColorModel {
 
   SchemaResult<String> safeToJson() => $ack.safeEncode(this);
 
+  ColorModel copyWith({Color? value}) => ColorModel(value ?? this.value);
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ColorModel &&
+          runtimeType == other.runtimeType &&
+          deepEquals(value, other.value));
+
+  @override
+  int get hashCode => Object.hashAll([runtimeType, deepHashCode(value)]);
+
+  @override
+  String toString() => 'ColorModel(value: $value)';
+
   static ColorModel _fromAckRuntime(Color value) =>
       _$ColorModelFromJson(<String, dynamic>{'value': value});
 
@@ -74,6 +89,24 @@ final class Profile {
   Map<String, dynamic> toJson() => Map<String, dynamic>.from($ack.encode(this));
 
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
+
+  Profile copyWith({String? bio, Uri? website}) =>
+      Profile(bio: bio ?? this.bio, website: website ?? this.website);
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Profile &&
+          runtimeType == other.runtimeType &&
+          deepEquals(bio, other.bio) &&
+          deepEquals(website, other.website));
+
+  @override
+  int get hashCode =>
+      Object.hashAll([runtimeType, deepHashCode(bio), deepHashCode(website)]);
+
+  @override
+  String toString() => 'Profile(bio: $bio, website: $website)';
 
   static Profile _fromAckRuntime(Map<String, Object?> value) =>
       _$ProfileFromJson(Map<String, dynamic>.from(value));
@@ -141,6 +174,57 @@ final class UserWithColor {
   Map<String, dynamic> toJson() => Map<String, dynamic>.from($ack.encode(this));
 
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
+
+  UserWithColor copyWith({
+    String? firstName,
+    String? lastName,
+    int? age,
+    Profile? profile,
+    ColorModel? color,
+    ColorModel? favoriteColor,
+    Pet? pet,
+    List<Pet>? pets,
+  }) => UserWithColor(
+    firstName: firstName ?? this.firstName,
+    lastName: lastName ?? this.lastName,
+    age: age ?? this.age,
+    profile: profile ?? this.profile,
+    color: color ?? this.color,
+    favoriteColor: favoriteColor ?? this.favoriteColor,
+    pet: pet ?? this.pet,
+    pets: pets ?? this.pets,
+  );
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is UserWithColor &&
+          runtimeType == other.runtimeType &&
+          deepEquals(firstName, other.firstName) &&
+          deepEquals(lastName, other.lastName) &&
+          deepEquals(age, other.age) &&
+          deepEquals(profile, other.profile) &&
+          deepEquals(color, other.color) &&
+          deepEquals(favoriteColor, other.favoriteColor) &&
+          deepEquals(pet, other.pet) &&
+          deepEquals(pets, other.pets));
+
+  @override
+  int get hashCode => Object.hashAll([
+    runtimeType,
+    deepHashCode(firstName),
+    deepHashCode(lastName),
+    deepHashCode(age),
+    deepHashCode(profile),
+    deepHashCode(color),
+    deepHashCode(favoriteColor),
+    deepHashCode(pet),
+    deepHashCode(pets),
+  ]);
+
+  @override
+  String toString() =>
+      'UserWithColor(firstName: $firstName, lastName: $lastName, age: $age, profile: $profile, color: $color, favoriteColor: $favoriteColor, pet: $pet, pets: $pets)';
 
   static UserWithColor _fromAckRuntime(Map<String, Object?> value) =>
       _$UserWithColorFromJson(Map<String, dynamic>.from(value));

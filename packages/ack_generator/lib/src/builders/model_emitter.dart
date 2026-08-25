@@ -62,6 +62,7 @@ final class AckModelEmitter {
           _safeParse(node.className),
           _objectToJson(),
           _objectSafeToJson(),
+          ..._dataClassMethods(node, fields: fields),
           _objectFromRuntime(node, fields: fields),
           _objectToRuntime(node, fields: fields),
           ..._fieldBridges(fields),
@@ -109,6 +110,7 @@ final class AckModelEmitter {
               ..lambda = true
               ..body = const Code(r'$ack.safeEncode(this)'),
           ),
+          ..._valueDataClassMethods(node),
           Method(
             (m) => m
               ..name = '_fromAckRuntime'
@@ -233,6 +235,7 @@ return switch (value[${_literal(node.discriminatorKey)}]) {
               ..lambda = true
               ..body = Code(_literal(value)),
           ),
+          ..._dataClassMethods(node, fields: fields),
           _objectFromRuntime(
             node,
             fields: fields,
@@ -394,6 +397,163 @@ ${_ack('AckModelAdapter')}(
       ..lambda = true
       ..body = const Code(r'$ack.safeParse(input)'),
   );
+
+  List<Method> _dataClassMethods(
+    AckObjectModelNode node, {
+    required List<AckFieldNode> fields,
+  }) {
+    final stored = [
+      ...fields,
+      if (node.captureFieldName case final capture?)
+        AckFieldNode(
+          dartName: capture,
+          jsonKey: capture,
+          presence: AckSchemaFieldPresence.optional,
+          nullable: false,
+          runtimeRef: const AckMapTypeRef(
+            AckNullableTypeRef(AckScalarTypeRef('Object')),
+          ),
+        ),
+    ];
+    final storedNames = {for (final field in stored) field.dartName};
+    final constructorParameters = [
+      for (final parameter in node.constructorParameters)
+        if (storedNames.contains(parameter.fieldName)) parameter,
+    ];
+    return _valueMembers(
+      className: node.className,
+      fields: stored,
+      constructorParameters: constructorParameters.isEmpty
+          ? [
+              for (final field in stored)
+                AckConstructorParameter(
+                  name: field.dartName,
+                  kind: AckConstructorParameterKind.named,
+                  fieldName: field.dartName,
+                  typeRef: field.runtimeRef,
+                ),
+            ]
+          : constructorParameters,
+    );
+  }
+
+  List<Method> _valueDataClassMethods(AckValueModelNode node) {
+    return _valueMembers(
+      className: node.className,
+      fields: [
+        AckFieldNode(
+          dartName: 'value',
+          jsonKey: 'value',
+          presence: AckSchemaFieldPresence.required,
+          nullable: false,
+          runtimeRef: node.runtimeRef,
+        ),
+      ],
+      constructorParameters: [
+        AckConstructorParameter(
+          name: 'value',
+          kind: AckConstructorParameterKind.positional,
+          fieldName: 'value',
+          typeRef: node.runtimeRef,
+        ),
+      ],
+    );
+  }
+
+  List<Method> _valueMembers({
+    required String className,
+    required List<AckFieldNode> fields,
+    required List<AckConstructorParameter> constructorParameters,
+  }) {
+    final byField = {for (final field in fields) field.dartName: field};
+    final arguments = [
+      for (final parameter in constructorParameters)
+        parameter.kind == AckConstructorParameterKind.named
+            ? '${parameter.name}: ${parameter.name} ?? this.${parameter.fieldName}'
+            : '${parameter.name} ?? this.${parameter.fieldName}',
+    ];
+    final comparisons = [
+      'other is $className',
+      'runtimeType == other.runtimeType',
+      for (final field in fields)
+        '${_ack('deepEquals')}(${field.dartName}, other.${field.dartName})',
+    ];
+    final hashes = [
+      'runtimeType',
+      for (final field in fields) '${_ack('deepHashCode')}(${field.dartName})',
+    ];
+    final toStringPreview = [
+      for (final field in fields) '${field.dartName}: \$${field.dartName}',
+    ].join(', ');
+    return [
+      Method(
+        (m) => m
+          ..name = 'copyWith'
+          ..returns = refer(className)
+          ..optionalParameters.addAll([
+            for (final parameter in constructorParameters)
+              Parameter(
+                (p) => p
+                  ..name = parameter.name
+                  ..named = true
+                  ..type = refer(
+                    _copyWithType(
+                      byField[parameter.fieldName] ??
+                          AckFieldNode(
+                            dartName: parameter.fieldName,
+                            jsonKey: parameter.fieldName,
+                            presence: AckSchemaFieldPresence.required,
+                            nullable: parameter.typeRef is AckNullableTypeRef,
+                            runtimeRef: parameter.typeRef,
+                          ),
+                    ),
+                  ),
+              ),
+          ])
+          ..lambda = true
+          ..body = Code('$className(${arguments.join(', ')})'),
+      ),
+      Method(
+        (m) => m
+          ..name = 'operator =='
+          ..annotations.add(refer('override'))
+          ..returns = refer('bool')
+          ..requiredParameters.add(
+            Parameter(
+              (p) => p
+                ..name = 'other'
+                ..type = refer('Object'),
+            ),
+          )
+          ..lambda = true
+          ..body = Code(
+            'identical(this, other) || (${comparisons.join(' && ')})',
+          ),
+      ),
+      Method(
+        (m) => m
+          ..name = 'hashCode'
+          ..annotations.add(refer('override'))
+          ..type = MethodType.getter
+          ..returns = refer('int')
+          ..lambda = true
+          ..body = Code('Object.hashAll([${hashes.join(', ')}])'),
+      ),
+      Method(
+        (m) => m
+          ..name = 'toString'
+          ..annotations.add(refer('override'))
+          ..returns = refer('String')
+          ..lambda = true
+          ..body = literalString('$className($toStringPreview)').code,
+      ),
+    ];
+  }
+
+  String _copyWithType(AckFieldNode field) {
+    final type = _fieldType(field);
+    return type.endsWith('?') ? type : '$type?';
+  }
 
   Method _objectToJson() => Method(
     (m) => m

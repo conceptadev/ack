@@ -58,6 +58,7 @@ final class SchemaModelGraphBuilder {
     'fromJson',
     'toJson',
     'safeToJson',
+    'copyWith',
     '_fromAckRuntime',
     '_toAckRuntime',
     'hashCode',
@@ -405,7 +406,10 @@ final class SchemaModelGraphBuilder {
         boundaryType: source.boundaryType,
         runtimeRef: source.runtimeRef,
         fields: source.fields,
-        additionalProperties: source.additionalProperties,
+        unknownPropertyPolicy: source.unknownPropertyPolicy,
+        captureFieldName: source.captureFieldName,
+        captureJsonKey: source.captureJsonKey,
+        constructorParameters: source.constructorParameters,
         description: source.description,
       );
     }
@@ -500,7 +504,15 @@ final class SchemaModelGraphBuilder {
       boundaryType: types.boundary,
       runtimeRef: types.runtime,
       fields: fields,
-      additionalProperties: additionalProperties,
+      constructorParameters: _schemaFirstConstructorParameters(
+        fields,
+        capture: additionalProperties,
+      ),
+      unknownPropertyPolicy: additionalProperties
+          ? AckUnknownPropertyPolicy.capture
+          : AckUnknownPropertyPolicy.reject,
+      captureFieldName: additionalProperties ? 'additionalProperties' : null,
+      captureJsonKey: additionalProperties ? 'additionalProperties' : null,
       description: _description(declaration.expression),
     );
   }
@@ -580,7 +592,10 @@ final class SchemaModelGraphBuilder {
           boundaryType: branch.boundaryType,
           runtimeRef: branch.runtimeRef,
           fields: branch.fields,
-          additionalProperties: branch.additionalProperties,
+          constructorParameters: branch.constructorParameters,
+          unknownPropertyPolicy: branch.unknownPropertyPolicy,
+          captureFieldName: branch.captureFieldName,
+          captureJsonKey: branch.captureJsonKey,
           unionId: declaration.id,
           discriminatorKey: discriminatorKey,
           discriminatorValue: value,
@@ -1177,10 +1192,36 @@ final class SchemaModelGraphBuilder {
     return field == null || field.isNull ? null : field.stringValue;
   }
 
-  AckFieldPresence _fieldPresence(_SchemaChain chain) {
-    if (chain.defaulted) return AckFieldPresence.defaulted;
-    if (chain.optional) return AckFieldPresence.optional;
-    return AckFieldPresence.required;
+  List<AckConstructorParameter> _schemaFirstConstructorParameters(
+    List<AckFieldNode> fields, {
+    required bool capture,
+  }) {
+    return [
+      for (final field in fields)
+        AckConstructorParameter(
+          name: field.dartName,
+          kind: AckConstructorParameterKind.named,
+          fieldName: field.dartName,
+          typeRef: field.runtimeRef,
+          defaultExpression: field.defaultExpression,
+        ),
+      if (capture)
+        const AckConstructorParameter(
+          name: 'additionalProperties',
+          kind: AckConstructorParameterKind.named,
+          fieldName: 'additionalProperties',
+          typeRef: AckMapTypeRef(
+            AckNullableTypeRef(AckScalarTypeRef('Object')),
+          ),
+          defaultExpression: 'const {}',
+        ),
+    ];
+  }
+
+  AckSchemaFieldPresence _fieldPresence(_SchemaChain chain) {
+    if (chain.defaulted) return AckSchemaFieldPresence.defaulted;
+    if (chain.optional) return AckSchemaFieldPresence.optional;
+    return AckSchemaFieldPresence.required;
   }
 
   String _className(
