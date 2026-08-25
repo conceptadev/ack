@@ -174,6 +174,10 @@ abstract final class ${metadata.facadeName} {
 
   String _objectSchema(AckObjectModelNode node) {
     final entries = [
+      if (node.discriminatorKey case final key?)
+        if (node.discriminatorValue case final value?)
+          if (!node.fields.any((field) => field.jsonKey == key))
+            '${_literal(key)}: ${_ack('Ack')}.literal(${_literal(value)})',
       for (final field in node.fields)
         '${_literal(field.jsonKey)}: ${field.schemaExpression}',
     ];

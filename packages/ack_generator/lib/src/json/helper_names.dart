@@ -38,6 +38,16 @@ String ackClassSchemaFacadeName(String className, {String? override}) =>
 String ackClassSchemaBackingName(String className) =>
     '_${className[0].toLowerCase()}${className.substring(1)}Schema';
 
+/// Model class generated for an `@AckType` declaration.
+String ackTypeModelClassName(String declarationName, {String? override}) {
+  if (override != null) return override;
+  final stem = declarationName.endsWith('Schema')
+      ? declarationName.substring(0, declarationName.length - 'Schema'.length)
+      : declarationName;
+  if (stem.isEmpty) return stem;
+  return '${stem[0].toUpperCase()}${stem.substring(1)}';
+}
+
 /// Private object schema used as a discriminated-union branch.
 String ackClassRawObjectName(String className) =>
     '_${className[0].toLowerCase()}${className.substring(1)}Object';

@@ -21,6 +21,14 @@ typedef _ModelOptions = ({
   bool additionalProperties,
 });
 
+typedef _FutureGeneratedType = ({
+  String schemaExpression,
+  AckTypeRef runtimeRef,
+  String? setListSchema,
+});
+
+typedef _ClassFirstDependency = ({ClassElement target, FieldElement field});
+
 /// Builds normalized Ack model nodes from hand-written `@AckModel` classes.
 ///
 /// Analyzer elements and AST nodes are consumed here; emitters receive only
@@ -114,6 +122,10 @@ final class ClassModelGraphBuilder {
     annotations.AckModel,
     inPackage: 'ack_annotations',
   );
+  static const _ackTypeChecker = TypeChecker.typeNamed(
+    annotations.AckType,
+    inPackage: 'ack_annotations',
+  );
   static const _ackFieldChecker = TypeChecker.typeNamed(
     annotations.AckField,
     inPackage: 'ack_annotations',
@@ -194,6 +206,7 @@ final class ClassModelGraphBuilder {
   final Set<ClassElement> _explicit = {};
   final Set<ClassElement> _consumed = {};
   final Map<String, ClassElement> _schemaNameOwners = {};
+  final Map<ClassElement, List<_ClassFirstDependency>> _dependencies = {};
   ResolvedLibraryResult? _inputResolved;
   final Map<Uri, ResolvedLibraryResult> _resolvedByUri = {};
 
@@ -237,6 +250,7 @@ final class ClassModelGraphBuilder {
       }
       await _buildObject(element, options: options);
     }
+    _rejectRecursiveClassFirstGraphs();
     _validateGeneratedNames();
     return _graph;
   }
@@ -498,6 +512,10 @@ final class ClassModelGraphBuilder {
 
       _rejectUnsupportedStaticType(field, field.type);
       _validateMapKey(field, field.type);
+      final futureType = _containsInvalidType(field.type)
+          ? await _futureGeneratedType(field)
+          : null;
+      _recordClassFirstDependencies(element, field.type, field);
       final jsonKey = _jsonKey(field) ?? _rename(name, options.caseStyle);
       final prior = ownerByJsonKey[jsonKey];
       if (prior != null) {
@@ -516,11 +534,13 @@ final class ClassModelGraphBuilder {
       }
       ownerByJsonKey[jsonKey] = field;
 
-      final nullable = _isNullable(field.type);
+      final nullable =
+          futureType?.runtimeRef is AckNullableTypeRef ||
+          _isNullable(field.type);
       final presence = _fieldPresence(parameter);
       var schema = isDiscriminator && discriminatorValue != null
           ? '${_ack('Ack')}.literal(${_literal(discriminatorValue)})'
-          : await _fieldSchema(field);
+          : await _fieldSchema(field, futureType: futureType);
       schema = _applyPresence(
         schema,
         presence: presence,
@@ -533,7 +553,7 @@ final class ClassModelGraphBuilder {
           jsonKey: jsonKey,
           presence: presence,
           nullable: nullable,
-          runtimeRef: _typeRef(field.type, field),
+          runtimeRef: futureType?.runtimeRef ?? _typeRef(field.type, field),
           schemaExpression: schema,
           defaultExpression: parameter?.defaultValueCode,
         ),
@@ -555,7 +575,59 @@ final class ClassModelGraphBuilder {
     return node;
   }
 
-  Future<String> _fieldSchema(FieldElement field) async {
+  void _recordClassFirstDependencies(
+    ClassElement owner,
+    DartType type,
+    FieldElement field,
+  ) {
+    if (type is! InterfaceType) return;
+    final target = type.element;
+    if (target is ClassElement &&
+        target.library == owner.library &&
+        _classFirstFacadeName(target) != null) {
+      _dependencies.putIfAbsent(owner, () => []).add((
+        target: target,
+        field: field,
+      ));
+    }
+    for (final argument in type.typeArguments) {
+      _recordClassFirstDependencies(owner, argument, field);
+    }
+  }
+
+  void _rejectRecursiveClassFirstGraphs() {
+    final visiting = <ClassElement>{};
+    final visited = <ClassElement>{};
+
+    void visit(ClassElement owner) {
+      if (visited.contains(owner)) return;
+      visiting.add(owner);
+      for (final dependency in _dependencies[owner] ?? const []) {
+        if (visiting.contains(dependency.target)) {
+          final field = dependency.field;
+          throw InvalidGenerationSource(
+            '${field.enclosingElement.name}.${field.name} creates a '
+            'recursive class-first schema graph. Automatic class-first '
+            'Ack.lazy semantics are not yet defined; use a schema-first '
+            'named Ack.lazy contract for recursive models.',
+            element: field,
+          );
+        }
+        visit(dependency.target);
+      }
+      visiting.remove(owner);
+      visited.add(owner);
+    }
+
+    for (final owner in _dependencies.keys) {
+      visit(owner);
+    }
+  }
+
+  Future<String> _fieldSchema(
+    FieldElement field, {
+    _FutureGeneratedType? futureType,
+  }) async {
     final override = _ackFieldChecker.firstAnnotationOfExact(field);
     if (override != null) {
       final base = await _escapeHatchExpression(
@@ -564,19 +636,217 @@ final class ClassModelGraphBuilder {
       );
       return _applySugar(base, field);
     }
+    if (futureType != null) {
+      final setListSchema = futureType.setListSchema;
+      if (setListSchema != null) {
+        return _setCodec(
+          _applySugar(setListSchema, field),
+          futureType.runtimeRef,
+        );
+      }
+      return _applySugar(futureType.schemaExpression, field);
+    }
     final type = field.type;
     if (type is InterfaceType &&
         type.isDartCoreSet &&
         type.typeArguments.length == 1) {
       final item = await _schemaForType(type.typeArguments.single, field);
       final list = _applySugar('${_ack('Ack')}.list($item)', field);
-      final rendered = _renderType(_typeRef(type, field));
-      return '$list.codec<$rendered>('
-          'decode: (list) => list.toSet(), '
-          'encode: (set) => set.toList(growable: false),'
-          ')';
+      return _setCodec(list, _typeRef(type, field));
     }
     return _applySugar(await _schemaForType(type, field), field);
+  }
+
+  String _setCodec(String listSchema, AckTypeRef runtimeRef) {
+    final rendered = _renderType(_schemaRuntimeRef(runtimeRef));
+    return '$listSchema.codec<$rendered>('
+        'decode: (list) => list.toSet(), '
+        'encode: (set) => set.toList(growable: false),'
+        ')';
+  }
+
+  AckTypeRef _schemaRuntimeRef(AckTypeRef type) => switch (type) {
+    AckNullableTypeRef(:final inner) => AckNullableTypeRef(
+      _schemaRuntimeRef(inner),
+    ),
+    AckModelTypeRef(:final runtimeRef) => _schemaRuntimeRef(runtimeRef),
+    AckListTypeRef(:final elementType) => AckListTypeRef(
+      _schemaRuntimeRef(elementType),
+    ),
+    AckSetTypeRef(:final elementType) => AckSetTypeRef(
+      _schemaRuntimeRef(elementType),
+    ),
+    AckMapTypeRef(:final valueType) => AckMapTypeRef(
+      _schemaRuntimeRef(valueType),
+    ),
+    _ => type,
+  };
+
+  bool _containsInvalidType(DartType type) =>
+      type is InvalidType ||
+      (type is InterfaceType && type.typeArguments.any(_containsInvalidType));
+
+  Future<_FutureGeneratedType?> _futureGeneratedType(FieldElement field) async {
+    final resolved = await _resolvedLibraryFor(field.library);
+    AstNode? node = resolved.getFragmentDeclaration(field.firstFragment)?.node;
+    while (node != null && node is! FieldDeclaration) {
+      node = node.parent;
+    }
+    final annotation = node is FieldDeclaration ? node.fields.type : null;
+    if (annotation == null) return null;
+    return _futureGeneratedTypeForAnnotation(annotation, field);
+  }
+
+  _FutureGeneratedType? _futureGeneratedTypeForAnnotation(
+    TypeAnnotation annotation,
+    FieldElement field,
+  ) {
+    if (annotation is! NamedType) return null;
+    final name = annotation.name.lexeme;
+    final prefix = annotation.importPrefix?.name.lexeme;
+    final arguments = annotation.typeArguments?.arguments ?? const [];
+    _FutureGeneratedType? result;
+    if (prefix == null && name == 'List' && arguments.length == 1) {
+      final item = _futureGeneratedTypeForAnnotation(arguments.single, field);
+      if (item == null) return null;
+      result = (
+        schemaExpression: '${_ack('Ack')}.list(${item.schemaExpression})',
+        runtimeRef: AckListTypeRef(item.runtimeRef),
+        setListSchema: null,
+      );
+    } else if (prefix == null && name == 'Set' && arguments.length == 1) {
+      final item = _futureGeneratedTypeForAnnotation(arguments.single, field);
+      if (item == null) return null;
+      final runtimeRef = AckSetTypeRef(item.runtimeRef);
+      final listSchema = '${_ack('Ack')}.list(${item.schemaExpression})';
+      result = (
+        schemaExpression: _setCodec(listSchema, runtimeRef),
+        runtimeRef: runtimeRef,
+        setListSchema: listSchema,
+      );
+    } else {
+      final target = _futureAckTypeTarget(
+        className: name,
+        prefix: prefix,
+        field: field,
+      );
+      if (target == null) return null;
+      final visibleName = prefix == null ? name : '$prefix.$name';
+      result = (
+        schemaExpression: '$visibleName.\$ack.schema',
+        runtimeRef: AckModelTypeRef(
+          schemaId: AckSchemaId(
+            libraryUri: target.library!.uri,
+            declarationName: target.name!,
+          ),
+          className: name,
+          runtimeRef: _jsonMapRef,
+          importPrefix: prefix,
+        ),
+        setListSchema: null,
+      );
+    }
+    if (annotation.question == null) return result;
+    return (
+      schemaExpression: result.schemaExpression,
+      runtimeRef: AckNullableTypeRef(result.runtimeRef),
+      setListSchema: result.setListSchema,
+    );
+  }
+
+  Element? _futureAckTypeTarget({
+    required String className,
+    required String? prefix,
+    required FieldElement field,
+  }) {
+    final matches = <Element>{};
+    String? hiddenDeclaration;
+
+    void consider(Element element, LibraryImport? import) {
+      final declaration = _ackTypeDeclaration(element);
+      if (declaration == null ||
+          _generatedAckTypeClassName(declaration) != className) {
+        return;
+      }
+      if (import != null && !_importAllowsName(import, className)) {
+        hiddenDeclaration = declaration.name;
+        return;
+      }
+      matches.add(declaration.baseElement);
+    }
+
+    if (prefix == null) {
+      for (final element in library.allElements) {
+        consider(element, null);
+      }
+    }
+    for (final import in library.element.firstFragment.libraryImports) {
+      if (import.isSynthetic || (import.prefix?.isDeferred ?? false)) continue;
+      final importPrefix = import.prefix?.element.name;
+      if (importPrefix != prefix) continue;
+      final importedLibrary = import.importedLibrary;
+      final elements = <Element>{
+        if (importedLibrary != null)
+          ...LibraryReader(importedLibrary).allElements,
+        ...import.namespace.definedNames2.values,
+      };
+      for (final element in elements) {
+        consider(element, import);
+      }
+    }
+    if (matches.isEmpty) {
+      if (hiddenDeclaration != null) {
+        throw InvalidGenerationSource(
+          'Generated schema-first type "$className" is hidden by an import '
+          'combinator. Expose $className from the import.',
+          element: field,
+        );
+      }
+      return null;
+    }
+    if (matches.length > 1) {
+      throw InvalidGenerationSource(
+        '${field.enclosingElement.name}.${field.name} resolves future generated '
+        'type "$className" ambiguously.',
+        element: field,
+      );
+    }
+    return matches.single;
+  }
+
+  Element? _ackTypeDeclaration(Element element) {
+    final declaration = switch (element) {
+      GetterElement(isOriginVariable: true) => element.variable.baseElement,
+      TopLevelVariableElement() => element.baseElement,
+      _ => null,
+    };
+    return declaration != null &&
+            _ackTypeChecker.hasAnnotationOfExact(declaration)
+        ? declaration
+        : null;
+  }
+
+  String _generatedAckTypeClassName(Element declaration) {
+    final annotation = _ackTypeChecker.firstAnnotationOfExact(declaration)!;
+    final custom = ConstantReader(annotation).read('name');
+    return ackTypeModelClassName(
+      declaration.name!,
+      override: custom.isNull ? null : custom.stringValue,
+    );
+  }
+
+  bool _importAllowsName(LibraryImport import, String name) {
+    for (final combinator in import.combinators) {
+      if (combinator is ShowElementCombinator &&
+          !combinator.shownNames.contains(name)) {
+        return false;
+      }
+      if (combinator is HideElementCombinator &&
+          combinator.hiddenNames.contains(name)) {
+        return false;
+      }
+    }
+    return true;
   }
 
   Future<String> _escapeHatchExpression(
@@ -658,16 +928,48 @@ final class ClassModelGraphBuilder {
       );
     }
     final target = interfaceType.element;
-    if (_ackModelChecker.hasAnnotationOfExact(target)) {
-      final options = _options(target as ClassElement)!;
-      final facadeName = _facadeName(target, options);
-      final prefix = _visiblePrefix(target);
-      return '${prefix == null ? '' : '$prefix.'}$facadeName.schema';
+    if (target is ClassElement) {
+      final facadeName = _classFirstFacadeName(target);
+      if (facadeName != null) {
+        final prefix = _visiblePrefix(target);
+        _validateClassFirstFacadeImport(
+          target,
+          facadeName,
+          prefix: prefix,
+          field: field,
+        );
+        return '${prefix == null ? '' : '$prefix.'}$facadeName.schema';
+      }
     }
     if (_generatedJsonChecker.hasAnnotationOfExact(target)) {
       return '${_visibleTypeName(interfaceType)}.\$ack.schema';
     }
     _unsupportedFieldType(field, interfaceType);
+  }
+
+  void _validateClassFirstFacadeImport(
+    ClassElement target,
+    String facadeName, {
+    required String? prefix,
+    required FieldElement field,
+  }) {
+    if (target.library == library.element) return;
+    final modelName = target.name!;
+    for (final import in library.element.firstFragment.libraryImports) {
+      if (import.isSynthetic || (import.prefix?.isDeferred ?? false)) continue;
+      final importPrefix = import.prefix?.element.name;
+      if (importPrefix != prefix) continue;
+      final candidate = prefix == null
+          ? import.namespace.get2(modelName)
+          : import.namespace.getPrefixed2(prefix, modelName);
+      if (candidate?.baseElement != target.baseElement) continue;
+      if (_importAllowsName(import, facadeName)) return;
+      throw InvalidGenerationSource(
+        'Generated class-first facade "$facadeName" is hidden by the import '
+        'for $modelName. Change the import to show $modelName, $facadeName.',
+        element: field,
+      );
+    }
   }
 
   String _applySugar(String schema, FieldElement field) {
@@ -1011,6 +1313,21 @@ final class ClassModelGraphBuilder {
 
   String _facadeName(ClassElement element, _ModelOptions options) =>
       ackClassSchemaFacadeName(element.name!, override: options.schemaName);
+
+  String? _classFirstFacadeName(ClassElement element) {
+    final direct = _options(element);
+    if (direct != null) return _facadeName(element, direct);
+    final isImplicitUnionBranch = element.allSupertypes.any((supertype) {
+      final base = supertype.element;
+      return base is ClassElement &&
+          base.library == element.library &&
+          base.isSealed &&
+          _ackModelChecker.hasAnnotationOfExact(base);
+    });
+    return isImplicitUnionBranch
+        ? ackClassSchemaFacadeName(element.name!)
+        : null;
+  }
 
   String? _jsonKey(FieldElement field) {
     final annotation = _jsonKeyChecker.firstAnnotationOfExact(field);

@@ -120,6 +120,8 @@ final class Profile {
   final Set<String> tags;
   @AckField(schema: colorSchema)
   final Color color;
+
+  static final fromJson = ProfileSchema.fromJson;
 }
 
 @AckModel(caseStyle: AckCaseStyle.snake)
@@ -128,6 +130,8 @@ final class Account {
   final String firstName;
   @JsonKey(name: 'avatar')
   final Uri imageUrl;
+
+  static final fromJson = AccountSchema.fromJson;
 }
 
 @AckModel(additionalProperties: true)
@@ -190,12 +194,12 @@ import 'package:test/test.dart';
 
 void main() {
   test('presence, defaults, collections, and escape hatches round-trip', () {
-    final profile = profileSchema.parse({
+    final profile = Profile.fromJson({
       'name': 'Ada',
       'nickname': null,
       'tags': ['schema', 'dart'],
       'color': '#fff',
-    })!;
+    });
     expect(profile.website, isNull);
     expect(profile.nickname, isNull);
     expect(profile.role, 'member');
@@ -208,15 +212,22 @@ void main() {
       'tags': ['schema', 'dart'],
       'color': '#fff',
     });
-    expect(() => profileSchema.parse({'name': 'Ada'}), throwsA(anything));
-    expect(profileSchema.toJsonSchema()['x-transformed'], isTrue);
+    expect(() => ProfileSchema.parse({'name': 'Ada'}), throwsA(anything));
+    expect(ProfileSchema.safeParse({'name': 'Ada'}).isFail, isTrue);
+    expect(ProfileSchema.toJsonSchema()['x-transformed'], isTrue);
+    expect(
+      ProfileSchema.toSchemaModel().toJsonSchema(),
+      ProfileSchema.toJsonSchema(),
+    );
+    expect(ProfileSchema.encode(profile), profile.toJson());
+    expect(ProfileSchema.safeEncode(profile).isOk, isTrue);
   });
 
   test('case style and JsonKey use one wire-key mapping', () {
-    final account = accountSchema.parse({
+    final account = Account.fromJson({
       'first_name': 'Ada',
       'avatar': 'https://example.com/avatar.png',
-    })!;
+    });
     expect(account.firstName, 'Ada');
     expect(account.imageUrl.host, 'example.com');
     expect(account.toJson(), {
@@ -226,7 +237,7 @@ void main() {
   });
 
   test('additional properties decode and encode extras first', () {
-    final config = configSchema.parse({'name': 'declared', 'theme': 'dark'})!;
+    final config = ConfigSchema.parse({'name': 'declared', 'theme': 'dark'});
     expect(config.additionalProperties, {'theme': 'dark'});
     final spoofed = Config(
       name: 'declared',
@@ -236,16 +247,16 @@ void main() {
   });
 
   test('sealed unions use super parameters and discriminator rules', () {
-    final cat = petSchema.parse({'type': 'cat', 'id': 'c1', 'lives': 9})!;
+    final cat = PetSchema.parse({'type': 'cat', 'id': 'c1', 'lives': 9});
     expect(cat, isA<Cat>());
     expect(cat.toJson(), {'type': 'cat', 'id': 'c1', 'lives': 9});
-    final dog = petSchema.parse({'type': 'Dog', 'id': 'd1', 'breed': 'lab'})!;
+    final dog = PetSchema.parse({'type': 'Dog', 'id': 'd1', 'breed': 'lab'});
     expect(dog, isA<Dog>());
     expect(dog.toJson(), {'type': 'Dog', 'id': 'd1', 'breed': 'lab'});
   });
 
   test('prefixed same-named imported types preserve identity', () {
-    final pair = importedPairSchema.parse({'left': 'a', 'right': 2})!;
+    final pair = ImportedPairSchema.parse({'left': 'a', 'right': 2});
     expect(pair.left, isA<alpha.Item>());
     expect(pair.right, isA<beta.Item>());
     expect(pair.toJson(), {'left': 'a', 'right': 2});
@@ -281,6 +292,18 @@ void main() {
         expect(
           generated['lib/models.ack.dart'],
           contains('extension ProfileAck'),
+        );
+        expect(
+          generated['lib/models.ack.dart'],
+          contains('abstract final class ProfileSchema'),
+        );
+        expect(
+          generated['lib/models.ack.dart'],
+          contains('final _profileSchema'),
+        );
+        expect(
+          generated['lib/models.ack.dart'],
+          isNot(contains('final profileSchema =')),
         );
 
         _expectSuccess(

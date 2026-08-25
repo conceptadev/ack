@@ -153,6 +153,10 @@ final class SchemaModelGraphBuilder {
     AckType,
     inPackage: 'ack_annotations',
   );
+  static const _ackModelChecker = TypeChecker.typeNamed(
+    AckModel,
+    inPackage: 'ack_annotations',
+  );
   static const _ackSchemaChecker = TypeChecker.typeNamed(
     AckSchema,
     inPackage: 'ack',
@@ -687,6 +691,8 @@ final class SchemaModelGraphBuilder {
 
     final reference = chain.reference;
     if (reference != null) {
+      final classFirst = _classFirstModelReference(reference, context);
+      if (classFirst != null) return classFirst;
       final model = await _modelReference(
         reference,
         path: path,
@@ -847,6 +853,104 @@ final class SchemaModelGraphBuilder {
       runtimeRef: _schemaTypes(expression, path, context).runtime,
       importPrefix: _expressionPrefix(expression),
     );
+  }
+
+  AckExternalTypeRef? _classFirstModelReference(
+    Expression expression,
+    Element context,
+  ) {
+    final match = RegExp(
+      r'^(?:([A-Za-z$][A-Za-z0-9_$]*)\.)?'
+      r'([A-Z][A-Za-z0-9_$]*)\.schema$',
+    ).firstMatch(expression.toSource());
+    if (match == null) return null;
+    final prefix = match.group(1);
+    final facadeName = match.group(2)!;
+    final matches = <ClassElement>{};
+    String? hiddenModelName;
+
+    void consider(ClassElement element, LibraryImport? import) {
+      final generatedFacade = _classFirstFacadeName(element);
+      if (generatedFacade != facadeName) return;
+      if (import != null &&
+          (!_importAllowsName(import, element.name!) ||
+              !_importAllowsName(import, facadeName))) {
+        hiddenModelName = element.name;
+        return;
+      }
+      matches.add(element);
+    }
+
+    if (prefix == null) {
+      for (final element in library.element.classes) {
+        consider(element, null);
+      }
+    }
+    for (final import in library.element.firstFragment.libraryImports) {
+      if (import.isSynthetic || (import.prefix?.isDeferred ?? false)) continue;
+      final importPrefix = import.prefix?.element.name;
+      if (importPrefix != prefix) continue;
+      final elements = <Element>{
+        ...import.namespace.definedNames2.values,
+        ...?import.importedLibrary?.classes,
+      };
+      for (final element in elements.whereType<ClassElement>()) {
+        consider(element, import);
+      }
+    }
+    if (matches.isEmpty) {
+      if (hiddenModelName != null) {
+        throw InvalidGenerationSource(
+          'Generated facade "$facadeName" is hidden by an import combinator. '
+          'Expose both $hiddenModelName and $facadeName.',
+          element: context,
+        );
+      }
+      return null;
+    }
+    if (matches.length > 1) {
+      throw InvalidGenerationSource(
+        'Generated facade reference ${expression.toSource()} is ambiguous.',
+        element: context,
+      );
+    }
+    final target = matches.single;
+    return AckExternalTypeRef(name: target.name!, importPrefix: prefix);
+  }
+
+  String? _classFirstFacadeName(ClassElement element) {
+    final annotation = _ackModelChecker.firstAnnotationOfExact(element);
+    if (annotation != null) {
+      final value = ConstantReader(annotation).read('schemaName');
+      return ackClassSchemaFacadeName(
+        element.name!,
+        override: value.isNull ? null : value.stringValue,
+      );
+    }
+    final isImplicitUnionBranch = element.allSupertypes.any((supertype) {
+      final base = supertype.element;
+      return base is ClassElement &&
+          base.library == element.library &&
+          base.isSealed &&
+          _ackModelChecker.hasAnnotationOfExact(base);
+    });
+    return isImplicitUnionBranch
+        ? ackClassSchemaFacadeName(element.name!)
+        : null;
+  }
+
+  bool _importAllowsName(LibraryImport import, String name) {
+    for (final combinator in import.combinators) {
+      if (combinator is ShowElementCombinator &&
+          !combinator.shownNames.contains(name)) {
+        return false;
+      }
+      if (combinator is HideElementCombinator &&
+          combinator.hiddenNames.contains(name)) {
+        return false;
+      }
+    }
+    return true;
   }
 
   _SchemaTypes _schemaTypes(
@@ -1092,7 +1196,7 @@ final class SchemaModelGraphBuilder {
           element: element,
         );
       }
-      return customName;
+      return ackTypeModelClassName(declarationName, override: customName);
     }
     var stem = declarationName;
     if (stem.endsWith('Schema')) {
@@ -1104,7 +1208,7 @@ final class SchemaModelGraphBuilder {
         element: element,
       );
     }
-    return '${stem[0].toUpperCase()}${stem.substring(1)}';
+    return ackTypeModelClassName(declarationName);
   }
 
   void _validateClassNames() {

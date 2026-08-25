@@ -8,16 +8,22 @@ Future<void> _expectFailure(
   String body,
   List<String> messages, {
   String head = _head,
+  Map<String, String> extraSources = const {},
+  Map<String, Object> allowedOutputs = const {},
 }) async {
   final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
   await readerWriter.testing.loadIsolateSources();
   final seen = <String>{};
   await testBuilder(
     ackGenerator(BuilderOptions.empty),
-    {'test_pkg|lib/model.dart': '$head\n$body'},
+    {
+      'test_pkg|lib/model.dart': '$head\n$body',
+      for (final entry in extraSources.entries)
+        'test_pkg|lib/${entry.key}': entry.value,
+    },
     generateFor: const {'test_pkg|lib/model.dart'},
     readerWriter: readerWriter,
-    outputs: const {},
+    outputs: allowedOutputs,
     onLog: (LogRecord log) {
       if (log.level.name != 'SEVERE') return;
       for (final message in messages) {
@@ -510,6 +516,85 @@ final class cat extends Pet {
       ['_catSchema', 'conflicts'],
     );
   });
+
+  test('rejects a directly recursive class-first model', () async {
+    await _expectFailure(
+      '''
+@AckModel()
+final class Node {
+  const Node({this.child});
+
+  final Node? child;
+}
+''',
+      ['Node.child', 'recursive class-first', 'Ack.lazy', 'schema-first'],
+    );
+  });
+
+  test('rejects mutually recursive class-first models', () async {
+    await _expectFailure(
+      '''
+@AckModel()
+final class Parent {
+  const Parent({required this.child});
+
+  final Child child;
+}
+
+@AckModel()
+final class Child {
+  const Child({required this.parent});
+
+  final Parent parent;
+}
+''',
+      ['Child.parent', 'recursive class-first', 'Ack.lazy', 'schema-first'],
+    );
+  });
+
+  test(
+    'rejects an imported class-first model whose facade is hidden',
+    () async {
+      await _expectFailure(
+        '''
+@AckModel()
+final class Order {
+  const Order({required this.address});
+
+  final Address address;
+}
+''',
+        ['AddressSchema', 'hidden', 'show Address, AddressSchema'],
+        head: '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+import 'address.dart' show Address;
+
+part 'model.ack.dart';
+part 'model.g.dart';
+''',
+        extraSources: {
+          'address.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+part 'address.ack.dart';
+part 'address.g.dart';
+
+@AckModel()
+final class Address {
+  const Address({required this.city});
+
+  final String city;
+}
+''',
+        },
+        allowedOutputs: {
+          'test_pkg|lib/address.ack.dart': decodedMatches(anything),
+        },
+      );
+    },
+  );
 
   test('rejects case-style key collisions', () async {
     await _expectFailure(
