@@ -63,7 +63,9 @@ mixin _$CatAck {
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    if (other is! Cat || runtimeType != other.runtimeType) return false;
+    if (other is! Cat || runtimeType != other.runtimeType) {
+      return false;
+    }
     final self = this as Cat;
     return deepEquals(self.id, other.id) && deepEquals(self.lives, other.lives);
   }
@@ -152,7 +154,9 @@ mixin _$DogAck {
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    if (other is! Dog || runtimeType != other.runtimeType) return false;
+    if (other is! Dog || runtimeType != other.runtimeType) {
+      return false;
+    }
     final self = this as Dog;
     return deepEquals(self.id, other.id) && deepEquals(self.breed, other.breed);
   }
@@ -297,7 +301,9 @@ mixin _$AccountAck {
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    if (other is! Account || runtimeType != other.runtimeType) return false;
+    if (other is! Account || runtimeType != other.runtimeType) {
+      return false;
+    }
     final self = this as Account;
     return deepEquals(self.displayName, other.displayName) &&
         deepEquals(self.website, other.website) &&
@@ -332,5 +338,5 @@ String _ackAccountFromRuntimeDisplayName(Object? value) => value as String;
 Object? _ackAccountToRuntimeDisplayName(String value) => value;
 Uri? _ackAccountFromRuntimeWebsite(Object? value) => value as Uri?;
 Object? _ackAccountToRuntimeWebsite(Uri? value) => value;
-String? _ackAccountFromRuntimeRole(Object? value) => value as String;
+String? _ackAccountFromRuntimeRole(Object? value) => value as String?;
 Object? _ackAccountToRuntimeRole(String value) => value;

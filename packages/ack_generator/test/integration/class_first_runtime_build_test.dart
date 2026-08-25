@@ -171,6 +171,14 @@ final class Loose with _$LooseAck {
 }
 
 @AckModel()
+final class Normalized with _$NormalizedAck {
+  const Normalized(String? value) : value = value ?? '';
+
+  @AckField(presence: AckFieldPresence.optional)
+  final String value;
+}
+
+@AckModel()
 final class ImportedPair with _$ImportedPairAck {
   const ImportedPair({required this.left, required this.right});
   @AckField(schema: alphaItemSchema)
@@ -294,6 +302,11 @@ void main() {
       }),
       throwsA(anything),
     );
+  });
+
+  test('optional wire fields feed nullable normalization parameters', () {
+    expect(NormalizedSchema.parse({}).value, '');
+    expect(NormalizedSchema.parse({'value': 'set'}).value, 'set');
   });
 
   test('copyWith treats null as retain and equality is deep', () {

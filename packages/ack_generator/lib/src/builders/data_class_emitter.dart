@@ -100,7 +100,9 @@ $className copyWith($parameterList) => $className(${arguments.join(', ')});''';
 @override
 bool operator ==(Object other) {
   if (identical(this, other)) return true;
-  if (other is! $className || runtimeType != other.runtimeType) return false;
+  if (other is! $className || runtimeType != other.runtimeType) {
+    return false;
+  }
   final self = this as $className;
   return $equality;
 }

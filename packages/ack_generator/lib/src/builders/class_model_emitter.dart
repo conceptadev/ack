@@ -288,11 +288,20 @@ Map<String, Object?> $function(${node.className} model) {
 
   String _fieldBridges(AckObjectModelNode node) {
     final output = StringBuffer();
+    final parametersByField = {
+      for (final parameter in node.constructorParameters)
+        parameter.fieldName: parameter,
+    };
     for (final field in node.fields) {
       final type = _type(field.runtimeRef);
-      final fromType = field.defaultExpression == null || field.nullable
-          ? type
-          : '$type?';
+      final parameterType =
+          parametersByField[field.dartName]?.typeRef ?? field.runtimeRef;
+      final fromRuntimeType =
+          field.defaultExpression != null &&
+              parameterType is! AckNullableTypeRef
+          ? AckNullableTypeRef(parameterType)
+          : parameterType;
+      final fromType = _type(fromRuntimeType);
       final fromName = ackClassFromRuntimeBridgeName(
         node.className,
         field.dartName,
@@ -304,7 +313,7 @@ Map<String, Object?> $function(${node.className} model) {
       output
         ..writeln(
           '$fromType $fromName(Object? value) => '
-          '${_fromRuntime(field.runtimeRef, 'value')};',
+          '${_fromRuntime(fromRuntimeType, 'value')};',
         )
         ..writeln(
           'Object? $toName($type value) => '

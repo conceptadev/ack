@@ -525,7 +525,7 @@ final class ClassModelGraphBuilder {
           fieldName: fieldName,
           typeRef:
               futureTypes[fieldName]?.runtimeRef ??
-              _typeRef(field!.type, field),
+              _typeRef(parameter.type, field!),
           isSuper: parameter is SuperFormalParameterElement,
           defaultExpression: parameter.defaultValueCode,
         ),

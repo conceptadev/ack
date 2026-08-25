@@ -26,6 +26,11 @@
 
 * Permit optional wire fields backed by required nullable normalization
   parameters, and preserve custom capture fields under `caseStyle` renaming.
+* Decode constructor-normalized fields through the constructor parameter type,
+  so an omitted optional wire value can reach a nullable parameter even when
+  the stored field is non-nullable.
+* Emit braced generated equality guards for compatibility with strict lint
+  configurations.
 
 ### Added
 
