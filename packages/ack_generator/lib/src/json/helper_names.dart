@@ -30,6 +30,14 @@ String ackClassToRuntimeName(String className) => '_\$${className}ToRuntime';
 /// Extension that exposes class-first JSON encoding methods.
 String ackClassExtensionName(String className) => '${className}Ack';
 
+/// Public static facade generated for a class-first schema.
+String ackClassSchemaFacadeName(String className, {String? override}) =>
+    override ?? '${className}Schema';
+
+/// Private codec backing a class-first schema facade.
+String ackClassSchemaBackingName(String className) =>
+    '_${className[0].toLowerCase()}${className.substring(1)}Schema';
+
 /// Private object schema used as a discriminated-union branch.
 String ackClassRawObjectName(String className) =>
     '_${className[0].toLowerCase()}${className.substring(1)}Object';

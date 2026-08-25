@@ -193,7 +193,7 @@ final class ClassModelGraphBuilder {
   final AckModelGraph _graph = AckModelGraph();
   final Set<ClassElement> _explicit = {};
   final Set<ClassElement> _consumed = {};
-  final Map<String, ClassElement> _schemaOwners = {};
+  final Map<String, ClassElement> _schemaNameOwners = {};
   ResolvedLibraryResult? _inputResolved;
   final Map<Uri, ResolvedLibraryResult> _resolvedByUri = {};
 
@@ -271,6 +271,12 @@ final class ClassModelGraphBuilder {
     }
 
     for (final node in _graph.nodes) {
+      final metadata = _graph.classMetadataFor(node.id);
+      if (metadata == null) {
+        throw StateError('Missing class-first metadata for ${node.id}.');
+      }
+      claim(metadata.facadeName, node);
+      claim(metadata.backingName, node);
       claim(ackClassExtensionName(node.className), node);
       if (node is! AckObjectModelNode) continue;
       claim(ackClassFromRuntimeName(node.className), node);
@@ -654,9 +660,9 @@ final class ClassModelGraphBuilder {
     final target = interfaceType.element;
     if (_ackModelChecker.hasAnnotationOfExact(target)) {
       final options = _options(target as ClassElement)!;
-      final schemaName = _schemaName(target, options);
+      final facadeName = _facadeName(target, options);
       final prefix = _visiblePrefix(target);
-      return '${prefix == null ? '' : '$prefix.'}$schemaName';
+      return '${prefix == null ? '' : '$prefix.'}$facadeName.schema';
     }
     if (_generatedJsonChecker.hasAnnotationOfExact(target)) {
       return '${_visibleTypeName(interfaceType)}.\$ack.schema';
@@ -950,38 +956,32 @@ final class ClassModelGraphBuilder {
     _ModelOptions options,
     AckSchemaId id,
   ) {
-    final schemaName = _schemaName(element, options);
-    if (!RegExp(r'^[A-Za-z$][A-Za-z0-9_$]*$').hasMatch(schemaName) ||
-        schemaName.startsWith('_') ||
-        _dartKeywords.contains(schemaName)) {
+    final facadeName = _facadeName(element, options);
+    final backingName = ackClassSchemaBackingName(element.name!);
+    if (!RegExp(r'^[A-Z][A-Za-z0-9_$]*$').hasMatch(facadeName) ||
+        _dartKeywords.contains(facadeName)) {
       throw InvalidGenerationSource(
-        'Invalid @AckModel schemaName "$schemaName" on ${element.name}.',
+        'Invalid @AckModel schema facade name "$facadeName" on '
+        '${element.name}; schemaName must be a public UpperCamel identifier.',
         element: element,
       );
     }
-    final prior = _schemaOwners[schemaName];
-    if (prior != null && prior != element) {
-      throw InvalidGenerationSource(
-        'Generated schema "$schemaName" for ${element.name} conflicts with '
-        '${prior.name}.',
-        element: element,
-      );
+    for (final name in [facadeName, backingName]) {
+      final prior = _schemaNameOwners[name];
+      if (prior != null && prior != element) {
+        throw InvalidGenerationSource(
+          'Generated schema declaration "$name" for ${element.name} '
+          'conflicts with ${prior.name}.',
+          element: element,
+        );
+      }
+      _schemaNameOwners[name] = element;
     }
-    final visible = library.element.firstFragment.scope
-        .lookup(schemaName)
-        .getter;
-    if (visible != null) {
-      throw InvalidGenerationSource(
-        'Generated schema "$schemaName" for ${element.name} conflicts with '
-        'a local or visible declaration.',
-        element: element,
-      );
-    }
-    _schemaOwners[schemaName] = element;
     _graph.setClassMetadata(
       id,
       AckClassModelMetadata(
-        schemaName: schemaName,
+        facadeName: facadeName,
+        backingName: backingName,
         caseStyle: options.caseStyle,
         hasExplicitAnnotation: _explicit.contains(element),
       ),
@@ -1009,12 +1009,8 @@ final class ClassModelGraphBuilder {
     return value.isNull ? null : value.stringValue;
   }
 
-  String _schemaName(ClassElement element, _ModelOptions options) {
-    final override = options.schemaName;
-    if (override != null) return override;
-    final className = element.name!;
-    return '${className[0].toLowerCase()}${className.substring(1)}Schema';
-  }
+  String _facadeName(ClassElement element, _ModelOptions options) =>
+      ackClassSchemaFacadeName(element.name!, override: options.schemaName);
 
   String? _jsonKey(FieldElement field) {
     final annotation = _jsonKeyChecker.firstAnnotationOfExact(field);

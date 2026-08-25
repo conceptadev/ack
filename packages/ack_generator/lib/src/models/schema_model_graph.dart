@@ -142,12 +142,14 @@ final class AckFieldNode {
 /// into emitters.
 final class AckClassModelMetadata {
   const AckClassModelMetadata({
-    required this.schemaName,
+    required this.facadeName,
+    required this.backingName,
     required this.caseStyle,
     this.hasExplicitAnnotation = true,
   });
 
-  final String schemaName;
+  final String facadeName;
+  final String backingName;
   final String caseStyle;
   final bool hasExplicitAnnotation;
 }

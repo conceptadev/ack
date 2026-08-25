@@ -47,7 +47,10 @@ final class AckModel {
                fieldRename: FieldRename.none,
              );
 
-  /// Exact generated schema name, or `null` to derive `<lowerCamel>Schema`.
+  /// Exact public schema facade class name.
+  ///
+  /// The name must be a public UpperCamel identifier. When omitted, Ack derives
+  /// `<ClassName>Schema`, preserving the model class's written capitalization.
   final String? schemaName;
 
   /// Naming convention applied to JSON field keys.

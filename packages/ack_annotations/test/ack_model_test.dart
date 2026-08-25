@@ -15,13 +15,13 @@ void main() {
     expect(defaults.jsonSerializable.fieldRename!.name, 'none');
 
     const configured = AckModel(
-      schemaName: 'wireUser',
+      schemaName: 'WireUserSchema',
       caseStyle: AckCaseStyle.snake,
       discriminatorKey: 'type',
       discriminatorValue: 'user',
       additionalProperties: true,
     );
-    expect(configured.schemaName, 'wireUser');
+    expect(configured.schemaName, 'WireUserSchema');
     expect(configured.caseStyle, AckCaseStyle.snake);
     expect(configured.discriminatorKey, 'type');
     expect(configured.discriminatorValue, 'user');

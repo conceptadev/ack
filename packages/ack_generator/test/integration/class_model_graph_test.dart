@@ -4,13 +4,17 @@ import 'package:build_test/build_test.dart';
 import 'package:logging/logging.dart';
 import 'package:test/test.dart';
 
-Future<void> _expectFailure(String body, List<String> messages) async {
+Future<void> _expectFailure(
+  String body,
+  List<String> messages, {
+  String head = _head,
+}) async {
   final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
   await readerWriter.testing.loadIsolateSources();
   final seen = <String>{};
   await testBuilder(
     ackGenerator(BuilderOptions.empty),
-    {'test_pkg|lib/model.dart': '$_head\n$body'},
+    {'test_pkg|lib/model.dart': '$head\n$body'},
     generateFor: const {'test_pkg|lib/model.dart'},
     readerWriter: readerWriter,
     outputs: const {},
@@ -325,20 +329,98 @@ final class User {
     );
   });
 
+  test('requires the schema-model extension to be visible', () async {
+    await _expectFailure(
+      '''
+@AckModel()
+final class User {
+  const User();
+}
+''',
+      ['AckSchemaModelExtension', 'visible'],
+      head: '''
+import 'package:ack/ack.dart'
+    show Ack, AckSchema, AckSchemaModel, SchemaResult;
+import 'package:ack_annotations/ack_annotations.dart';
+
+part 'model.ack.dart';
+part 'model.g.dart';
+''',
+    );
+  });
+
   test('rejects duplicate generated schema names', () async {
+    await _expectFailure(
+      '''
+@AckModel(schemaName: 'PersonSchema')
+final class User {
+  const User();
+}
+
+@AckModel(schemaName: 'PersonSchema')
+final class Admin {
+  const Admin();
+}
+''',
+      ['PersonSchema', 'conflicts'],
+    );
+  });
+
+  test('rejects a lower-camel schema facade override', () async {
     await _expectFailure(
       '''
 @AckModel(schemaName: 'personSchema')
 final class User {
   const User();
 }
-
-@AckModel(schemaName: 'personSchema')
-final class Admin {
-  const Admin();
-}
 ''',
-      ['personSchema', 'conflicts'],
+      ['personSchema', 'UpperCamel', 'facade'],
+    );
+  });
+
+  test('rejects a local schema facade collision', () async {
+    await _expectFailure(
+      '''
+@AckModel()
+final class User {
+  const User();
+}
+
+abstract final class UserSchema {}
+''',
+      ['UserSchema', 'conflicts'],
+    );
+  });
+
+  test('rejects a local private backing schema collision', () async {
+    await _expectFailure(
+      '''
+@AckModel()
+final class User {
+  const User();
+}
+
+final _userSchema = Ack.string();
+''',
+      ['_userSchema', 'conflicts'],
+    );
+  });
+
+  test('rejects an implicit union branch facade collision', () async {
+    await _expectFailure(
+      '''
+@AckModel(discriminatorKey: 'type')
+sealed class Pet {
+  const Pet();
+}
+
+final class Cat extends Pet {
+  const Cat();
+}
+
+abstract final class CatSchema {}
+''',
+      ['CatSchema', 'conflicts'],
     );
   });
 
@@ -407,7 +489,7 @@ final _catObject = Ack.object({});
     );
   });
 
-  test('rejects generated raw union object helper collisions', () async {
+  test('rejects case-only branch backing schema collisions', () async {
     await _expectFailure(
       '''
 @AckModel(discriminatorKey: 'type')
@@ -415,17 +497,17 @@ sealed class Pet {
   const Pet();
 }
 
-@AckModel(schemaName: 'upperCatSchema')
+@AckModel(schemaName: 'UpperCatSchema')
 final class Cat extends Pet {
   const Cat();
 }
 
-@AckModel(schemaName: 'lowerCatSchema')
+@AckModel(schemaName: 'LowerCatSchema')
 final class cat extends Pet {
   const cat();
 }
 ''',
-      ['_catObject', 'conflicts'],
+      ['_catSchema', 'conflicts'],
     );
   });
 

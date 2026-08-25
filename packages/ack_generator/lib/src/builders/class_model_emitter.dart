@@ -39,15 +39,17 @@ final class AckClassModelEmitter {
     AckModelGraph graph,
     AckObjectModelNode node,
   ) {
-    final schemaName = _metadata(graph, node).schemaName;
+    final metadata = _metadata(graph, node);
     output
-      ..writeln(_codecSchema(node, schemaName: schemaName))
+      ..writeln(_codecSchema(node, backingName: metadata.backingName))
+      ..writeln()
+      ..writeln(_facade(node.className, metadata))
       ..writeln()
       ..writeln(_fromRuntimeFunction(node))
       ..writeln()
       ..writeln(_toRuntimeFunction(node))
       ..writeln()
-      ..writeln(_extension(node.className, schemaName))
+      ..writeln(_extension(node.className, metadata.facadeName))
       ..writeln()
       ..writeln(_fieldBridges(node));
   }
@@ -57,18 +59,22 @@ final class AckClassModelEmitter {
     AckModelGraph graph,
     AckObjectModelNode node,
   ) {
-    final schemaName = _metadata(graph, node).schemaName;
+    final metadata = _metadata(graph, node);
     final rawName = ackClassRawObjectName(node.className);
     output
       ..writeln('final $rawName = ${_objectSchema(node)};')
       ..writeln()
-      ..writeln(_codecSchema(node, schemaName: schemaName, input: rawName))
+      ..writeln(
+        _codecSchema(node, backingName: metadata.backingName, input: rawName),
+      )
+      ..writeln()
+      ..writeln(_facade(node.className, metadata))
       ..writeln()
       ..writeln(_fromRuntimeFunction(node))
       ..writeln()
       ..writeln(_toRuntimeFunction(node))
       ..writeln()
-      ..writeln(_extension(node.className, schemaName))
+      ..writeln(_extension(node.className, metadata.facadeName))
       ..writeln()
       ..writeln(_fieldBridges(node));
   }
@@ -79,7 +85,7 @@ final class AckClassModelEmitter {
     AckUnionModelNode node,
     Map<AckSchemaId, AckModelNode> nodes,
   ) {
-    final schemaName = _metadata(graph, node).schemaName;
+    final metadata = _metadata(graph, node);
     final schemaEntries = <String>[];
     final decodeCases = <String>[];
     final encodeCases = <String>[];
@@ -99,7 +105,7 @@ final class AckClassModelEmitter {
     }
     output
       ..writeln('''
-final $schemaName = ${_ack('Ack')}.discriminated(
+final ${metadata.backingName} = ${_ack('Ack')}.discriminated(
   discriminatorKey: ${_literal(node.discriminatorKey)},
   schemas: {${schemaEntries.join(', ')}},
 ).codec<${node.className}>(
@@ -114,22 +120,57 @@ final $schemaName = ${_ack('Ack')}.discriminated(
   },
 );''')
       ..writeln()
-      ..writeln(_extension(node.className, schemaName))
+      ..writeln(_facade(node.className, metadata))
+      ..writeln()
+      ..writeln(_extension(node.className, metadata.facadeName))
       ..writeln();
   }
 
   String _codecSchema(
     AckObjectModelNode node, {
-    required String schemaName,
+    required String backingName,
     String? input,
   }) {
     final expression = input ?? _objectSchema(node);
     return '''
-final $schemaName = $expression.codec<${node.className}>(
+final $backingName = $expression.codec<${node.className}>(
   decode: ${ackClassFromRuntimeName(node.className)},
   encode: ${ackClassToRuntimeName(node.className)},
 );''';
   }
+
+  String _facade(String className, AckClassModelMetadata metadata) =>
+      '''
+abstract final class ${metadata.facadeName} {
+  static ${_ack('AckSchema')}<Map<String, Object?>, $className> get schema =>
+      ${metadata.backingName};
+
+  static $className parse(Object? value, {String? debugName}) =>
+      ${metadata.backingName}.parse(value, debugName: debugName)!;
+
+  static ${_ack('SchemaResult')}<$className> safeParse(
+    Object? value, {
+    String? debugName,
+  }) => ${metadata.backingName}.safeParse(value, debugName: debugName);
+
+  static $className fromJson(Map<String, dynamic> json) => parse(json);
+
+  static Map<String, Object?> encode(
+    $className value, {
+    String? debugName,
+  }) => ${metadata.backingName}.encode(value, debugName: debugName)!;
+
+  static ${_ack('SchemaResult')}<Map<String, Object?>> safeEncode(
+    $className value, {
+    String? debugName,
+  }) => ${metadata.backingName}.safeEncode(value, debugName: debugName);
+
+  static Map<String, Object?> toJsonSchema() =>
+      ${metadata.backingName}.toJsonSchema();
+
+  static ${_ack('AckSchemaModel')} toSchemaModel() =>
+      ${_ack('AckSchemaModelExtension')}(${metadata.backingName}).toSchemaModel();
+}''';
 
   String _objectSchema(AckObjectModelNode node) {
     final entries = [
@@ -210,14 +251,14 @@ Map<String, Object?> $function(${node.className} model) {
 }''';
   }
 
-  String _extension(String className, String schemaName) =>
+  String _extension(String className, String facadeName) =>
       '''
 extension ${ackClassExtensionName(className)} on $className {
   Map<String, dynamic> toJson() =>
-      Map<String, dynamic>.from($schemaName.encode(this)!);
+      Map<String, dynamic>.from($facadeName.encode(this));
 
   ${_ack('SchemaResult')}<Map<String, Object?>> safeToJson() =>
-      $schemaName.safeEncode(this);
+      $facadeName.safeEncode(this);
 }''';
 
   String _fieldBridges(AckObjectModelNode node) {

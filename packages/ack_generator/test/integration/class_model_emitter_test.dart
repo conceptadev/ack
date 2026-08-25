@@ -63,7 +63,8 @@ final class Profile {
         outputs: {
           'test_pkg|lib/profile.ack.dart': decodedMatches(
             allOf([
-              contains('final profileSchema = Ack.object'),
+              contains('final _profileSchema = Ack.object'),
+              isNot(contains('final profileSchema =')),
               contains("'bio': Ack.string().minLength(1).maxLength(500)"),
               contains("'website': Ack.uri().optional()"),
               contains("'nickname': Ack.string().nullable()"),
@@ -75,6 +76,21 @@ final class Profile {
               contains('.codec<Profile>('),
               contains(r'decode: _$ProfileFromRuntime'),
               contains(r'encode: _$ProfileToRuntime'),
+              contains('abstract final class ProfileSchema'),
+              contains(
+                'static AckSchema<Map<String, Object?>, Profile> get schema',
+              ),
+              contains('static Profile parse('),
+              contains('static SchemaResult<Profile> safeParse('),
+              contains(
+                'static Profile fromJson(Map<String, dynamic> json) => parse(json)',
+              ),
+              contains('static Map<String, Object?> encode('),
+              contains('static SchemaResult<Map<String, Object?>> safeEncode('),
+              contains('static Map<String, Object?> toJsonSchema()'),
+              contains('static AckSchemaModel toSchemaModel()'),
+              contains('_profileSchema.parse(value, debugName: debugName)!'),
+              contains('_profileSchema.encode(value, debugName: debugName)!'),
               contains(r'Profile _$ProfileFromRuntime'),
               contains(r'_$ProfileFromJson'),
               contains(r'Map<String, Object?> _$ProfileToRuntime'),
@@ -82,6 +98,8 @@ final class Profile {
               contains('extension ProfileAck on Profile'),
               contains('Map<String, dynamic> toJson()'),
               contains('SchemaResult<Map<String, Object?>> safeToJson()'),
+              contains('ProfileSchema.encode(this)'),
+              contains('ProfileSchema.safeEncode(this)'),
               contains('_ackProfileFromRuntimeBio'),
               contains('_ackProfileToRuntimeTags'),
             ]),
@@ -236,12 +254,17 @@ const Type otherAddressType = b.Address;
 ''',
         },
         outputs: {
-          'test_pkg|lib/a.ack.dart': decodedMatches(contains('addressSchema')),
+          'test_pkg|lib/a.ack.dart': decodedMatches(
+            allOf([
+              contains('final _addressSchema'),
+              contains('abstract final class AddressSchema'),
+            ]),
+          ),
           'test_pkg|lib/order.ack.dart': decodedMatches(
             allOf([
-              contains("'shipping': a.addressSchema"),
+              contains("'shipping': a.AddressSchema.schema"),
               contains('a.Address _ackOrderFromRuntimeShipping'),
-              isNot(contains('b.addressSchema')),
+              isNot(contains('b.AddressSchema')),
             ]),
           ),
         },
@@ -286,9 +309,15 @@ final class Dog extends Pet {
               contains('final _catObject = Ack.object'),
               contains("'id': Ack.string()"),
               contains("'lives': Ack.integer().min(1).max(9)"),
-              contains('final catSchema = _catObject.codec<Cat>'),
-              contains('final dogSchema = _dogObject.codec<Dog>'),
-              contains('final petSchema ='),
+              contains('final _catSchema = _catObject.codec<Cat>'),
+              contains('final _dogSchema = _dogObject.codec<Dog>'),
+              contains('final _petSchema ='),
+              contains('abstract final class CatSchema'),
+              contains('abstract final class DogSchema'),
+              contains('abstract final class PetSchema'),
+              isNot(contains('final catSchema =')),
+              isNot(contains('final dogSchema =')),
+              isNot(contains('final petSchema =')),
               contains('Ack.discriminated('),
               contains("discriminatorKey: 'type'"),
               contains("schemas: {'cat': _catObject, 'Dog': _dogObject}"),
@@ -305,4 +334,68 @@ final class Dog extends Pet {
       );
     },
   );
+
+  test(
+    'uses an exact custom facade name with a derived private backing',
+    () async {
+      await _build(
+        {
+          'account.dart':
+              '''
+$_imports
+part 'account.ack.dart';
+part 'account.g.dart';
+
+@AckModel(schemaName: 'WireAccountSchema')
+final class Account {
+  const Account({required this.id});
+  final String id;
+}
+''',
+        },
+        outputs: {
+          'test_pkg|lib/account.ack.dart': decodedMatches(
+            allOf([
+              contains('final _accountSchema = Ack.object'),
+              contains('abstract final class WireAccountSchema'),
+              contains('WireAccountSchema.encode(this)'),
+              isNot(contains('abstract final class AccountSchema')),
+            ]),
+          ),
+        },
+      );
+    },
+  );
+
+  test('qualifies facade APIs through a prefixed Ack import', () async {
+    await _build(
+      {
+        'account.dart': '''
+import 'package:ack/ack.dart' as ack
+    show Ack, AckSchema, AckSchemaModel, AckSchemaModelExtension, SchemaResult;
+import 'package:ack_annotations/ack_annotations.dart' as annotations
+    show AckModel;
+
+part 'account.ack.dart';
+part 'account.g.dart';
+
+@annotations.AckModel()
+final class Account {
+  const Account();
+}
+''',
+      },
+      outputs: {
+        'test_pkg|lib/account.ack.dart': decodedMatches(
+          allOf([
+            contains('ack.Ack.object'),
+            contains('ack.AckSchema<Map<String, Object?>, Account>'),
+            contains('ack.SchemaResult<Account>'),
+            contains('ack.AckSchemaModel toSchemaModel()'),
+            contains('ack.AckSchemaModelExtension(_accountSchema)'),
+          ]),
+        ),
+      },
+    );
+  });
 }

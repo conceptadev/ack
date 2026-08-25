@@ -1,5 +1,6 @@
 import 'package:ack_annotations/ack_annotations.dart';
-import 'package:ack/ack.dart' show Ack, AckModelAdapter, SchemaResult;
+import 'package:ack/ack.dart'
+    show Ack, AckModelAdapter, AckSchema, AckSchemaModel, SchemaResult;
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:build/build.dart';
@@ -29,6 +30,14 @@ final class AckSchemaGenerator extends Generator {
   );
   static const _schemaResultChecker = TypeChecker.typeNamed(
     SchemaResult,
+    inPackage: 'ack',
+  );
+  static const _ackSchemaChecker = TypeChecker.typeNamed(
+    AckSchema,
+    inPackage: 'ack',
+  );
+  static const _ackSchemaModelChecker = TypeChecker.typeNamed(
+    AckSchemaModel,
     inPackage: 'ack',
   );
 
@@ -116,11 +125,18 @@ final class AckSchemaGenerator extends Generator {
     annotatedElement,
     requiredTypes: const {
       'Ack': _ackChecker,
+      'AckSchema': _ackSchemaChecker,
+      'AckSchemaModel': _ackSchemaModelChecker,
       'SchemaResult': _schemaResultChecker,
     },
+    requiredElements: const {
+      'AckSchemaModelExtension':
+          'package:ack/src/schema_model/ack_schema_model_builder.dart',
+    },
     message:
-        'Generated @AckModel schemas require visible exact Ack and '
-        'SchemaResult imports in this library.',
+        'Generated @AckModel schemas require visible exact Ack, AckSchema, '
+        'AckSchemaModel, AckSchemaModelExtension, and SchemaResult imports in '
+        'this library.',
     todo: 'Import package:ack/ack.dart, directly or through a barrel.',
   );
 
@@ -208,6 +224,7 @@ final class AckSchemaGenerator extends Generator {
     LibraryReader library,
     Element annotatedElement, {
     required Map<String, TypeChecker> requiredTypes,
+    Map<String, String> requiredElements = const {},
     required String message,
     required String todo,
   }) {
@@ -224,7 +241,13 @@ final class AckSchemaGenerator extends Generator {
             : import.namespace.getPrefixed2(prefix, entry.key);
         return candidate != null && entry.value.isExactly(candidate);
       });
-      if (!exposesRequiredTypes) continue;
+      final exposesRequiredElements = requiredElements.entries.every((entry) {
+        final candidate = prefix == null
+            ? import.namespace.get2(entry.key)
+            : import.namespace.getPrefixed2(prefix, entry.key);
+        return candidate?.library?.uri.toString() == entry.value;
+      });
+      if (!exposesRequiredTypes || !exposesRequiredElements) continue;
       if (prefix != null && prefix.isNotEmpty) {
         prefixed ??= prefix;
       } else {
