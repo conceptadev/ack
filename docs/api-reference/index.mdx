@@ -323,8 +323,8 @@ print(user.toJson());
 
 **Target**: Public, constructable classes
 
-**Generates**: An Ack codec schema, top-level JSON/runtime bridges, and
-`toJson` / `safeToJson` extension methods
+**Generates**: A public `<ClassName>Schema` facade backed by a private codec,
+top-level JSON/runtime bridges, and `toJson` / `safeToJson` extension methods
 
 Ack infers schema fields from constructor-backed fields. Required parameters,
 nullable types, optional parameters, and constructor defaults determine field
@@ -354,17 +354,29 @@ final class Account {
   final String displayName;
   final String role;
 
-  factory Account.fromJson(Map<String, dynamic> json) =>
-      accountSchema.parse(json)!;
+  static final fromJson = AccountSchema.fromJson;
 }
 
-final account = accountSchema.parse({'display_name': 'Ada'})!;
+final account = AccountSchema.parse({'display_name': 'Ada'});
 print(account.toJson());
+print(AccountSchema.toJsonSchema());
 ```
 
+The facade exposes `schema`, `parse`, `safeParse`, `fromJson`, `encode`,
+`safeEncode`, `toJsonSchema`, and `toSchemaModel`. The backing `_accountSchema`
+is library-private and no public lower-camel alias is generated. Set
+`schemaName: 'WireAccountSchema'` to choose the exact facade class name.
+
+Nested class-first fields compose through `AddressSchema.schema`. Imports with
+combinators must expose both names (`show Address, AddressSchema`). A
+schema-first `@AckType()` declaration may also compose the facade explicitly,
+and class-first models can use schema-first generated model types on a clean
+build.
+
 `@AckModel()` cannot share a class with `@JsonSerializable()`. Class-first
-value roots and undiscriminated `anyOf` shapes are unsupported; use
-schema-first `@AckType()` for those cases. See
+value roots, automatic recursive graphs, and undiscriminated `anyOf` shapes are
+unsupported; use schema-first `@AckType()` and named `Ack.lazy` for those
+cases. See
 [Model Code Generation](../core-concepts/typesafe-schemas.mdx) for the complete
 tutorial and comparison.
 

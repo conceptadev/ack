@@ -65,5 +65,7 @@ an intentional `Type` suffix is kept exactly.
 `@AckType()` is not supported on classes or instance members.
 
 `@AckModel()` targets a public, constructable class and derives an Ack codec
-schema from its constructor-backed fields. See the
+schema from its constructor-backed fields. It generates a public
+`<ClassName>Schema` facade over a private codec; `schemaName:` overrides the
+exact facade class name and must be UpperCamelCase. See the
 [Model Code Generation guide](../../docs/core-concepts/typesafe-schemas.mdx).

@@ -87,19 +87,27 @@ void main() {
   });
 
   test('class-first generates a schema from a model', () {
-    final account = Account.fromJson({
+    final json = {
       'display_name': 'Ada',
       'email': 'ada@example.com',
       'middle_name': null,
-    });
+    };
+    final account = Account.fromJson(json);
     expect(account.role, 'member');
     expect(account.website, isNull);
-    expect(account.toJson(), {
+    final encoded = {
       'display_name': 'Ada',
       'email': 'ada@example.com',
       'middle_name': null,
       'role': 'member',
-    });
+    };
+    expect(account.toJson(), encoded);
+    expect(AccountSchema.parse(json).displayName, 'Ada');
+    expect(AccountSchema.safeParse({...json, 'email': 'invalid'}).isFail, isTrue);
+    expect(AccountSchema.encode(account), encoded);
+    expect(AccountSchema.safeEncode(account).isOk, isTrue);
+    expect(AccountSchema.toJsonSchema()['type'], 'object');
+    expect(AccountSchema.toSchemaModel(), isNotNull);
   });
 }
 ''');

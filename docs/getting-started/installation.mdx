@@ -47,8 +47,9 @@ dev_dependencies:
 
 The generator works in both directions. `@AckType()` marks a top-level schema
 and generates an immutable model. `@AckModel()` marks a hand-written class and
-generates its Ack codec schema and JSON helpers. There is no `@AckSchema()`
-annotation; `AckSchema` is the runtime schema type.
+generates a public `<ClassName>Schema` facade, a private Ack codec, and JSON
+helpers. There is no `@AckSchema()` annotation; `AckSchema` is the runtime
+schema type.
 
 ```dart
 import 'package:ack/ack.dart';

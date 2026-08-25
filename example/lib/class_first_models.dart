@@ -17,8 +17,7 @@ final class Account {
   final Uri? website;
   final String role;
 
-  factory Account.fromJson(Map<String, dynamic> json) =>
-      accountSchema.parse(json)!;
+  static final fromJson = AccountSchema.fromJson;
 }
 
 @AckModel(discriminatorKey: 'type')

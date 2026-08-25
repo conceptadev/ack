@@ -7,7 +7,9 @@
   declare both `.ack.dart` and `.g.dart` parts.
 * Add the generator-support `AckType.jsonSerializable` marker and raise the
   minimum SDK to Dart 3.9 so the nested `JsonSerializable` configuration can
-  live in this package. The public barrel still exports only `@AckType()`.
+  live in this package.
+* Add class-first `@AckModel()` and field constraint annotations. Its
+  `schemaName:` value is the exact public UpperCamelCase schema facade name.
 
 ## 1.1.0
 

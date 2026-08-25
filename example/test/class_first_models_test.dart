@@ -7,10 +7,13 @@ void main() {
 
     expect(account.role, 'member');
     expect(account.toJson(), {'display_name': 'Ada', 'role': 'member'});
+    expect(AccountSchema.safeParse({'display_name': 'A'}).isFail, isTrue);
+    expect(AccountSchema.toJsonSchema()['type'], 'object');
+    expect(AccountSchema.toSchemaModel(), isNotNull);
   });
 
   test('class-first sealed models dispatch through a discriminator', () {
-    final pet = petSchema.parse({'type': 'cat', 'id': 'c1', 'lives': 9})!;
+    final pet = PetSchema.parse({'type': 'cat', 'id': 'c1', 'lives': 9});
 
     expect(pet, isA<Cat>());
     expect(pet.toJson(), {'type': 'cat', 'id': 'c1', 'lives': 9});

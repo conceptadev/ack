@@ -160,7 +160,9 @@ because a generated model must be encodable. See the
 [Model Code Generation guide](docs/core-concepts/typesafe-schemas.mdx).
 
 Already own the model class? Use `@AckModel()` to derive a codec schema from
-constructor-backed fields while keeping the class hand-written. See the
+constructor-backed fields while keeping the class hand-written. A class named
+`Account` receives an `AccountSchema` facade for parsing, encoding, schema
+export, and nested composition; the backing codec remains private. See the
 [Model Code Generation guide](docs/core-concepts/typesafe-schemas.mdx).
 
 ## Codecs

@@ -94,18 +94,28 @@ final class Account {
   final String displayName;
   final String role;
 
-  factory Account.fromJson(Map<String, dynamic> json) =>
-      accountSchema.parse(json)!;
+  static final fromJson = AccountSchema.fromJson;
 }
 ```
 
-This generates `accountSchema`, a codec schema whose runtime value is
-`Account`, plus `toJson` and `safeToJson` extension methods. Constructor
+This generates an `AccountSchema` facade backed by a private `_accountSchema`
+codec, plus `toJson` and `safeToJson` extension methods. The facade exposes
+`schema`, `parse`, `safeParse`, `fromJson`, `encode`, `safeEncode`,
+`toJsonSchema`, and `toSchemaModel`. `schemaName:` overrides the exact public
+UpperCamelCase facade name; no public lower-camel alias is emitted. Constructor
 parameters determine presence and defaults. Field types and constraint
 annotations determine the schema. Sealed classes use
 `@AckModel(discriminatorKey: ...)`; same-library concrete branches are included
 automatically. Use `@AckField` with a top-level schema-function tear-off for a
 custom field type or `Map<String, V>`.
+
+Nested class-first models compose through `AddressSchema.schema`, preserving
+import prefixes. Import combinators and barrels must expose both `Address` and
+`AddressSchema`. Schema-first declarations may explicitly use the facade, and
+class-first fields may use schema-first generated model types; both directions
+work from a clean build. Nullable/list/set wrappers are preserved. Automatic
+recursive class-first graphs are rejected; use schema-first named `Ack.lazy`
+for recursive contracts.
 
 Generated models do not implement `Map`, `List`, or scalar interfaces. Scalar
 and collection roots are value models with a `.value` field. Use model fields
@@ -131,7 +141,8 @@ Class-first generation supports object models, inferred scalar and enum
 fields, nested lists, sets through list codecs, custom `@AckField` schemas,
 constructor defaults, case styles, additional properties, and same-library
 sealed discriminated unions. It rejects `dynamic`, `Object?`, non-String map
-keys, class-first value roots, and undiscriminated `anyOf` models.
+keys, recursive class-first graphs, class-first value roots, and undiscriminated
+`anyOf` models.
 
 ## Discriminated generated models
 
@@ -170,6 +181,8 @@ validates through the union's effective branch.
 - Replace passthrough `.args` access with `.additionalProperties`.
 - Replace generated `fromMap` / `toMap` calls with `fromJson` / `toJson`.
 - Replace one-way transforms used by generated models with bidirectional codecs.
+- Replace public class-first `accountSchema` calls with `AccountSchema`; use
+  `AccountSchema.schema` when composing another schema.
 - Regenerate all checked-in outputs with `dart run build_runner build`.
 
 ## Runtime API reminders

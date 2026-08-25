@@ -11,6 +11,9 @@
 * Require annotated libraries to declare both `.ack.dart` and `.g.dart` parts.
 * Reject one-way transforms and non-string runtime map keys; generated models
   require a bidirectional, statically encodable contract.
+* Replace the provisional public lower-camel class-first schema variable with
+  an UpperCamelCase facade (`accountSchema` becomes `AccountSchema`). The
+  codec backing is private and no compatibility alias is emitted.
 
 ### Added
 
@@ -18,6 +21,8 @@
   constructors, and public `$ack` adapters for model classes.
 * Add a normalized schema graph foundation for imported, recursive, and
   discriminated model dependencies.
+* Generate class-first schema facades with parse, safe parse, encode, safe
+  encode, JSON Schema/schema-model export, and a schema composition getter.
 
 ### Changed
 
@@ -28,6 +33,9 @@
 * Reject parse-only transforms and schema shapes without a static model form.
 * Support named recursion, cross-file references, custom codecs, additional
   properties, and sealed discriminated model hierarchies.
+* Support clean-build schema reuse between class-first and schema-first models,
+  including imported models and collection/nullable wrappers. Reject recursive
+  class-first graphs with a located diagnostic.
 
 ### Migration
 
@@ -37,6 +45,9 @@
   scalars. Use `.additionalProperties` for passthrough data.
 * Replace `fromMap` / `toMap` calls with `fromJson` / `toJson`, add both part
   directives, convert required transforms to codecs, and regenerate outputs.
+* Replace class-first `accountSchema` calls with `AccountSchema`; use
+  `AccountSchema.schema` for composition. Change lower-camel `schemaName:`
+  overrides to exact UpperCamelCase facade names.
 
 ## 1.1.0
 

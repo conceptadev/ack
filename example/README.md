@@ -16,7 +16,8 @@ and `.g.dart` parts.
   and `lib/additional_properties_example.dart`
 - Codecs (built-in and custom) in `lib/codecs_example.dart`
 - Hand-written class-first models and sealed unions in
-  `lib/class_first_models.dart`
+  `lib/class_first_models.dart`, including generated `AccountSchema` and union
+  facades backed by private codecs
 
 ## Running the examples
 

@@ -1,8 +1,12 @@
-# Ack model-class generation
+# Ack model and schema generation
 
 `@AckType()` generates immutable Dart classes while the source Ack schema
 remains responsible for validation, defaults, codecs, and serialization.
 `json_serializable` generates only the structural runtime-map field mapping.
+
+`@AckModel()` runs the opposite direction: a hand-written Dart class produces
+a private codec and a public `<ClassName>Schema` facade. Both directions share
+the normalized graph, runtime bridges, JSON phase, and generated parts.
 
 ```text
 PUBLIC DECODE
@@ -49,6 +53,39 @@ Object models have an unchecked public constructor, stored typed fields,
 `$ack` adapter. They don't implement `Map` and don't provide `fromMap` or
 `toMap` aliases. Scalar and collection roots generate value models whose
 `fromJson` and `toJson` signatures use the schema's boundary type.
+
+## Class-first facade contract
+
+For a hand-written `Account`, `@AckModel()` emits a private `_accountSchema`
+codec and a public `AccountSchema` abstract-final facade. The facade delegates
+`parse`, `safeParse`, `fromJson`, `encode`, `safeEncode`, `toJsonSchema`, and
+`toSchemaModel` to the codec. Its `schema` getter is the public composition
+boundary. Generated `toJson` and `safeToJson` extensions also use the facade,
+so every public path shares validation behavior.
+
+The source class may expose the conventional callable with an inferred static
+tear-off:
+
+```dart
+static final fromJson = AccountSchema.fromJson;
+```
+
+`AckModel.schemaName` overrides the exact UpperCamelCase facade name. The
+private backing name remains class-derived, and no public lower-camel alias is
+emitted.
+
+Class-first nesting emits `[prefix.]AddressSchema.schema`, including implicit
+sealed-union branches. Schema-first analysis recognizes that exact future
+generated expression during a clean phase-1 build. In the other direction,
+class-first analysis resolves written future `@AckType()` model names and
+emits `[prefix.]Address.$ack.schema`. These fallbacks are restricted to unique,
+accessible annotated declarations; ordinary unresolved dynamic expressions
+remain errors. `show`/`hide` combinators must expose both the model and facade.
+
+Direct and same-library mutual class-first recursion are rejected before
+emission because automatic lazy naming and JSON Schema definition semantics
+are not defined. Recursive contracts continue to use schema-first named
+`Ack.lazy` declarations.
 
 ## Runtime adapter
 
@@ -162,3 +199,14 @@ map-backed extension types:
 After updating source imports and calls, delete stale generated outputs and run
 `dart run build_runner build`. This is a major-version migration for
 `ack_generator`; consumers should not adopt it as a compatible 1.x update.
+
+For unreleased class-first facade users, replace the temporary branch API:
+
+| Temporary class-first API | Facade API |
+| --- | --- |
+| `accountSchema.parse(json)!` | `AccountSchema.parse(json)` |
+| `accountSchema.safeParse(json)` | `AccountSchema.safeParse(json)` |
+| `accountSchema.encode(account)!` | `AccountSchema.encode(account)` |
+| `accountSchema.toJsonSchema()` | `AccountSchema.toJsonSchema()` |
+| nested `accountSchema` | `AccountSchema.schema` |
+| `schemaName: 'wireAccountSchema'` | `schemaName: 'WireAccountSchema'` |

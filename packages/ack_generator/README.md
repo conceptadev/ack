@@ -94,5 +94,14 @@ getters. Classes, instance members, and local variables are rejected.
 for both directions, field inference, sealed unions, passthrough properties,
 and build configuration.
 
+For a hand-written `Account`, class-first generation exposes an
+`AccountSchema` facade backed by a private `_accountSchema` codec. The facade
+provides parsing, safe parsing, encoding, JSON Schema/schema-model export, and
+the `schema` getter used for composition. Add
+`static final fromJson = AccountSchema.fromJson;` when the class should expose
+the conventional one-argument entry point. Imported nested models compose as
+`prefix.AddressSchema.schema`; `show`/`hide` combinators must expose both the
+model and facade.
+
 For design details and migration notes, see
 [`docs/architecture/acktype-model-generation.md`](../../docs/architecture/acktype-model-generation.md).
