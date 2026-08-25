@@ -137,7 +137,12 @@ dependency_overrides:
           if (entry.key.endsWith('.ack.dart')) {
             if (isClassFirst) {
               expect(entry.value, contains('extension AccountAck'));
-              expect(entry.value, contains('final accountSchema'));
+              expect(entry.value, contains('final _accountSchema'));
+              expect(
+                entry.value,
+                contains('abstract final class AccountSchema'),
+              );
+              expect(entry.value, isNot(contains('final accountSchema')));
             } else {
               expect(entry.value, contains('class '));
               expect(entry.value, contains('jsonSerializable'));
