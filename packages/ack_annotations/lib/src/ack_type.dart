@@ -1,8 +1,8 @@
 import 'package:meta/meta_meta.dart';
 
-import 'ack_generated_json.dart';
-
-/// Marks a top-level Ack schema for immutable model-class generation.
+/// Marks a top-level Ack schema for frozen legacy extension-type generation.
+///
+/// Legacy `AckType` behavior is frozen until removal in Ack 2.
 ///
 /// Apply `@AckType()` to a top-level schema variable or getter:
 ///
@@ -14,11 +14,8 @@ import 'ack_generated_json.dart';
 /// });
 /// ```
 ///
-/// The declaring library must include both generated parts, for example
-/// `part 'user.ack.dart';` and `part 'user.g.dart';`. `ack_generator` emits
-/// the model class, public parse/JSON API, and runtime bridges in the Ack
-/// part. Structural field mapping is generated into the combined JSON part.
-/// Ack remains responsible for validation and codec-aware serialization.
+/// `ack_generator` emits a typed wrapper around the schema's validated
+/// representation plus `parse()` and `safeParse()` helpers.
 ///
 /// Supported targets:
 /// - Top-level variables
@@ -31,27 +28,26 @@ import 'ack_generated_json.dart';
 /// - Classes
 /// - Instance members
 /// - Local variables
+@Deprecated(
+  'Use @AckInfer() for schema-first models or @AckModel() for '
+  'class-first models. AckType will be removed in 2.0.0.',
+)
 @Target({TargetKind.topLevelVariable, TargetKind.getter})
 class AckType {
-  /// Internal marker used on generated model classes.
+  /// Optional custom name for the generated extension type.
   ///
-  /// Typed as [Object] so generated code only needs a constant annotation
-  /// expression. The generator inspects the actual [AckGeneratedJson] type.
-  static const Object jsonSerializable = AckGeneratedJson();
-
-  /// Optional exact name for the generated model class.
+  /// If not provided, the type name is derived from the schema variable name:
+  /// - `userSchema` -> `UserType`
+  /// - `passwordSchema` -> `PasswordType`
   ///
-  /// If omitted, the class name is derived from the schema declaration:
-  /// - `userSchema` -> `User`
-  /// - `passwordSchema` -> `Password`
-  ///
-  /// If provided, the value is used directly:
-  /// - `@AckType(name: 'AppUser')` -> `AppUser`
+  /// If provided, the custom name is used with the `Type` suffix:
+  /// - `@AckType(name: 'CustomUser')` -> `CustomUserType`
+  /// - `@AckType(name: 'MyPassword')` -> `MyPasswordType`
   final String? name;
 
-  /// Creates an annotation for immutable Ack model generation.
+  /// Creates an annotation to generate extension types for validated data.
   ///
-  /// [name] must be an unchanged UpperCamelCase Dart identifier. It is used
-  /// exactly; a `Type` suffix is retained when intentionally supplied.
+  /// The [name] value must be a valid Dart identifier and should omit the
+  /// trailing `Type` suffix.
   const AckType({this.name});
 }

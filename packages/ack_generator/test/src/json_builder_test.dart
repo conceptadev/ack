@@ -16,14 +16,18 @@ void main() {
       );
     }
     final yaml = File(p.join(directory.path, 'build.yaml')).readAsStringSync();
+    expect(yaml, contains('ack_generator:'));
     expect(yaml, contains('builder_factories: ["ackGenerator"]'));
-    expect(yaml, contains('builder_factories: ["ackJsonSerializableBuilder"]'));
-    expect(yaml, contains('.ack_json_serializable.g.part'));
+    expect(yaml, contains('build_extensions: {".dart": [".g.dart"]}'));
+    expect(yaml, contains('ack_models:'));
+    expect(yaml, contains('builder_factories: ["ackModelBuilder"]'));
+    expect(yaml, contains('build_extensions: {".dart": [".ack.dart"]}'));
+    expect(yaml, contains('ack_model_json:'));
+    expect(yaml, contains('builder_factories: ["ackModelJsonBuilder"]'));
+    expect(yaml, contains('build_extensions: {".dart": [".ack.g.dart"]}'));
     expect(yaml, contains('required_inputs: [".ack.dart"]'));
-    expect(yaml, contains('source_gen|combining_builder'));
-    expect(yaml, contains('ack_generator|ack_json_serializable'));
-    expect(yaml, contains('json_serializable|json_serializable'));
-    expect(yaml, isNot(contains('jsonSerializableBuilder')));
+    expect(yaml, contains('ack_generator|ack_model_json'));
+    expect(yaml, isNot(contains('source_gen|combining_builder')));
   });
 
   test('derived helper names stay deterministic', () {
@@ -38,7 +42,7 @@ void main() {
     final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
     await readerWriter.testing.loadIsolateSources();
     await testBuilder(
-      ackJsonSerializableBuilder(BuilderOptions.empty),
+      ackModelJsonBuilder(BuilderOptions.empty),
       {'test_pkg|lib/plain.dart': 'final value = 1;'},
       generateFor: const {'test_pkg|lib/plain.dart'},
       readerWriter: readerWriter,

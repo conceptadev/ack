@@ -1,6 +1,6 @@
 # Ack model and schema generation
 
-`@AckType()` generates immutable Dart classes while the source Ack schema
+`@AckInfer()` generates immutable Dart classes while the source Ack schema
 remains responsible for validation, defaults, codecs, and serialization.
 `json_serializable` generates only the structural runtime-map field mapping.
 
@@ -31,21 +31,21 @@ Each annotated library declares both generated parts:
 
 ```dart
 part 'user.ack.dart';
-part 'user.g.dart';
+part 'user.ack.g.dart';
 ```
 
-Ack writes the dedicated `.ack.dart` model part first. An internal shared
-builder then delegates marked classes to `json_serializable` and contributes a
-cache fragment that `source_gen`'s combining builder merges into `.g.dart`.
+Ack writes the dedicated `.ack.dart` model part first. A second Ack-owned
+builder then delegates marked classes to `json_serializable` and writes the
+result directly to `.ack.g.dart`.
 
 Ack-only consumers do not add `json_annotation` or `json_serializable`. The
 generator package activates both phases. Applications that already use ordinary
-`json_serializable` keep those dependencies; both fragments combine in one
-JSON part without duplicate Ack helpers.
+`json_serializable` keep its `.g.dart` output separate from Ack's `.ack.g.dart`
+output and disable the unused legacy Ack builder for that modern-only target.
 
 ## Public model contract
 
-`userSchema` generates `User`. A custom `@AckType(name: 'MemberType')` value is
+`userSchema` generates `User`. A custom `@AckInfer(name: 'MemberType')` value is
 used exactly.
 
 Object models have an unchecked public constructor, stored typed fields,
@@ -95,7 +95,7 @@ emitted.
 Class-first nesting emits `[prefix.]AddressSchema.schema`, including implicit
 sealed-union branches. Schema-first analysis recognizes that exact future
 generated expression during a clean phase-1 build. In the other direction,
-class-first analysis resolves written future `@AckType()` model names and
+class-first analysis resolves written future `@AckInfer()` model names and
 emits `[prefix.]Address.$ack.schema`. These fallbacks are restricted to unique,
 accessible annotated declarations; ordinary unresolved dynamic expressions
 remain errors. `show`/`hide` combinators must expose both the model and facade.
@@ -191,7 +191,7 @@ immutable generated model. A one-way transform can usually migrate to a custom
 The Ack emitter reads only the normalized graph and uses `code_builder` for
 declarations, adapters, constructor snapshots, and per-field runtime bridges.
 Direct map reads and writes are not emitted. Object, value, and concrete union
-branch classes receive `@AckType.jsonSerializable`, a generator marker that
+branch classes receive `@AckInfer.jsonSerializable`, a generator marker that
 wraps a fixed `JsonSerializable(includeIfNull: false)` configuration.
 
 The internal JSON builder recognizes that marker, ignores consumer
@@ -208,25 +208,28 @@ The generator suite uses real workspace Ack package sources. Process fixtures
 build temporary packages from no generated output, run strict analysis and
 runtime tests, prove an Ack-only consumer produces both outputs, then rebuild
 and compare generated output for determinism. The checked example package keeps
-its generated `.ack.dart` and `.g.dart` files as reviewable fixtures.
+its generated `.ack.dart` and `.ack.g.dart` files as reviewable fixtures.
 
-## Migration from extension-based generation
+## Optional migration from legacy AckType
 
-The immutable model generator is a breaking replacement for the previous
-map-backed extension types:
+Ack 1.2 keeps the deprecated map-backed `@AckType()` generator unchanged.
+Consumers can stay on that path or opt a connected schema graph into immutable
+models:
 
-| Previous API | Immutable model API |
+| Legacy AckType API | Modern AckInfer API |
 | --- | --- |
-| only `part '<file>.g.dart';` | both `.ack.dart` and `.g.dart` parts |
+| `@AckType()` | `@AckInfer()` |
+| only `part '<file>.g.dart';` | both `.ack.dart` and `.ack.g.dart` parts |
 | generated `UserType` | generated `User` |
 | model implements `Map`, `List`, or a scalar interface | stored object fields or a `.value` field |
 | passthrough `.args` | `.additionalProperties` |
-| generated `fromMap` / `toMap` | `fromJson` / `toJson` |
+| Map access and passthrough `.args` | typed fields, `.additionalProperties`, and `toJson` |
 | one-way `.transform()` | bidirectional `.codec()` |
 
 After updating source imports and calls, delete stale generated outputs and run
-`dart run build_runner build`. This is a major-version migration for
-`ack_generator`; consumers should not adopt it as a compatible 1.x update.
+`dart run build_runner build`. Unrelated legacy and modern declarations may
+share a library, but nested references cannot cross the generator boundary;
+migrate that connected graph together.
 
 For unreleased class-first facade users, replace the temporary branch API:
 
@@ -240,4 +243,4 @@ For unreleased class-first facade users, replace the temporary branch API:
 | `schemaName: 'wireAccountSchema'` | `schemaName: 'WireAccountSchema'` |
 | `extension AccountAck on Account` | `mixin _$AccountAck` on the source class |
 | `additionalProperties: true` | `AckAdditionalPropertiesMode.capture` |
-| generated `*Type` class names | the exact `@AckType` name, no suffix |
+| generated `*Type` class names | the exact `@AckInfer` name, no suffix |

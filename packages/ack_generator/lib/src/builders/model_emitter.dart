@@ -5,10 +5,10 @@ import '../models/schema_model_graph.dart';
 
 /// Emits immutable model declarations solely from a normalized model graph.
 final class AckModelEmitter {
-  AckModelEmitter({this.ackPrefix, this.ackTypePrefix});
+  AckModelEmitter({this.ackPrefix, this.ackInferPrefix});
 
   final String? ackPrefix;
-  final String? ackTypePrefix;
+  final String? ackInferPrefix;
 
   List<Spec> emit(AckModelGraph graph) {
     final nodes = {for (final node in graph.nodes) node.id: node};
@@ -827,7 +827,7 @@ return $helper(<String, dynamic>{
     );
   }
 
-  String _fromRuntime(AckTypeRef type, String expression) {
+  String _fromRuntime(AckInferRef type, String expression) {
     return switch (type) {
       AckNullableTypeRef(:final inner) =>
         '$expression == null ? null : ${_fromRuntime(inner, '$expression!')}',
@@ -843,7 +843,7 @@ return $helper(<String, dynamic>{
     };
   }
 
-  String _toRuntime(AckTypeRef type, String expression) {
+  String _toRuntime(AckInferRef type, String expression) {
     return switch (type) {
       AckNullableTypeRef(:final inner) =>
         '$expression == null ? null : ${_toRuntime(inner, '$expression!')}',
@@ -859,7 +859,7 @@ return $helper(<String, dynamic>{
     };
   }
 
-  String _immutableCopy(AckTypeRef type, String expression) {
+  String _immutableCopy(AckInferRef type, String expression) {
     return switch (type) {
       AckNullableTypeRef(:final inner) =>
         '$expression == null ? null : ${_immutableCopy(inner, '$expression!')}',
@@ -896,18 +896,18 @@ return $helper(<String, dynamic>{
   String _declaredKeysLiteral(Set<String> keys) =>
       '<String>{${keys.map(_literal).join(', ')}}';
 
-  AckTypeRef _nonNullable(AckTypeRef type) => switch (type) {
+  AckInferRef _nonNullable(AckInferRef type) => switch (type) {
     AckNullableTypeRef(:final inner) => inner,
     _ => type,
   };
 
-  bool _requiresImmutableCopy(AckTypeRef type) => switch (type) {
+  bool _requiresImmutableCopy(AckInferRef type) => switch (type) {
     AckNullableTypeRef(:final inner) => _requiresImmutableCopy(inner),
     AckListTypeRef() || AckSetTypeRef() || AckMapTypeRef() => true,
     _ => false,
   };
 
-  bool _requiresRuntimeConversion(AckTypeRef type) => switch (type) {
+  bool _requiresRuntimeConversion(AckInferRef type) => switch (type) {
     AckNullableTypeRef(:final inner) => _requiresRuntimeConversion(inner),
     AckModelTypeRef() ||
     AckListTypeRef() ||
@@ -916,7 +916,7 @@ return $helper(<String, dynamic>{
     _ => false,
   };
 
-  String _valueToJsonBody(AckTypeRef boundaryType) {
+  String _valueToJsonBody(AckInferRef boundaryType) {
     return switch (boundaryType) {
       AckListTypeRef(:final elementType) =>
         'List<${_type(elementType)}>.of(\$ack.encode(this))',
@@ -926,7 +926,7 @@ return $helper(<String, dynamic>{
     };
   }
 
-  String _type(AckTypeRef type) {
+  String _type(AckInferRef type) {
     return switch (type) {
       AckNullableTypeRef(:final inner) => '${_type(inner)}?',
       AckScalarTypeRef(:final dartType) => dartType,
@@ -990,10 +990,10 @@ Map.unmodifiable(
   ];
 
   Expression _jsonMarker() {
-    final prefix = ackTypePrefix;
+    final prefix = ackInferPrefix;
     final typeName = prefix == null || prefix.isEmpty
-        ? 'AckType'
-        : '$prefix.AckType';
+        ? 'AckInfer'
+        : '$prefix.AckInfer';
     return refer(typeName).property('jsonSerializable');
   }
 

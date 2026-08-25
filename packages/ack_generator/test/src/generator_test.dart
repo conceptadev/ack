@@ -12,7 +12,7 @@ Future<void> _build(
   final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
   await readerWriter.testing.loadIsolateSources();
   await testBuilder(
-    ackGenerator(BuilderOptions.empty),
+    ackModelBuilder(BuilderOptions.empty),
     {'test_pkg|lib/schema.dart': source},
     generateFor: const {'test_pkg|lib/schema.dart'},
     readerWriter: readerWriter,
@@ -31,9 +31,9 @@ import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'schema.ack.dart';
-part 'schema.g.dart';
+part 'schema.ack.g.dart';
 
-@AckType()
+@AckInfer()
 final userSchema = Ack.object({'name': Ack.string()});
 ''',
         outputs: {
@@ -49,7 +49,7 @@ final userSchema = Ack.object({'name': Ack.string()});
     },
   );
 
-  test('does not emit output without AckType declarations', () async {
+  test('does not emit output without AckInfer declarations', () async {
     await _build('final value = 1;', outputs: const {});
   });
 
@@ -60,14 +60,14 @@ final userSchema = Ack.object({'name': Ack.string()});
 import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
-@AckType()
+@AckInfer()
 final userSchema = Ack.string();
 ''',
       outputs: const {},
       onLog: (log) {
         if (log.level.name == 'SEVERE' &&
             log.message.contains("part 'schema.ack.dart';") &&
-            log.message.contains("part 'schema.g.dart';")) {
+            log.message.contains("part 'schema.ack.g.dart';")) {
           sawError = true;
         }
       },
@@ -86,13 +86,13 @@ import 'package:ack_annotations/ack_annotations.dart';
 
 part 'schema.ack.dart';
 
-@AckType()
+@AckInfer()
 final userSchema = Ack.string();
 ''',
         outputs: const {},
         onLog: (log) {
           if (log.level.name == 'SEVERE' &&
-              log.message.contains("part 'schema.g.dart';")) {
+              log.message.contains("part 'schema.ack.g.dart';")) {
             sawError = true;
           }
         },
@@ -109,9 +109,9 @@ import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
 part './schema.ack.dart';
-part './schema.g.dart';
+part './schema.ack.g.dart';
 
-@AckType()
+@AckInfer()
 final userSchema = Ack.object({'name': Ack.string()});
 ''',
       outputs: const {},
@@ -135,16 +135,16 @@ import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'sub/schema.ack.dart';
-part 'sub/schema.g.dart';
+part 'sub/schema.ack.g.dart';
 
-@AckType()
+@AckInfer()
 final userSchema = Ack.string();
 ''',
         outputs: const {},
         onLog: (log) {
           if (log.level.name == 'SEVERE' &&
               log.message.contains("part 'schema.ack.dart';") &&
-              log.message.contains("part 'schema.g.dart';")) {
+              log.message.contains("part 'schema.ack.g.dart';")) {
             sawError = true;
           }
         },
@@ -161,15 +161,15 @@ import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'schema.ack.dart';
-part 'other.g.dart';
+part 'other.ack.g.dart';
 
-@AckType()
+@AckInfer()
 final userSchema = Ack.string();
 ''',
       outputs: const {},
       onLog: (log) {
         if (log.level.name == 'SEVERE' &&
-            log.message.contains("part 'schema.g.dart';")) {
+            log.message.contains("part 'schema.ack.g.dart';")) {
           sawError = true;
         }
       },
@@ -177,13 +177,13 @@ final userSchema = Ack.string();
     expect(sawError, isTrue);
   });
 
-  test('rejects AckType on classes', () async {
+  test('rejects AckInfer on classes', () async {
     var sawError = false;
     await _build(
       '''
 import 'package:ack_annotations/ack_annotations.dart';
 
-@AckType()
+@AckInfer()
 class InvalidSchema {}
 ''',
       outputs: const {},

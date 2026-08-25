@@ -4,11 +4,11 @@
 part of 'schema_types_primitives.dart';
 
 // **************************************************************************
-// AckSchemaGenerator
+// AckModelGenerator
 // **************************************************************************
 
 /// Immutable value model generated from `passwordSchema`.
-@AckType.jsonSerializable
+@AckInfer.jsonSerializable
 final class Password {
   Password(this.value);
 
@@ -61,7 +61,7 @@ final class Password {
 }
 
 /// Immutable value model generated from `ageSchema`.
-@AckType.jsonSerializable
+@AckInfer.jsonSerializable
 final class Age {
   Age(this.value);
 
@@ -113,7 +113,7 @@ final class Age {
 }
 
 /// Immutable value model generated from `priceSchema`.
-@AckType.jsonSerializable
+@AckInfer.jsonSerializable
 final class Price {
   Price(this.value);
 
@@ -165,7 +165,7 @@ final class Price {
 }
 
 /// Immutable value model generated from `activeSchema`.
-@AckType.jsonSerializable
+@AckInfer.jsonSerializable
 final class Active {
   Active(this.value);
 
@@ -217,7 +217,7 @@ final class Active {
 }
 
 /// Immutable value model generated from `tagsSchema`.
-@AckType.jsonSerializable
+@AckInfer.jsonSerializable
 final class Tags {
   Tags(List<String> value)
     : value = List<String>.unmodifiable(value.map((item) => item));
@@ -272,7 +272,7 @@ final class Tags {
 }
 
 /// Immutable value model generated from `scoresSchema`.
-@AckType.jsonSerializable
+@AckInfer.jsonSerializable
 final class Scores {
   Scores(List<int> value)
     : value = List<int>.unmodifiable(value.map((item) => item));
@@ -327,7 +327,7 @@ final class Scores {
 }
 
 /// Immutable value model generated from `statusSchema`.
-@AckType.jsonSerializable
+@AckInfer.jsonSerializable
 final class StatusLiteral {
   StatusLiteral(this.value);
 
@@ -380,7 +380,7 @@ final class StatusLiteral {
 }
 
 /// Immutable value model generated from `roleSchema`.
-@AckType.jsonSerializable
+@AckInfer.jsonSerializable
 final class Role {
   Role(this.value);
 
@@ -432,7 +432,7 @@ final class Role {
 }
 
 /// Immutable value model generated from `userRoleSchema`.
-@AckType.jsonSerializable
+@AckInfer.jsonSerializable
 final class UserRoleModel {
   UserRoleModel(this.value);
 
@@ -486,7 +486,7 @@ final class UserRoleModel {
 }
 
 /// Immutable value model generated from `statusEnumSchema`.
-@AckType.jsonSerializable
+@AckInfer.jsonSerializable
 final class StatusEnum {
   StatusEnum(this.value);
 
@@ -539,7 +539,7 @@ final class StatusEnum {
 }
 
 /// Immutable value model generated from `optionalStatusSchema`.
-@AckType.jsonSerializable
+@AckInfer.jsonSerializable
 final class OptionalStatus {
   OptionalStatus(this.value);
 
@@ -593,7 +593,7 @@ final class OptionalStatus {
 }
 
 /// Immutable value model generated from `defaultedEnumSchema`.
-@AckType.jsonSerializable
+@AckInfer.jsonSerializable
 final class DefaultedEnum {
   DefaultedEnum(this.value);
 
@@ -647,7 +647,7 @@ final class DefaultedEnum {
 }
 
 /// Immutable value model generated from `chainedEnumStringSchema`.
-@AckType.jsonSerializable
+@AckInfer.jsonSerializable
 final class ChainedEnumString {
   ChainedEnumString(this.value);
 
@@ -701,7 +701,7 @@ final class ChainedEnumString {
 }
 
 /// Immutable value model generated from `refinedAgeSchema`.
-@AckType.jsonSerializable
+@AckInfer.jsonSerializable
 final class RefinedAge {
   RefinedAge(this.value);
 

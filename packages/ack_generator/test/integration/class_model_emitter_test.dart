@@ -10,7 +10,7 @@ Future<void> _build(
   final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
   await readerWriter.testing.loadIsolateSources();
   await testBuilder(
-    ackGenerator(BuilderOptions.empty),
+    ackModelBuilder(BuilderOptions.empty),
     {
       for (final entry in sources.entries)
         'test_pkg|lib/${entry.key}': entry.value,
@@ -34,7 +34,7 @@ void main() {
             '''
 $_imports
 part 'profile.ack.dart';
-part 'profile.g.dart';
+part 'profile.ack.g.dart';
 
 @AckModel()
 final class Profile with _\$ProfileAck {
@@ -121,7 +121,7 @@ final class Profile with _\$ProfileAck {
               '''
 $_imports
 part 'types.ack.dart';
-part 'types.g.dart';
+part 'types.ack.g.dart';
 
 final class Color {
   const Color(this.value);
@@ -191,7 +191,7 @@ final class Record with _\$RecordAck {
             '''
 $_imports
 part 'account.ack.dart';
-part 'account.g.dart';
+part 'account.ack.g.dart';
 
 @AckModel(caseStyle: AckCaseStyle.snake)
 final class Account with _\$AccountAck {
@@ -225,7 +225,7 @@ final class Account with _\$AccountAck {
               '''
 $_imports
 part 'a.ack.dart';
-part 'a.g.dart';
+part 'a.ack.g.dart';
 
 @AckModel()
 final class Address with _\$AddressAck {
@@ -244,7 +244,7 @@ $_imports
 import 'a.dart' as a;
 import 'b.dart' as b;
 part 'order.ack.dart';
-part 'order.g.dart';
+part 'order.ack.g.dart';
 
 @AckModel()
 final class Order with _\$OrderAck {
@@ -284,7 +284,7 @@ const Type otherAddressType = b.Address;
               '''
 $_imports
 part 'pet.ack.dart';
-part 'pet.g.dart';
+part 'pet.ack.g.dart';
 
 @AckModel(discriminatorKey: 'type')
 sealed class Pet with _\$PetAck {
@@ -353,7 +353,7 @@ final class Dog extends Pet with _\$DogAck {
               '''
 $_imports
 part 'account.ack.dart';
-part 'account.g.dart';
+part 'account.ack.g.dart';
 
 @AckModel(schemaName: 'WireAccountSchema')
 final class Account with _\$AccountAck {
@@ -388,7 +388,7 @@ import 'package:ack_annotations/ack_annotations.dart' as annotations
     show AckModel;
 
 part 'account.ack.dart';
-part 'account.g.dart';
+part 'account.ack.g.dart';
 
 @annotations.AckModel()
 final class Account with _\$AccountAck {

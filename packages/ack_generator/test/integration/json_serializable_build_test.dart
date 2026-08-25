@@ -68,9 +68,9 @@ import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'user.ack.dart';
-part 'user.g.dart';
+part 'user.ack.g.dart';
 
-@AckType()
+@AckInfer()
 final userSchema = Ack.object({
   'name': Ack.string(),
   'createdAt': Ack.datetime(),
@@ -87,10 +87,10 @@ final userSchema = Ack.object({
           p.join(temporary.path, 'lib', 'user.ack.dart'),
         ).readAsStringSync();
         final jsonPart = File(
-          p.join(temporary.path, 'lib', 'user.g.dart'),
+          p.join(temporary.path, 'lib', 'user.ack.g.dart'),
         ).readAsStringSync();
 
-        expect(ackPart, contains('@AckType.jsonSerializable'));
+        expect(ackPart, contains('@AckInfer.jsonSerializable'));
         expect(ackPart, contains(r'_$UserFromJson'));
         expect(ackPart, contains('_ackFromRuntimeCreatedAt'));
         expect(jsonPart, contains('JsonSerializableGenerator'));
@@ -147,6 +147,11 @@ dependency_overrides:
 targets:
   \$default:
     builders:
+      # Both legacy AckType and source_gen own `.g.dart` by contract. This
+      # modern-only library disables the unused legacy builder so the ordinary
+      # combining builder remains the sole `.g.dart` owner.
+      ack_generator:ack_generator:
+        enabled: false
       json_serializable:
         options:
           include_if_null: true
@@ -157,9 +162,10 @@ import 'package:ack_annotations/ack_annotations.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 part 'same.ack.dart';
+part 'same.ack.g.dart';
 part 'same.g.dart';
 
-@AckType()
+@AckInfer()
 final userSchema = Ack.object({
   'name': Ack.string(),
   'nickname': Ack.string().optional(),
@@ -202,15 +208,26 @@ void main() {
           'dart analyze --fatal-infos',
         );
 
-        final combined = File(
+        final ackJson = File(
+          p.join(temporary.path, 'lib', 'same.ack.g.dart'),
+        ).readAsStringSync();
+        final ordinaryJson = File(
           p.join(temporary.path, 'lib', 'same.g.dart'),
         ).readAsStringSync();
-        expect(_helperDefinitionCount(combined, 'User', 'FromJson'), 1);
-        expect(_helperDefinitionCount(combined, 'User', 'ToJson'), 1);
-        expect(_helperDefinitionCount(combined, 'SameEnvelope', 'FromJson'), 1);
-        expect(_helperDefinitionCount(combined, 'SameEnvelope', 'ToJson'), 1);
-        expect(combined, contains('User._ackFromRuntimeName(json[\'name\'])'));
-        expect(combined, contains('JsonSerializableGenerator'));
+        expect(_helperDefinitionCount(ackJson, 'User', 'FromJson'), 1);
+        expect(_helperDefinitionCount(ackJson, 'User', 'ToJson'), 1);
+        expect(_helperDefinitionCount(ordinaryJson, 'User', 'FromJson'), 0);
+        expect(_helperDefinitionCount(ordinaryJson, 'User', 'ToJson'), 0);
+        expect(
+          _helperDefinitionCount(ordinaryJson, 'SameEnvelope', 'FromJson'),
+          1,
+        );
+        expect(
+          _helperDefinitionCount(ordinaryJson, 'SameEnvelope', 'ToJson'),
+          1,
+        );
+        expect(ackJson, contains('User._ackFromRuntimeName(json[\'name\'])'));
+        expect(ackJson, contains('JsonSerializableGenerator'));
         _expectSuccess(await _run(temporary, ['test']), 'dart test');
       } finally {
         temporary.deleteSync(recursive: true);
@@ -220,7 +237,7 @@ void main() {
   );
 
   test(
-    'prefixed barrel AckType imports compile through the JSON phase',
+    'prefixed barrel AckInfer imports compile through the JSON phase',
     () async {
       final projectRoot = _projectRoot();
       final temporary = await Directory.systemTemp.createTemp(
@@ -262,9 +279,9 @@ dependency_overrides:
 import 'support.dart' as support;
 
 part 'user.ack.dart';
-part 'user.g.dart';
+part 'user.ack.g.dart';
 
-@support.AckType()
+@support.AckInfer()
 final userSchema = support.Ack.object({
   'name': support.Ack.string(),
   'role': support.Ack.enumValues(support.Role.values),
@@ -299,7 +316,7 @@ void main() {
         final ackPart = File(
           p.join(temporary.path, 'lib', 'user.ack.dart'),
         ).readAsStringSync();
-        expect(ackPart, contains('@support.AckType.jsonSerializable'));
+        expect(ackPart, contains('@support.AckInfer.jsonSerializable'));
         expect(ackPart, contains('support.AckModelAdapter'));
         expect(ackPart, contains('final support.Role role;'));
         _expectSuccess(await _run(temporary, ['test']), 'dart test');

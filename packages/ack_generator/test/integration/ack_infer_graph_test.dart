@@ -1,3 +1,4 @@
+// Modern schema-first graph tests.
 import 'package:ack_generator/src/builder.dart';
 import 'package:build/build.dart';
 import 'package:build_test/build_test.dart';
@@ -8,7 +9,7 @@ Future<void> _expectOutput(String source, Matcher matcher) async {
   final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
   await readerWriter.testing.loadIsolateSources();
   await testBuilder(
-    ackGenerator(BuilderOptions.empty),
+    ackModelBuilder(BuilderOptions.empty),
     {'test_pkg|lib/schema.dart': source},
     generateFor: const {'test_pkg|lib/schema.dart'},
     readerWriter: readerWriter,
@@ -21,7 +22,7 @@ Future<void> _expectFailure(String source, List<String> messages) async {
   await readerWriter.testing.loadIsolateSources();
   final seen = <String>{};
   await testBuilder(
-    ackGenerator(BuilderOptions.empty),
+    ackModelBuilder(BuilderOptions.empty),
     {'test_pkg|lib/schema.dart': source},
     generateFor: const {'test_pkg|lib/schema.dart'},
     readerWriter: readerWriter,
@@ -41,7 +42,7 @@ import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'schema.ack.dart';
-part 'schema.g.dart';
+part 'schema.ack.g.dart';
 ''';
 
 void main() {
@@ -61,13 +62,13 @@ final class TagList {
   final List<String> values;
 }
 
-@AckType(name: 'UserIdModel')
+@AckInfer(name: 'UserIdModel')
 final userIdSchema = Ack.integer().codec<UserId>(
   decode: UserId.new,
   encode: (id) => id.value,
 );
 
-@AckType()
+@AckInfer()
 final profileSchema = Ack.object({
   'tags': Ack.list(Ack.string()).codec<TagList>(
     decode: TagList.new,
@@ -95,7 +96,7 @@ final class UserRecord {
   final String name;
 }
 
-@AckType()
+@AckInfer()
 final userSchema = Ack.object({
   'name': Ack.string(),
 }).codec<UserRecord>(
@@ -117,7 +118,7 @@ final userSchema = Ack.object({
     await _expectOutput(
       '''
 $_head
-@AckType()
+@AckInfer()
 final AckSchema<JsonMap, JsonMap> nodeSchema = Ack.object({
   'name': Ack.string(),
   'children': Ack.list(
@@ -137,12 +138,12 @@ final AckSchema<JsonMap, JsonMap> nodeSchema = Ack.object({
     await _expectOutput(
       '''
 $_head
-@AckType()
+@AckInfer()
 final AckSchema<JsonMap, JsonMap> authorSchema = Ack.object({
   'books': Ack.list(Ack.lazy('book', () => bookSchema)),
 });
 
-@AckType()
+@AckInfer()
 final AckSchema<JsonMap, JsonMap> bookSchema = Ack.object({
   'author': Ack.lazy('author', () => authorSchema),
 });
@@ -158,7 +159,7 @@ final AckSchema<JsonMap, JsonMap> bookSchema = Ack.object({
     await _expectFailure(
       '''
 $_head
-@AckType()
+@AckInfer()
 final payloadSchema = Ack.any();
 ''',
       ['payloadSchema', 'Ack.any()'],
@@ -174,7 +175,7 @@ final payloadSchema = Ack.any();
       await _expectFailure(
         '''
 $_head
-@AckType()
+@AckInfer()
 final payloadSchema = ${unsupported.key};
 ''',
         ['payloadSchema', unsupported.value],
@@ -186,7 +187,7 @@ final payloadSchema = ${unsupported.key};
     await _expectFailure(
       '''
 $_head
-@AckType()
+@AckInfer()
 final userSchema = Ack.object({
   'nick': Ack.string().trim(),
 });
@@ -203,7 +204,7 @@ final userSchema = Ack.object({
 $_head
 final ageFromString = Ack.string().transform(int.parse);
 
-@AckType()
+@AckInfer()
 final userSchema = Ack.object({
   'age': ageFromString,
 });
@@ -219,7 +220,7 @@ final userSchema = Ack.object({
 $_head
 final ageFromString = Ack.string().transform(int.parse);
 
-@AckType()
+@AckInfer()
 final ageSchema = ageFromString;
 ''',
       ['ageSchema', 'ageFromString', '.transform()'],
@@ -232,7 +233,7 @@ final ageSchema = ageFromString;
 $_head
 final payloadAny = Ack.any();
 
-@AckType()
+@AckInfer()
 final userSchema = Ack.object({
   'payload': payloadAny,
 });
@@ -247,12 +248,12 @@ final userSchema = Ack.object({
 $_head
 final address = Ack.object({'city': Ack.string()});
 
-@AckType()
+@AckInfer()
 final userSchema = Ack.object({
   'home': address,
 });
 ''',
-      ['userSchema.home', "'address'", '@AckType'],
+      ['userSchema.home', "'address'", '@AckInfer'],
     );
   });
 
@@ -260,7 +261,7 @@ final userSchema = Ack.object({
     await _expectFailure(
       '''
 $_head
-@AckType()
+@AckInfer()
 final userSchema = Ack.object({
   '_id': Ack.string(),
 });
@@ -273,10 +274,10 @@ final userSchema = Ack.object({
     await _expectFailure(
       '''
 $_head
-@AckType()
+@AckInfer()
 final catSchema = Ack.object({'lives': Ack.integer()});
 
-@AckType()
+@AckInfer()
 final petSchema = Ack.discriminated(
   discriminatorKey: '_kind',
   schemas: {'cat': catSchema},
@@ -290,7 +291,7 @@ final petSchema = Ack.discriminated(
     await _expectFailure(
       '''
 $_head
-@AckType()
+@AckInfer()
 final userSchema = Ack.object({
   'home': Ack.object({'city': Ack.string()}),
 });
@@ -303,7 +304,7 @@ final userSchema = Ack.object({
     await _expectFailure(
       '''
 $_head
-@AckType()
+@AckInfer()
 final bagSchema = Ack.object({
   'items': Ack.list(Ack.object({'n': Ack.string()})),
 });
@@ -318,7 +319,7 @@ final bagSchema = Ack.object({
 $_head
 AckSchema make() => Ack.string();
 
-@AckType()
+@AckInfer()
 final payloadSchema = make();
 ''',
       ['payloadSchema', 'unresolvable dynamic schema factory'],
@@ -329,13 +330,13 @@ final payloadSchema = make();
     await _expectFailure(
       '''
 $_head
-@AckType(name: 'User')
+@AckInfer(name: 'User')
 final firstSchema = Ack.object({'a': Ack.string()});
 
-@AckType(name: 'User')
+@AckInfer(name: 'User')
 final secondSchema = Ack.object({'b': Ack.string()});
 ''',
-      ['User', 'Multiple @AckType'],
+      ['User', 'Multiple @AckInfer'],
     );
   });
 
@@ -355,7 +356,7 @@ final color = Ack.string().codec<Color>(
 
 final tags = Ack.list(Ack.string());
 
-@AckType()
+@AckInfer()
 final profileSchema = Ack.object({
   'color': color,
   'tags': tags,
@@ -378,7 +379,7 @@ final class Color {
   final String value;
 }
 
-@AckType()
+@AckInfer()
 final userSchema = Ack.object({
   'color': Ack.string().codec<Color>(
     decode: Color.new,
@@ -392,10 +393,10 @@ final userSchema = Ack.object({
     await _expectFailure(
       '''
 $_head
-@AckType()
+@AckInfer()
 final firstSchema = secondSchema;
 
-@AckType()
+@AckInfer()
 final secondSchema = firstSchema;
 ''',
       ['alias cycle', 'firstSchema'],

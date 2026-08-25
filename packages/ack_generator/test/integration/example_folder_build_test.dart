@@ -114,23 +114,23 @@ dependency_overrides:
         final first = _generatedContents(temporaryExample);
         expect(first.keys, {
           'lib/additional_properties_example.ack.dart',
-          'lib/additional_properties_example.g.dart',
+          'lib/additional_properties_example.ack.g.dart',
           'lib/class_first_models.ack.dart',
-          'lib/class_first_models.g.dart',
+          'lib/class_first_models.ack.g.dart',
           'lib/pet.ack.dart',
-          'lib/pet.g.dart',
+          'lib/pet.ack.g.dart',
           'lib/schema_types_discriminated.ack.dart',
-          'lib/schema_types_discriminated.g.dart',
+          'lib/schema_types_discriminated.ack.g.dart',
           'lib/schema_types_edge_cases.ack.dart',
-          'lib/schema_types_edge_cases.g.dart',
+          'lib/schema_types_edge_cases.ack.g.dart',
           'lib/schema_types_primitives.ack.dart',
-          'lib/schema_types_primitives.g.dart',
+          'lib/schema_types_primitives.ack.g.dart',
           'lib/schema_types_simple.ack.dart',
-          'lib/schema_types_simple.g.dart',
+          'lib/schema_types_simple.ack.g.dart',
           'lib/schema_types_transforms.ack.dart',
-          'lib/schema_types_transforms.g.dart',
+          'lib/schema_types_transforms.ack.g.dart',
           'lib/user_with_color.ack.dart',
-          'lib/user_with_color.g.dart',
+          'lib/user_with_color.ack.g.dart',
         });
         for (final entry in first.entries) {
           final isClassFirst = entry.key.contains('class_first_models');

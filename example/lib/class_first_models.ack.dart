@@ -4,7 +4,7 @@
 part of 'class_first_models.dart';
 
 // **************************************************************************
-// AckSchemaGenerator
+// AckModelGenerator
 // **************************************************************************
 
 final _catObject = Ack.object({

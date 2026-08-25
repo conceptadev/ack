@@ -15,7 +15,7 @@ Future<void> _expectFailure(
   await readerWriter.testing.loadIsolateSources();
   final seen = <String>{};
   await testBuilder(
-    ackGenerator(BuilderOptions.empty),
+    ackModelBuilder(BuilderOptions.empty),
     {
       'test_pkg|lib/model.dart': '$head\n$body',
       for (final entry in extraSources.entries)
@@ -40,7 +40,7 @@ import 'package:ack_annotations/ack_annotations.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 part 'model.ack.dart';
-part 'model.g.dart';
+part 'model.ack.g.dart';
 ''';
 
 void main() {
@@ -350,7 +350,7 @@ import 'package:ack/ack.dart'
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'model.ack.dart';
-part 'model.g.dart';
+part 'model.ack.g.dart';
 ''',
     );
   });
@@ -572,7 +572,7 @@ import 'package:ack_annotations/ack_annotations.dart';
 import 'address.dart' show Address;
 
 part 'model.ack.dart';
-part 'model.g.dart';
+part 'model.ack.g.dart';
 ''',
         extraSources: {
           'address.dart': '''
@@ -580,7 +580,7 @@ import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'address.ack.dart';
-part 'address.g.dart';
+part 'address.ack.g.dart';
 
 @AckModel()
 final class Address with _\$AddressAck {

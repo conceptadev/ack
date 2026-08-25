@@ -1,70 +1,43 @@
-## 2.0.0
-
-### Breaking
-
-* Replace map-backed `@AckType()` extension types with immutable Dart model
-  classes. Generated names no longer receive a `Type` suffix.
-* Generated models no longer implement `Map`, `List`, or scalar interfaces.
-  Collection and scalar roots expose a `.value` field.
-* Replace passthrough `.args` with `.additionalProperties`, and replace
-  generated `fromMap` / `toMap` with `fromJson` / `toJson`.
-* Require annotated libraries to declare both `.ack.dart` and `.g.dart` parts.
-* Reject one-way transforms and non-string runtime map keys; generated models
-  require a bidirectional, statically encodable contract.
-* Replace the provisional public lower-camel class-first schema variable with
-  an UpperCamelCase facade (`accountSchema` becomes `AccountSchema`). The
-  codec backing is private and no compatibility alias is emitted.
-* Require instantiable `@AckModel` classes and implicit union branches to apply
-  the generated `_$ClassAck` mixin. The mixin supplies `toJson`, `safeToJson`,
-  `copyWith` (null means keep the current value), and deep collection-aware
-  `==`, `hashCode`, and `toString`.
-* Replace class-first `additionalProperties: bool` with
-  `AckAdditionalPropertiesMode` and expose `wireSchema` beside typed `schema`.
-* Narrow the Analyzer constraint to `>=10.0.0 <11.0.0`.
-
-### Fixed
-
-* Permit optional wire fields backed by required nullable normalization
-  parameters, and preserve custom capture fields under `caseStyle` renaming.
-* Decode constructor-normalized fields through the constructor parameter type,
-  so an omitted optional wire value can reach a nullable parameter even when
-  the stored field is non-nullable.
-* Emit braced generated equality guards for compatibility with strict lint
-  configurations.
+## 1.2.0
 
 ### Added
 
-* Generate `parse`, `safeParse`, `fromJson`, `toJson`, `safeToJson`, unchecked
-  constructors, and public `$ack` adapters for model classes.
-* Add a normalized schema graph foundation for imported, recursive, and
-  discriminated model dependencies.
-* Generate class-first schema facades with parse, safe parse, encode, safe
-  encode, JSON Schema/schema-model export, and a schema composition getter.
+* Add `@AckInfer()` schema-first immutable models with parse/JSON/copy/value
+  APIs, named recursion, unions, codecs, defaults, nullability, additional
+  properties, immutable collections, and cross-library composition.
+* Add `@AckModel()` class-first generation with private backing codecs, public
+  schema facades, constructor and field inference, unknown-property policies,
+  sealed unions, generated mixins, and inferred static `fromJson` aliases.
+* Add dedicated `.ack.dart` and `.ack.g.dart` builders so modern Ack output
+  remains separate from legacy and ordinary `.g.dart` generators.
+
+### Compatibility
+
+* Restore the Ack 1.1 `@AckType()` analyzer, emitter, tests, and
+  `ack_generator` LibraryBuilder. Legacy `*Type`, Map, `.args`,
+  `parse`, `safeParse`, naming, getter, union, transform, and additional
+  property behavior is frozen until Ack 2.
+* Allow unrelated legacy and modern declarations in one library. Reject nested
+  graphs that cross the generator boundary with a located migration diagnostic.
+
+### Fixed
+
+* Decode constructor-normalized fields through the constructor parameter type.
+* Emit strict-lint-compatible equality guards.
+* Keep model equality independent of collection wrapper implementations and
+  preserve propagated `Error` objects through runtime validation.
 
 ### Changed
 
-* Generate dedicated `.ack.dart` source parts and an internal JSON phase that
-  delegates structural mapping to `json_serializable`. Annotated libraries
-  declare both `.ack.dart` and `.g.dart`. Ack still owns schema validation,
-  codecs, defaults, and public parse/JSON methods.
-* Reject parse-only transforms and schema shapes without a static model form.
-* Support named recursion, cross-file references, custom codecs, additional
-  properties, and sealed discriminated model hierarchies.
-* Support clean-build schema reuse between class-first and schema-first models,
-  including imported models and collection/nullable wrappers. Reject recursive
-  class-first graphs with a located diagnostic.
+* Raise the Dart floor to 3.9 and constrain Analyzer to
+  `>=10.0.0 <11.0.0`.
 
 ### Migration
 
-* Rename generated `UserType` references to `User` unless `@AckType(name: ...)`
-  supplies an exact custom name.
-* Use stored fields or `.value` instead of treating models as maps, lists, or
-  scalars. Use `.additionalProperties` for passthrough data.
-* Replace `fromMap` / `toMap` calls with `fromJson` / `toJson`, add both part
-  directives, convert required transforms to codecs, and regenerate outputs.
-* Replace class-first `accountSchema` calls with `AccountSchema`; use
-  `AccountSchema.schema` for composition. Change lower-camel `schemaName:`
-  overrides to exact UpperCamelCase facade names.
+* To opt in a connected legacy graph, rename `@AckType()` to `@AckInfer()`,
+  add `.ack.dart` and `.ack.g.dart`, replace `*Type`/Map access with the
+  immutable class API, then use `fromJson`/`toJson` at the JSON boundary.
+* Keep `@AckType()` and `.g.dart` unchanged when migration is not desired.
 
 ## 1.1.0
 

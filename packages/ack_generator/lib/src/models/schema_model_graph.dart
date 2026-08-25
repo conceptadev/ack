@@ -47,7 +47,7 @@ final class AckConstructorParameter {
   final String name;
   final AckConstructorParameterKind kind;
   final String fieldName;
-  final AckTypeRef typeRef;
+  final AckInferRef typeRef;
   final bool isSuper;
   final String? defaultExpression;
 }
@@ -56,26 +56,26 @@ final class AckConstructorParameter {
 ///
 /// Analyzer objects and output-specific cast strings must not escape the
 /// analysis layer. Emitters consume this structural representation instead.
-sealed class AckTypeRef {
-  const AckTypeRef();
+sealed class AckInferRef {
+  const AckInferRef();
 }
 
 /// A nullable structural type reference.
-final class AckNullableTypeRef extends AckTypeRef {
+final class AckNullableTypeRef extends AckInferRef {
   const AckNullableTypeRef(this.inner);
 
-  final AckTypeRef inner;
+  final AckInferRef inner;
 }
 
 /// A core scalar such as `String`, `int`, `double`, `bool`, or `num`.
-final class AckScalarTypeRef extends AckTypeRef {
+final class AckScalarTypeRef extends AckInferRef {
   const AckScalarTypeRef(this.dartType);
 
   final String dartType;
 }
 
 /// A visible type declared outside the generated model graph.
-final class AckExternalTypeRef extends AckTypeRef {
+final class AckExternalTypeRef extends AckInferRef {
   const AckExternalTypeRef({
     required this.name,
     this.importPrefix,
@@ -84,7 +84,7 @@ final class AckExternalTypeRef extends AckTypeRef {
 
   final String name;
   final String? importPrefix;
-  final List<AckTypeRef> typeArguments;
+  final List<AckInferRef> typeArguments;
 
   String get visibleName {
     final prefix = importPrefix;
@@ -93,7 +93,7 @@ final class AckExternalTypeRef extends AckTypeRef {
 }
 
 /// A reference to another generated Ack model.
-final class AckModelTypeRef extends AckTypeRef {
+final class AckModelTypeRef extends AckInferRef {
   const AckModelTypeRef({
     required this.schemaId,
     required this.className,
@@ -103,7 +103,7 @@ final class AckModelTypeRef extends AckTypeRef {
 
   final AckSchemaId schemaId;
   final String className;
-  final AckTypeRef runtimeRef;
+  final AckInferRef runtimeRef;
   final String? importPrefix;
 
   String get visibleName {
@@ -112,22 +112,22 @@ final class AckModelTypeRef extends AckTypeRef {
   }
 }
 
-final class AckListTypeRef extends AckTypeRef {
+final class AckListTypeRef extends AckInferRef {
   const AckListTypeRef(this.elementType);
 
-  final AckTypeRef elementType;
+  final AckInferRef elementType;
 }
 
-final class AckSetTypeRef extends AckTypeRef {
+final class AckSetTypeRef extends AckInferRef {
   const AckSetTypeRef(this.elementType);
 
-  final AckTypeRef elementType;
+  final AckInferRef elementType;
 }
 
-final class AckMapTypeRef extends AckTypeRef {
+final class AckMapTypeRef extends AckInferRef {
   const AckMapTypeRef(this.valueType);
 
-  final AckTypeRef valueType;
+  final AckInferRef valueType;
 }
 
 /// A field in a normalized object model.
@@ -147,7 +147,7 @@ final class AckFieldNode {
   final String jsonKey;
   final AckSchemaFieldPresence presence;
   final bool nullable;
-  final AckTypeRef runtimeRef;
+  final AckInferRef runtimeRef;
   final String? description;
 
   /// Source expression for a schema inferred from a hand-written field.
@@ -193,8 +193,8 @@ sealed class AckModelNode {
 
   final AckSchemaId id;
   final String className;
-  final AckTypeRef boundaryType;
-  final AckTypeRef runtimeRef;
+  final AckInferRef boundaryType;
+  final AckInferRef runtimeRef;
   final String? description;
 }
 

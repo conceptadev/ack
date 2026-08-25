@@ -23,7 +23,7 @@ Map<String, String> _generatedFiles(Directory directory) => {
           .where(
             (file) =>
                 file.path.endsWith('.ack.dart') ||
-                file.path.endsWith('.g.dart'),
+                file.path.endsWith('.ack.g.dart'),
           ))
     p.relative(file.path, from: directory.path): file.readAsStringSync(),
 };
@@ -71,7 +71,7 @@ import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'address.ack.dart';
-part 'address.g.dart';
+part 'address.ack.g.dart';
 
 @AckModel(schemaName: 'PostalAddressSchema')
 final class Address with _$AddressAck {
@@ -99,7 +99,7 @@ import 'package:ack_annotations/ack_annotations.dart';
 import 'address.dart' show Address, PostalAddressSchema;
 
 part 'customer.ack.dart';
-part 'customer.g.dart';
+part 'customer.ack.g.dart';
 
 @AckModel()
 final class Customer with _$CustomerAck {
@@ -124,7 +124,7 @@ import 'package:ack_annotations/ack_annotations.dart';
 import 'models.dart' as models;
 
 part 'parcel.ack.dart';
-part 'parcel.g.dart';
+part 'parcel.ack.g.dart';
 
 @AckModel()
 final class Parcel with _$ParcelAck {
@@ -139,7 +139,7 @@ import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'north.ack.dart';
-part 'north.g.dart';
+part 'north.ack.g.dart';
 
 @AckModel()
 final class Place with _$PlaceAck {
@@ -153,7 +153,7 @@ import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'south.ack.dart';
-part 'south.g.dart';
+part 'south.ack.g.dart';
 
 @AckModel()
 final class Place with _$PlaceAck {
@@ -171,7 +171,7 @@ import 'north.dart' as north;
 import 'south.dart' as south;
 
 part 'itinerary.ack.dart';
-part 'itinerary.g.dart';
+part 'itinerary.ack.g.dart';
 
 @AckModel()
 final class Itinerary with _$ItineraryAck {
@@ -187,7 +187,7 @@ import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'pet.ack.dart';
-part 'pet.g.dart';
+part 'pet.ack.g.dart';
 
 @AckModel(discriminatorKey: 'type')
 sealed class Pet with _$PetAck {
@@ -210,7 +210,7 @@ import 'address.dart' as address;
 import 'pet.dart' as pets;
 
 part 'order.ack.dart';
-part 'order.g.dart';
+part 'order.ack.g.dart';
 
 @AckModel()
 final class Order with _$OrderAck {
@@ -235,9 +235,9 @@ import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'legacy.ack.dart';
-part 'legacy.g.dart';
+part 'legacy.ack.g.dart';
 
-@AckType(name: 'LegacyAddress')
+@AckInfer(name: 'LegacyAddress')
 final legacyAddressContract = Ack.object({'city': Ack.string()});
 ''',
         );
@@ -249,7 +249,7 @@ import 'package:ack_annotations/ack_annotations.dart';
 import 'legacy.dart' as legacy;
 
 part 'holder.ack.dart';
-part 'holder.g.dart';
+part 'holder.ack.g.dart';
 
 @AckModel()
 final class Holder with _$HolderAck {
@@ -278,9 +278,9 @@ import 'package:ack_annotations/ack_annotations.dart';
 import 'address.dart' as address;
 
 part 'address_envelope.ack.dart';
-part 'address_envelope.g.dart';
+part 'address_envelope.ack.g.dart';
 
-@AckType()
+@AckInfer()
 final addressEnvelopeSchema = Ack.object({
   'primary': address.PostalAddressSchema.schema,
   'optional': address.PostalAddressSchema.schema.optional(),

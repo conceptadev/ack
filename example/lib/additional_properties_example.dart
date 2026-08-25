@@ -6,12 +6,12 @@ import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'additional_properties_example.ack.dart';
-part 'additional_properties_example.g.dart';
+part 'additional_properties_example.ack.g.dart';
 
 /// Example 1: User configuration with additional metadata
 /// The generated model has `additionalProperties`, which contains
 /// only the additional properties (not 'username' or 'email')
-@AckType()
+@AckInfer()
 final userConfigSchema = Ack.object({
   'username': Ack.string(),
   'email': Ack.string(),
@@ -19,7 +19,7 @@ final userConfigSchema = Ack.object({
 
 /// Example 2: API request with explicit additionalProperties
 /// Same behavior as passthrough().
-@AckType()
+@AckInfer()
 final apiRequestSchema = Ack.object({
   'method': Ack.string(),
   'url': Ack.string(),
@@ -27,12 +27,12 @@ final apiRequestSchema = Ack.object({
 
 /// Example 3: Feature flags with base configuration
 /// Demonstrates filtering out known fields from dynamic properties
-@AckType()
+@AckInfer()
 final featureFlagsSchema = Ack.object({
   'appVersion': Ack.string(),
   'environment': Ack.string(),
 }).passthrough();
 
 /// Example 4: Empty schema with all properties as additional
-@AckType()
+@AckInfer()
 final dynamicDataSchema = Ack.object({}).passthrough();

@@ -1,3 +1,4 @@
+// Modern schema-first data-class tests.
 import 'package:ack_generator/src/builder.dart';
 import 'package:build/build.dart';
 import 'package:build_test/build_test.dart';
@@ -11,7 +12,7 @@ Future<void> _build(
   final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
   await readerWriter.testing.loadIsolateSources();
   await testBuilder(
-    ackGenerator(BuilderOptions.empty),
+    ackModelBuilder(BuilderOptions.empty),
     {'test_pkg|lib/model.dart': source},
     generateFor: const {'test_pkg|lib/model.dart'},
     readerWriter: readerWriter,
@@ -24,7 +25,7 @@ Future<void> _expectFailure(String body, List<String> messages) async {
   await readerWriter.testing.loadIsolateSources();
   final seen = <String>{};
   await testBuilder(
-    ackGenerator(BuilderOptions.empty),
+    ackModelBuilder(BuilderOptions.empty),
     {'test_pkg|lib/model.dart': '$_imports\n$body'},
     generateFor: const {'test_pkg|lib/model.dart'},
     readerWriter: readerWriter,
@@ -43,7 +44,7 @@ import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'model.ack.dart';
-part 'model.g.dart';
+part 'model.ack.g.dart';
 ''';
 
 void main() {
@@ -211,7 +212,7 @@ final class Normalized with _\$NormalizedAck {
     await _build(
       '''
 $_imports
-@AckType()
+@AckInfer()
 final userSchema = Ack.object({
   'name': Ack.string(),
   'tags': Ack.list(Ack.string()),

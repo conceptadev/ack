@@ -11,12 +11,12 @@ void main() {
       await readerWriter.testing.loadIsolateSources();
 
       await testBuilder(
-        ackJsonSerializableBuilder(BuilderOptions.empty),
+        ackModelJsonBuilder(BuilderOptions.empty),
         {
           'test_pkg|lib/pet.dart': r'''
 import 'package:ack_annotations/ack_generator_support.dart';
 
-part 'pet.g.dart';
+part 'pet.ack.g.dart';
 
 sealed class Pet {
   const Pet({required this.id});
@@ -43,7 +43,7 @@ final class Cat extends Pet {
         generateFor: const {'test_pkg|lib/pet.dart'},
         readerWriter: readerWriter,
         outputs: {
-          'test_pkg|lib/pet.ack_json_serializable.g.part': decodedMatches(
+          'test_pkg|lib/pet.ack.g.dart': decodedMatches(
             allOf([
               contains('Cat('),
               contains("id: Cat._ackFromRuntimeId(json['id'])"),

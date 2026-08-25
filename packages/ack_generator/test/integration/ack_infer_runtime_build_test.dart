@@ -1,3 +1,4 @@
+// Modern schema-first runtime integration tests.
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
@@ -17,7 +18,7 @@ void _expectSuccess(ProcessResult result, String command) {
 
 void main() {
   test(
-    'clean generated models compile and preserve the V2 runtime contract',
+    'clean generated models compile and preserve the AckInfer runtime contract',
     () async {
       var projectRoot = Directory.current;
       while (!Directory(
@@ -26,13 +27,13 @@ void main() {
         projectRoot = projectRoot.parent;
       }
       final temporary = await Directory.systemTemp.createTemp(
-        'ack_v2_runtime_',
+        'ack_ack_infer_runtime_',
       );
       try {
         Directory(p.join(temporary.path, 'lib')).createSync();
         Directory(p.join(temporary.path, 'test')).createSync();
         File(p.join(temporary.path, 'pubspec.yaml')).writeAsStringSync('''
-name: ack_v2_runtime
+name: ack_ack_infer_runtime
 publish_to: none
 environment:
   sdk: '>=3.9.0 <4.0.0'
@@ -58,7 +59,7 @@ import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'models.ack.dart';
-part 'models.g.dart';
+part 'models.ack.g.dart';
 
 final class Box {
   const Box(this.values);
@@ -70,7 +71,7 @@ final class RuntimeUser {
   final String name;
 }
 
-@AckType(name: 'UserRecord')
+@AckInfer(name: 'UserRecord')
 final userRecordSchema = Ack.object({
   'name': Ack.string(),
 }).codec<RuntimeUser>(
@@ -78,7 +79,7 @@ final userRecordSchema = Ack.object({
   encode: (user) => {'name': user.name},
 );
 
-@AckType()
+@AckInfer()
 final AckSchema<JsonMap, JsonMap> nodeSchema = Ack.object({
   'label': Ack.string(),
   'children': Ack.list(
@@ -86,18 +87,18 @@ final AckSchema<JsonMap, JsonMap> nodeSchema = Ack.object({
   ).optional(),
 });
 
-@AckType()
+@AckInfer()
 final AckSchema<JsonMap, JsonMap> authorSchema = Ack.object({
   'books': Ack.list(Ack.lazy('book', () => bookSchema)),
 });
 
-@AckType()
+@AckInfer()
 final AckSchema<JsonMap, JsonMap> bookSchema = Ack.object({
   'title': Ack.string(),
   'author': Ack.lazy('author', () => authorSchema).optional(),
 });
 
-@AckType()
+@AckInfer()
 final extrasSchema = Ack.object({
   'name': Ack.string(),
   'maybe': Ack.string().nullable(),
@@ -110,25 +111,25 @@ final extrasSchema = Ack.object({
   ),
 }).passthrough();
 
-@AckType()
+@AckInfer()
 final catSchema = Ack.object({'lives': Ack.integer()});
 
-@AckType()
+@AckInfer()
 final dogSchema = Ack.object({'friendly': Ack.boolean()}).passthrough();
 
-@AckType()
+@AckInfer()
 final petSchema = Ack.discriminated(
   discriminatorKey: 'kind',
   schemas: {'cat': catSchema, 'dog': dogSchema},
 );
 
-@AckType(name: 'MemberType')
+@AckInfer(name: 'MemberType')
 final memberSchema = Ack.string();
 
-@AckType()
+@AckInfer()
 final emptySchema = Ack.object({});
 
-@AckType()
+@AckInfer()
 final scoresSchema = Ack.list(Ack.integer());
 
 final class Counted {
@@ -146,7 +147,7 @@ final class Counted {
   }
 }
 
-@AckType(name: 'CountedModel')
+@AckInfer(name: 'CountedModel')
 final countedSchema = Ack.object({
   'item': Ack.string().codec<Counted>(
     decode: Counted.decode,
@@ -167,9 +168,9 @@ import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'address.ack.dart';
-part 'address.g.dart';
+part 'address.ack.g.dart';
 
-@AckType()
+@AckInfer()
 final addressSchema = Ack.object({'city': Ack.string()});
 ''',
         );
@@ -185,9 +186,9 @@ import 'address.dart' as direct;
 import 'exports.dart' as exported;
 
 part 'person.ack.dart';
-part 'person.g.dart';
+part 'person.ack.g.dart';
 
-@AckType()
+@AckInfer()
 final personSchema = Ack.object({
   'home': direct.addressSchema,
   'history': Ack.list(exported.addressSchema),
@@ -197,8 +198,8 @@ final personSchema = Ack.object({
         File(
           p.join(temporary.path, 'test', 'runtime_test.dart'),
         ).writeAsStringSync(r'''
-import 'package:ack_v2_runtime/models.dart';
-import 'package:ack_v2_runtime/person.dart';
+import 'package:ack_ack_infer_runtime/models.dart';
+import 'package:ack_ack_infer_runtime/person.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -341,18 +342,21 @@ void main() {
                   .where(
                     (file) =>
                         file.path.endsWith('.ack.dart') ||
-                        file.path.endsWith('.g.dart'),
+                        file.path.endsWith('.ack.g.dart'),
                   ))
             p.relative(file.path, from: temporary.path): file
                 .readAsStringSync(),
         };
         expect(
           generated.keys,
-          containsAll(['lib/models.ack.dart', 'lib/models.g.dart']),
+          containsAll(['lib/models.ack.dart', 'lib/models.ack.g.dart']),
         );
-        expect(generated['lib/models.g.dart'], contains(r'_$ExtrasFromJson'));
         expect(
-          generated['lib/models.g.dart'],
+          generated['lib/models.ack.g.dart'],
+          contains(r'_$ExtrasFromJson'),
+        );
+        expect(
+          generated['lib/models.ack.g.dart'],
           contains('Extras._ackFromRuntimeName'),
         );
         expect(generated['lib/models.ack.dart'], contains(r'_$ExtrasFromJson'));
@@ -374,7 +378,7 @@ void main() {
                   .where(
                     (file) =>
                         file.path.endsWith('.ack.dart') ||
-                        file.path.endsWith('.g.dart'),
+                        file.path.endsWith('.ack.g.dart'),
                   ))
             p.relative(file.path, from: temporary.path): file
                 .readAsStringSync(),

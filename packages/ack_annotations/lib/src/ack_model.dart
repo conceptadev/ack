@@ -21,7 +21,7 @@ enum AckAdditionalPropertiesMode { reject, discard, capture }
 /// Marks a hand-written class for Ack schema generation.
 ///
 /// The declaring library must include both generated parts, for example
-/// `part 'user.ack.dart';` and `part 'user.g.dart';`. Instantiable models and
+/// `part 'user.ack.dart';` and `part 'user.ack.g.dart';`. Instantiable models and
 /// implicit sealed-union branches must apply the generated `_$ClassAck` mixin.
 @Target({TargetKind.classType})
 final class AckModel {

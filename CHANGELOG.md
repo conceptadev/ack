@@ -3,17 +3,23 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
-## 2.0.0
+## 1.2.0
 
-* Class-first models require the generated `_$ClassAck` mixin and expose
-  `schema` plus `wireSchema` on the public facade.
-* Replace class-first `additionalProperties: bool` with
-  `AckAdditionalPropertiesMode` and optional `@AckField` presence overrides.
-* Generated models include `copyWith` (null means retain), deep equality via
-  `deepEquals`/`deepHashCode`, and no compatibility aliases for mapper APIs
-  or old `*Type` names.
-* Pin `ack_generator` to Analyzer `>=10.0.0 <11.0.0`.
-* Align all published Ack packages on the coordinated 2.0.0 release line.
+* Preserve `@AckType()` as the deprecated Ack 1.1 extension-type generator,
+  including the `*Type`, Map, `.args`, `parse`, `safeParse`, and `.g.dart`
+  contracts.
+* Add `@AckInfer()` for immutable schema-first models and retain
+  `@AckModel()` for class-first schemas with private codecs and public
+  UpperCamelCase schema facades.
+* Isolate modern output in `.ack.dart` and `.ack.g.dart`, including
+  cross-library model reuse and explicit rejection of mixed nested
+  legacy/modern graphs.
+* Generate copy/value APIs with collection-wrapper-independent equality and
+  preserve propagated `Error` objects rather than converting programming
+  defects into validation failures.
+* Raise the Dart floor to 3.9 and pin `ack_generator` to Analyzer
+  `>=10.0.0 <11.0.0`.
+* Align all published Ack packages on the coordinated 1.2.0 release line.
 
 ## 1.1.0 - 2026-07-12
 

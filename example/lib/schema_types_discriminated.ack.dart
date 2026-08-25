@@ -4,7 +4,7 @@
 part of 'schema_types_discriminated.dart';
 
 // **************************************************************************
-// AckSchemaGenerator
+// AckModelGenerator
 // **************************************************************************
 
 /// Discriminated model base generated from `petSchema`.
@@ -44,7 +44,7 @@ sealed class Pet {
 }
 
 /// Discriminated model branch generated from `catSchema`.
-@AckType.jsonSerializable
+@AckInfer.jsonSerializable
 final class Cat extends Pet {
   Cat({required this.lives});
 
@@ -99,7 +99,7 @@ final class Cat extends Pet {
 }
 
 /// Discriminated model branch generated from `dogSchema`.
-@AckType.jsonSerializable
+@AckInfer.jsonSerializable
 final class Dog extends Pet {
   Dog({
     required this.bark,

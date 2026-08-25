@@ -2,7 +2,7 @@ import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'schema_types_transforms.ack.dart';
-part 'schema_types_transforms.g.dart';
+part 'schema_types_transforms.ack.g.dart';
 
 class Color {
   final String value;
@@ -16,13 +16,13 @@ class TagList {
 
 final baseColorSchema = Ack.string();
 
-@AckType(name: 'ColorModel')
+@AckInfer(name: 'ColorModel')
 final colorSchema = Ack.string().codec<Color>(
   decode: Color.new,
   encode: (color) => color.value,
 );
 
-@AckType()
+@AckInfer()
 final profileSchema = Ack.object({
   'homepage': Ack.uri(),
   'birthday': Ack.date(),

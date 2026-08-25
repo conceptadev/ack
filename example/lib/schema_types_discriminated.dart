@@ -2,16 +2,16 @@ import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'schema_types_discriminated.ack.dart';
-part 'schema_types_discriminated.g.dart';
+part 'schema_types_discriminated.ack.g.dart';
 
-/// Discriminated schema example for immutable model generation with @AckType.
-@AckType()
+/// Discriminated schema example for immutable model generation with @AckInfer.
+@AckInfer()
 final catSchema = Ack.object({'lives': Ack.integer()});
 
-@AckType()
+@AckInfer()
 ObjectSchema get dogSchema => Ack.object({'bark': Ack.boolean()}).passthrough();
 
-@AckType()
+@AckInfer()
 final petSchema = Ack.discriminated(
   discriminatorKey: 'kind',
   schemas: {'cat': catSchema, 'dog': dogSchema},

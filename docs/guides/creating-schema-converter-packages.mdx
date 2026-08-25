@@ -53,7 +53,7 @@ ack_<target_system>
 - `ack_openapi` - OpenAPI 3.0/3.1 schemas
 - `ack_graphql` - GraphQL SDL schemas
 - `ack_protobuf` - Protocol Buffer schemas
-- `ack_typebox` - TypeBox schemas
+- `ack_inferbox` - TypeBox schemas
 - `ack_ajv` - AJV JSON Schema schemas
 
 ---
@@ -141,7 +141,7 @@ environment:
   # flutter: '>=3.16.0'
 
 dependencies:
-  ack: ^2.0.0
+  ack: ^1.2.0
   # Add target SDK dependency if needed
   # <target_sdk>: ^x.y.z
   meta: ^1.15.0
@@ -1020,7 +1020,7 @@ Converts Ack schemas to <Target> format for [use case]. Assumes familiarity with
 
 \`\`\`yaml
 dependencies:
-  ack: ^2.0.0
+  ack: ^1.2.0
   ack_<target>: ^1.0.0
   <target_sdk>: ^x.y.z  # Required peer dependency
 \`\`\`

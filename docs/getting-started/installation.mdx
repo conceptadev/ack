@@ -20,7 +20,7 @@ Or add to your `pubspec.yaml` (check [pub.dev](https://pub.dev/packages/ack) for
 
 ```yaml
 dependencies:
-  ack: ^2.0.0 # Replace with latest version
+  ack: ^1.2.0 # Replace with latest version
 ```
 
 ## Optional code generator
@@ -37,15 +37,15 @@ Or add them to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  ack: ^2.0.0 # Replace with latest version
-  ack_annotations: ^2.0.0 # Replace with latest version
+  ack: ^1.2.0 # Replace with latest version
+  ack_annotations: ^1.2.0 # Replace with latest version
 
 dev_dependencies:
-  ack_generator: ^2.0.0 # Replace with latest version
+  ack_generator: ^1.2.0 # Replace with latest version
   build_runner: ^2.4.0
 ```
 
-The generator works in both directions. `@AckType()` marks a top-level schema
+The generator works in both directions. `@AckInfer()` marks a top-level schema
 and generates an immutable model. `@AckModel()` marks a hand-written class and
 generates a public `<ClassName>Schema` facade, a private Ack codec, and JSON
 helpers. There is no `@AckSchema()` annotation; `AckSchema` is the runtime
@@ -56,9 +56,9 @@ import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'user.ack.dart';
-part 'user.g.dart';
+part 'user.ack.g.dart';
 
-@AckType()
+@AckInfer()
 final userSchema = Ack.object({
   'name': Ack.string(),
   'email': Ack.string().email(),

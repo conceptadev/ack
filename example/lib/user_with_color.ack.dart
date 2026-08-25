@@ -4,11 +4,11 @@
 part of 'user_with_color.dart';
 
 // **************************************************************************
-// AckSchemaGenerator
+// AckModelGenerator
 // **************************************************************************
 
 /// Immutable value model generated from `colorSchema`.
-@AckType.jsonSerializable
+@AckInfer.jsonSerializable
 final class ColorModel {
   ColorModel(this.value);
 
@@ -61,7 +61,7 @@ final class ColorModel {
 }
 
 /// Immutable model generated from `profileSchema`.
-@AckType.jsonSerializable
+@AckInfer.jsonSerializable
 final class Profile {
   Profile({required this.bio, this.website});
 
@@ -125,7 +125,7 @@ final class Profile {
 }
 
 /// Immutable model generated from `userWithColorSchema`.
-@AckType.jsonSerializable
+@AckInfer.jsonSerializable
 final class UserWithColor {
   UserWithColor({
     required this.firstName,

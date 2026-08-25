@@ -7,22 +7,18 @@ Future<void> _expectJsonOutput(String source, Matcher matcher) async {
   final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
   await readerWriter.testing.loadIsolateSources();
   await testBuilder(
-    ackJsonSerializableBuilder(BuilderOptions.empty),
+    ackModelJsonBuilder(BuilderOptions.empty),
     {'test_pkg|lib/model.dart': source},
     generateFor: const {'test_pkg|lib/model.dart'},
     readerWriter: readerWriter,
-    outputs: {
-      'test_pkg|lib/model.ack_json_serializable.g.part': decodedMatches(
-        matcher,
-      ),
-    },
+    outputs: {'test_pkg|lib/model.ack.g.dart': decodedMatches(matcher)},
   );
 }
 
 const _head = '''
 import 'package:ack_annotations/ack_annotations.dart';
 
-part 'model.g.dart';
+part 'model.ack.g.dart';
 ''';
 
 void main() {

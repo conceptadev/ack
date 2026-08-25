@@ -4,11 +4,11 @@
 part of 'schema_types_simple.dart';
 
 // **************************************************************************
-// AckSchemaGenerator
+// AckModelGenerator
 // **************************************************************************
 
 /// Immutable model generated from `userSchema`.
-@AckType.jsonSerializable
+@AckInfer.jsonSerializable
 final class User {
   User({required this.name, required this.age, required this.active});
 

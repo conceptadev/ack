@@ -4,11 +4,11 @@
 part of 'schema_types_edge_cases.dart';
 
 // **************************************************************************
-// AckSchemaGenerator
+// AckModelGenerator
 // **************************************************************************
 
 /// Immutable model generated from `productSchema`.
-@AckType.jsonSerializable
+@AckInfer.jsonSerializable
 final class Product {
   Product({
     required this.name,
@@ -114,7 +114,7 @@ final class Product {
 }
 
 /// Immutable model generated from `gridSchema`.
-@AckType.jsonSerializable
+@AckInfer.jsonSerializable
 final class Grid {
   Grid({required this.name, required List<List<int>> matrix})
     : matrix = List<List<int>>.unmodifiable(
@@ -184,7 +184,7 @@ final class Grid {
 }
 
 /// Immutable model generated from `addressSchema`.
-@AckType.jsonSerializable
+@AckInfer.jsonSerializable
 final class Address {
   Address({
     required this.street,
@@ -282,7 +282,7 @@ final class Address {
 }
 
 /// Immutable model generated from `personSchema`.
-@AckType.jsonSerializable
+@AckInfer.jsonSerializable
 final class Person {
   Person({
     required this.name,
@@ -377,7 +377,7 @@ final class Person {
 }
 
 /// Immutable model generated from `employeeSchema`.
-@AckType.jsonSerializable
+@AckInfer.jsonSerializable
 final class Employee {
   Employee({
     required this.name,
@@ -479,7 +479,7 @@ final class Employee {
 }
 
 /// Immutable model generated from `modifierSchema`.
-@AckType.jsonSerializable
+@AckInfer.jsonSerializable
 final class Modifier {
   Modifier({
     required this.requiredField,
@@ -596,7 +596,7 @@ final class Modifier {
 }
 
 /// Immutable model generated from `taggedItemSchema`.
-@AckType.jsonSerializable
+@AckInfer.jsonSerializable
 final class TaggedItem {
   TaggedItem({
     required this.name,
@@ -734,7 +734,7 @@ final class TaggedItem {
 }
 
 /// Immutable model generated from `contactListSchema`.
-@AckType.jsonSerializable
+@AckInfer.jsonSerializable
 final class ContactList {
   ContactList({required this.name, required List<Address> addresses})
     : addresses = List<Address>.unmodifiable(addresses.map((item) => item));
@@ -808,7 +808,7 @@ final class ContactList {
 }
 
 /// Immutable model generated from `emptySchema`.
-@AckType.jsonSerializable
+@AckInfer.jsonSerializable
 final class Empty {
   Empty();
 
@@ -854,7 +854,7 @@ final class Empty {
 }
 
 /// Immutable model generated from `minimalSchema`.
-@AckType.jsonSerializable
+@AckInfer.jsonSerializable
 final class Minimal {
   Minimal({required this.id});
 
@@ -909,7 +909,7 @@ final class Minimal {
 }
 
 /// Immutable model generated from `namedItemSchema`.
-@AckType.jsonSerializable
+@AckInfer.jsonSerializable
 final class NamedItem {
   NamedItem({required this.name});
 
@@ -964,7 +964,7 @@ final class NamedItem {
 }
 
 /// Immutable model generated from `item`.
-@AckType.jsonSerializable
+@AckInfer.jsonSerializable
 final class Item {
   Item({required this.id});
 
@@ -1018,7 +1018,7 @@ final class Item {
 }
 
 /// Immutable model generated from `myCustomSchema123`.
-@AckType.jsonSerializable
+@AckInfer.jsonSerializable
 final class MyCustomSchema123 {
   MyCustomSchema123({required this.value});
 

@@ -1,6 +1,6 @@
 name: ack_annotations
-description: AckType annotation for immutable Ack model generation
-version: 2.0.0
+description: Annotations for legacy Ack types and immutable Ack model generation
+version: 1.2.0
 repository: https://github.com/conceptadev/ack
 resolution: workspace
 

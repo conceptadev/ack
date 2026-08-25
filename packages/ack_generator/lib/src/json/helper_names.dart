@@ -38,8 +38,8 @@ String ackClassSchemaFacadeName(String className, {String? override}) =>
 String ackClassSchemaBackingName(String className) =>
     '_${className[0].toLowerCase()}${className.substring(1)}Schema';
 
-/// Model class generated for an `@AckType` declaration.
-String ackTypeModelClassName(String declarationName, {String? override}) {
+/// Model class generated for an `@AckInfer` declaration.
+String ackInferModelClassName(String declarationName, {String? override}) {
   if (override != null) return override;
   final stem = declarationName.endsWith('Schema')
       ? declarationName.substring(0, declarationName.length - 'Schema'.length)

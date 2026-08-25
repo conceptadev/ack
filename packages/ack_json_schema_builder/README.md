@@ -12,7 +12,7 @@ Converts ACK schemas to json_schema_builder format via `.toJsonSchemaBuilder()`.
 
 ```yaml
 dependencies:
-  ack: ^2.0.0
+  ack: ^1.2.0
   ack_json_schema_builder: ^1.0.0
   json_schema_builder: ^0.1.3
 ```

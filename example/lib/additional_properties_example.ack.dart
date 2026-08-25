@@ -4,11 +4,11 @@
 part of 'additional_properties_example.dart';
 
 // **************************************************************************
-// AckSchemaGenerator
+// AckModelGenerator
 // **************************************************************************
 
 /// Immutable model generated from `userConfigSchema`.
-@AckType.jsonSerializable
+@AckInfer.jsonSerializable
 final class UserConfig {
   UserConfig({
     required this.username,
@@ -114,7 +114,7 @@ final class UserConfig {
 }
 
 /// Immutable model generated from `apiRequestSchema`.
-@AckType.jsonSerializable
+@AckInfer.jsonSerializable
 final class ApiRequest {
   ApiRequest({
     required this.method,
@@ -220,7 +220,7 @@ final class ApiRequest {
 }
 
 /// Immutable model generated from `featureFlagsSchema`.
-@AckType.jsonSerializable
+@AckInfer.jsonSerializable
 final class FeatureFlags {
   FeatureFlags({
     required this.appVersion,
@@ -326,7 +326,7 @@ final class FeatureFlags {
 }
 
 /// Immutable model generated from `dynamicDataSchema`.
-@AckType.jsonSerializable
+@AckInfer.jsonSerializable
 final class DynamicData {
   DynamicData({Map<String, Object?> additionalProperties = const {}})
     : additionalProperties = _ackImmutableCopyMap(additionalProperties);

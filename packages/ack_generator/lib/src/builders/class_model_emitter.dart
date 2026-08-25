@@ -333,7 +333,7 @@ Map<String, Object?> $function(${node.className} model) {
     return output.toString();
   }
 
-  String _fromRuntime(AckTypeRef type, String expression) => switch (type) {
+  String _fromRuntime(AckInferRef type, String expression) => switch (type) {
     AckNullableTypeRef(:final inner)
         when inner is AckScalarTypeRef || inner is AckExternalTypeRef =>
       '$expression as ${_type(type)}',
@@ -355,7 +355,7 @@ Map<String, Object?> $function(${node.className} model) {
     _ => '$expression as ${_type(type)}',
   };
 
-  String _toRuntime(AckTypeRef type, String expression) => switch (type) {
+  String _toRuntime(AckInferRef type, String expression) => switch (type) {
     AckNullableTypeRef(:final inner)
         when inner is AckScalarTypeRef || inner is AckExternalTypeRef =>
       expression,
@@ -374,7 +374,7 @@ Map<String, Object?> $function(${node.className} model) {
     _ => expression,
   };
 
-  String _type(AckTypeRef type) => switch (type) {
+  String _type(AckInferRef type) => switch (type) {
     AckNullableTypeRef(:final inner) => '${_type(inner)}?',
     AckScalarTypeRef(:final dartType) => dartType,
     AckExternalTypeRef(:final visibleName, :final typeArguments) =>

@@ -1,21 +1,21 @@
-## 2.0.0
+## 1.2.0
 
-### Breaking
+### Added
 
-* Define `@AckType()` as immutable model-class generation. Custom names are
-  exact, generated class names no longer add `Type`, and annotated libraries
-  declare both `.ack.dart` and `.g.dart` parts.
-* Add the generator-support `AckType.jsonSerializable` marker and raise the
-  minimum SDK to Dart 3.9 so the nested `JsonSerializable` configuration can
-  live in this package.
-* Add class-first `@AckModel()` and field constraint annotations. Its
-  `schemaName:` value is the exact public UpperCamelCase schema facade name.
-* Replace `@AckModel(additionalProperties: bool)` with
-  `AckAdditionalPropertiesMode` (`reject`, `discard`, `capture`) and optional
-  `additionalPropertiesField` (defaults to `additionalProperties`, may be
-  `args`).
-* Expand `@AckField` with optional `schema` and `AckFieldPresence`. A no-op
-  `@AckField()` is rejected.
+* Add `@AckInfer()` for immutable schema-first model generation. Custom names
+  are exact and annotated libraries declare `.ack.dart` plus `.ack.g.dart`.
+* Add class-first `@AckModel()`, `@AckField`, constraint annotations,
+  unknown-property modes, exact schema facade names, and the generated JSON
+  marker used by Ack-owned output.
+
+### Deprecated
+
+* Deprecate only `@AckType()` with its Ack 2.0 removal message. Its Ack 1.1
+  name suffixing and generated extension-type APIs remain unchanged.
+
+### Changed
+
+* Raise the minimum Dart SDK to 3.9.
 
 ## 1.1.0
 

@@ -4,11 +4,11 @@
 part of 'schema_types_transforms.dart';
 
 // **************************************************************************
-// AckSchemaGenerator
+// AckModelGenerator
 // **************************************************************************
 
 /// Immutable value model generated from `colorSchema`.
-@AckType.jsonSerializable
+@AckInfer.jsonSerializable
 final class ColorModel {
   ColorModel(this.value);
 
@@ -61,7 +61,7 @@ final class ColorModel {
 }
 
 /// Immutable model generated from `profileSchema`.
-@AckType.jsonSerializable
+@AckInfer.jsonSerializable
 final class Profile {
   Profile({
     required this.homepage,

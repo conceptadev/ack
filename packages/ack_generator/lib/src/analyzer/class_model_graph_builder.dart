@@ -24,7 +24,7 @@ typedef _ModelOptions = ({
 
 typedef _FutureGeneratedType = ({
   String schemaExpression,
-  AckTypeRef runtimeRef,
+  AckInferRef runtimeRef,
   String? setListSchema,
 });
 
@@ -133,8 +133,8 @@ final class ClassModelGraphBuilder {
     annotations.AckModel,
     inPackage: 'ack_annotations',
   );
-  static const _ackTypeChecker = TypeChecker.typeNamed(
-    annotations.AckType,
+  static const _ackInferChecker = TypeChecker.typeNamed(
+    annotations.AckInfer,
     inPackage: 'ack_annotations',
   );
   static const _ackFieldChecker = TypeChecker.typeNamed(
@@ -737,7 +737,7 @@ final class ClassModelGraphBuilder {
     return _applySugar(await _schemaForType(type, field), field);
   }
 
-  String _setCodec(String listSchema, AckTypeRef runtimeRef) {
+  String _setCodec(String listSchema, AckInferRef runtimeRef) {
     final rendered = _renderType(_schemaRuntimeRef(runtimeRef));
     return '$listSchema.codec<$rendered>('
         'decode: (list) => list.toSet(), '
@@ -745,7 +745,7 @@ final class ClassModelGraphBuilder {
         ')';
   }
 
-  AckTypeRef _schemaRuntimeRef(AckTypeRef type) => switch (type) {
+  AckInferRef _schemaRuntimeRef(AckInferRef type) => switch (type) {
     AckNullableTypeRef(:final inner) => AckNullableTypeRef(
       _schemaRuntimeRef(inner),
     ),
@@ -805,7 +805,7 @@ final class ClassModelGraphBuilder {
         setListSchema: listSchema,
       );
     } else {
-      final target = _futureAckTypeTarget(
+      final target = _futureAckInferTarget(
         className: name,
         prefix: prefix,
         field: field,
@@ -834,7 +834,7 @@ final class ClassModelGraphBuilder {
     );
   }
 
-  Element? _futureAckTypeTarget({
+  Element? _futureAckInferTarget({
     required String className,
     required String? prefix,
     required FieldElement field,
@@ -843,9 +843,9 @@ final class ClassModelGraphBuilder {
     String? hiddenDeclaration;
 
     void consider(Element element, LibraryImport? import) {
-      final declaration = _ackTypeDeclaration(element);
+      final declaration = _ackInferDeclaration(element);
       if (declaration == null ||
-          _generatedAckTypeClassName(declaration) != className) {
+          _generatedAckInferClassName(declaration) != className) {
         return;
       }
       if (import != null && !_importAllowsName(import, className)) {
@@ -894,22 +894,22 @@ final class ClassModelGraphBuilder {
     return matches.single;
   }
 
-  Element? _ackTypeDeclaration(Element element) {
+  Element? _ackInferDeclaration(Element element) {
     final declaration = switch (element) {
       GetterElement(isOriginVariable: true) => element.variable.baseElement,
       TopLevelVariableElement() => element.baseElement,
       _ => null,
     };
     return declaration != null &&
-            _ackTypeChecker.hasAnnotationOfExact(declaration)
+            _ackInferChecker.hasAnnotationOfExact(declaration)
         ? declaration
         : null;
   }
 
-  String _generatedAckTypeClassName(Element declaration) {
-    final annotation = _ackTypeChecker.firstAnnotationOfExact(declaration)!;
+  String _generatedAckInferClassName(Element declaration) {
+    final annotation = _ackInferChecker.firstAnnotationOfExact(declaration)!;
     final custom = ConstantReader(annotation).read('name');
-    return ackTypeModelClassName(
+    return ackInferModelClassName(
       declaration.name!,
       override: custom.isNull ? null : custom.stringValue,
     );
@@ -1154,14 +1154,14 @@ final class ClassModelGraphBuilder {
     );
   }
 
-  AckTypeRef _typeRef(DartType type, FieldElement field) {
+  AckInferRef _typeRef(DartType type, FieldElement field) {
     if (type is DynamicType || type is TypeParameterType) {
       _unsupportedFieldType(field, type);
     }
     if (type is! InterfaceType) _unsupportedFieldType(field, type);
     final interfaceType = type;
     final nullable = _isNullable(interfaceType);
-    late final AckTypeRef result;
+    late final AckInferRef result;
     if (interfaceType.isDartCoreList &&
         interfaceType.typeArguments.length == 1) {
       result = AckListTypeRef(
@@ -1616,7 +1616,7 @@ final class ClassModelGraphBuilder {
     return (number.toIntValue() ?? number.toDoubleValue())!.toString();
   }
 
-  String _renderType(AckTypeRef type) => switch (type) {
+  String _renderType(AckInferRef type) => switch (type) {
     AckNullableTypeRef(:final inner) => '${_renderType(inner)}?',
     AckScalarTypeRef(:final dartType) => dartType,
     AckExternalTypeRef(:final visibleName, :final typeArguments) =>
@@ -1647,7 +1647,7 @@ final class ClassModelGraphBuilder {
     declarationName: element.name!,
   );
 
-  static const AckTypeRef _jsonMapRef = AckMapTypeRef(
+  static const AckInferRef _jsonMapRef = AckMapTypeRef(
     AckNullableTypeRef(AckScalarTypeRef('Object')),
   );
 }

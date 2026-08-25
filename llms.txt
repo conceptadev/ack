@@ -3,14 +3,14 @@
 > A schema validation library for Dart and Flutter with a fluent runtime API, bidirectional codecs, and two-way model/schema code generation.
 
 Ack validates untrusted boundary data with schemas built through the `Ack`
-factory. Annotate a schema with `@AckType()` to generate a model, or annotate a
+factory. Annotate a schema with `@AckInfer()` to generate a model, or annotate a
 hand-written class with `@AckModel()` to generate its schema and JSON helpers.
 There is no `@AckSchema()` annotation; `AckSchema` is the runtime schema type.
 
 ## Packages
 
 1. `ack`: core runtime validation, codecs, and generated-model support
-2. `ack_annotations`: exposes `@AckType()` and `@AckModel()`
+2. `ack_annotations`: exposes `@AckInfer()` and `@AckModel()`
 3. `ack_generator`: generates models from schemas and schemas from models
 4. `ack_firebase_ai`: converts Ack schemas to Firebase AI structured-output schemas
 5. `ack_json_schema_builder`: converts Ack schemas to `json_schema_builder` schemas
@@ -47,7 +47,7 @@ Codecs decode a boundary value into a runtime value and encode it back.
 
 ## Model code generation
 
-Both directions use the same generated parts and build command. `@AckType()`
+Both directions use the same generated parts and build command. `@AckInfer()`
 is schema-first; `@AckModel()` is class-first.
 
 Every annotated library declares both generated parts:
@@ -57,15 +57,15 @@ import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'user_schema.ack.dart';
-part 'user_schema.g.dart';
+part 'user_schema.ack.g.dart';
 
-@AckType()
+@AckInfer()
 final addressSchema = Ack.object({
   'street': Ack.string(),
   'city': Ack.string(),
 });
 
-@AckType()
+@AckInfer()
 final userSchema = Ack.object({
   'name': Ack.string(),
   'address': addressSchema,
@@ -73,7 +73,7 @@ final userSchema = Ack.object({
 ```
 
 Run `dart run build_runner build`. `addressSchema` and `userSchema` generate
-`Address` and `User`. A custom `@AckType(name: 'Member')` value is used exactly.
+`Address` and `User`. A custom `@AckInfer(name: 'Member')` value is used exactly.
 
 Generated object models provide:
 
@@ -151,23 +151,23 @@ undiscriminated `anyOf` models, missing `_$ClassAck` mixins, and no-op
 
 ## Discriminated generated models
 
-`Ack.discriminated(...)` works with `@AckType()` when:
+`Ack.discriminated(...)` works with `@AckInfer()` when:
 
 - `schemas` is a non-empty map literal;
-- each branch is a top-level `@AckType()` object schema in the same library;
+- each branch is a top-level `@AckInfer()` object schema in the same library;
 - each branch is non-nullable;
 - branch schemas normally omit the discriminator field;
 - an included discriminator is an exact matching `Ack.literal(...)` or an
   `Ack.enumString(...)` containing the branch key.
 
 ```dart
-@AckType()
+@AckInfer()
 final catSchema = Ack.object({'lives': Ack.integer()});
 
-@AckType()
+@AckInfer()
 final dogSchema = Ack.object({'breed': Ack.string()});
 
-@AckType()
+@AckInfer()
 final petSchema = Ack.discriminated(
   discriminatorKey: 'type',
   schemas: {'cat': catSchema, 'dog': dogSchema},
@@ -180,11 +180,13 @@ validates through the union's effective branch.
 
 ## Migration from the previous generator
 
-- Add both `.ack.dart` and `.g.dart` part directives.
+- Rename `@AckType()` to `@AckInfer()` for each connected graph you opt in.
+- Add both `.ack.dart` and `.ack.g.dart` part directives.
 - Rename generated `UserType` usages to `User` unless a custom name is set.
 - Replace map/list/scalar interface access with stored fields or `.value`.
 - Replace passthrough `.args` access with `.additionalProperties`.
-- Replace generated `fromMap` / `toMap` calls with `fromJson` / `toJson`.
+- Replace legacy Map access and `.args` with typed fields and
+  `.additionalProperties`; use `fromJson` / `toJson` at the JSON boundary.
 - Replace one-way transforms used by generated models with bidirectional codecs.
 - Replace public class-first `accountSchema` calls with `AccountSchema`; use
   `AccountSchema.schema` when composing another schema and

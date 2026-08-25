@@ -1,272 +1,448 @@
 import 'package:ack_annotations/ack_annotations.dart';
-import 'package:ack/ack.dart'
-    show Ack, AckModelAdapter, AckSchema, AckSchemaModel, SchemaResult;
-import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:build/build.dart';
 import 'package:code_builder/code_builder.dart';
+import 'package:dart_style/dart_style.dart';
+import 'package:logging/logging.dart';
 import 'package:source_gen/source_gen.dart';
 
-import 'analyzer/class_model_graph_builder.dart';
-import 'analyzer/schema_model_graph_builder.dart';
-import 'builders/class_model_emitter.dart';
-import 'builders/model_emitter.dart';
+import 'analyzer/schema_ast_analyzer.dart';
+import 'builders/type_builder.dart';
+import 'models/model_info.dart';
+import 'validation/code_validator.dart';
 
-/// Generates immutable model classes for top-level schemas annotated with
-/// `@AckType`.
-final class AckSchemaGenerator extends Generator {
-  static const _ackTypeChecker = TypeChecker.typeNamed(
-    AckType,
-    inPackage: 'ack_annotations',
-  );
-  static const _ackModelChecker = TypeChecker.typeNamed(
-    AckModel,
-    inPackage: 'ack_annotations',
-  );
-  static const _ackChecker = TypeChecker.typeNamed(Ack, inPackage: 'ack');
-  static const _ackModelAdapterChecker = TypeChecker.typeNamed(
-    AckModelAdapter,
-    inPackage: 'ack',
-  );
-  static const _schemaResultChecker = TypeChecker.typeNamed(
-    SchemaResult,
-    inPackage: 'ack',
-  );
-  static const _ackSchemaChecker = TypeChecker.typeNamed(
-    AckSchema,
-    inPackage: 'ack',
-  );
-  static const _ackSchemaModelChecker = TypeChecker.typeNamed(
-    AckSchemaModel,
-    inPackage: 'ack',
+/// Logger for schema generation warnings and diagnostics.
+final _log = Logger('AckSchemaGenerator');
+
+/// Generates extension types for top-level schemas annotated with `@AckType`.
+class AckSchemaGenerator extends Generator {
+  final _formatter = DartFormatter(
+    languageVersion: DartFormatter.latestLanguageVersion,
   );
 
   @override
-  Future<String> generate(LibraryReader library, BuildStep buildStep) async {
-    final annotated = <Element>[];
-    final annotatedModels = <ClassElement>[];
+  String generate(LibraryReader library, BuildStep buildStep) {
+    final annotatedVariables = <TopLevelVariableElement>[];
+    final annotatedGetters = <GetterElement>[];
 
     for (final element in library.allElements) {
-      if (!_hasAckType(element)) continue;
-      if (element is ClassElement) {
+      if (element is ClassElement && _hasAckTypeAnnotation(element)) {
         throw InvalidGenerationSource(
           '@AckType can only be applied to top-level schema variables or getters, not classes.',
           element: element,
+          todo:
+              'Remove @AckType from the class and annotate a top-level schema variable or getter instead.',
         );
       }
-      if (element is TopLevelVariableElement) {
-        annotated.add(element);
-      } else if (element is GetterElement && element.isOriginDeclaration) {
-        if (element.enclosingElement is! LibraryElement) {
+
+      if (element is TopLevelVariableElement &&
+          _hasAckTypeAnnotation(element)) {
+        annotatedVariables.add(element);
+      } else if (element is GetterElement && _hasAckTypeAnnotation(element)) {
+        final isTopLevel = element.enclosingElement is LibraryElement;
+        if (!isTopLevel) {
           throw InvalidGenerationSource(
             '@AckType can only be applied to top-level schema variables or getters.',
             element: element,
+            todo:
+                'Move this getter to the library level or annotate a top-level schema variable instead.',
           );
         }
-        annotated.add(element);
+
+        if (element.isOriginDeclaration) {
+          annotatedGetters.add(element);
+        }
       }
     }
 
     for (final classElement in library.classes) {
-      if (_ackModelChecker.hasAnnotationOfExact(classElement)) {
-        annotatedModels.add(classElement);
-      }
       for (final getter in classElement.getters) {
-        if (_hasAckType(getter)) {
+        if (_hasAckTypeAnnotation(getter)) {
           throw InvalidGenerationSource(
             '@AckType can only be applied to top-level schema variables or getters.',
             element: getter,
+            todo:
+                'Move this getter to the library level or annotate a top-level schema variable instead.',
           );
         }
       }
     }
 
-    if (annotated.isEmpty && annotatedModels.isEmpty) return '';
-    await _requirePartDirectives(
-      buildStep,
-      annotated.isNotEmpty ? annotated.first : annotatedModels.first,
+    if (annotatedVariables.isEmpty && annotatedGetters.isEmpty) {
+      return '';
+    }
+
+    final helperMethods = <Method>[];
+    final extensionTypes = <Spec>[];
+    final schemaAstAnalyzer = SchemaAstAnalyzer();
+    final typeBuilder = TypeBuilder();
+    typeBuilder.setAckImportPrefix(_resolveAckImportPrefix(library));
+
+    final modelInfos = <ModelInfo>[];
+
+    for (final variable in annotatedVariables) {
+      try {
+        final modelInfo = schemaAstAnalyzer.analyzeSchemaVariable(
+          variable,
+          customTypeName: _extractAckTypeName(variable),
+        );
+        if (modelInfo != null) {
+          modelInfos.add(modelInfo);
+        }
+      } catch (e) {
+        throw InvalidGenerationSource(
+          'Failed to analyze schema variable "${variable.name}": $e',
+          element: variable,
+          todo:
+              'Ensure the variable uses Ack schema syntax such as Ack.object(), Ack.string(), or another @AckType schema reference.',
+        );
+      }
+    }
+
+    for (final getter in annotatedGetters) {
+      try {
+        final modelInfo = schemaAstAnalyzer.analyzeSchemaGetter(
+          getter,
+          customTypeName: _extractAckTypeName(getter),
+        );
+        if (modelInfo != null) {
+          modelInfos.add(modelInfo);
+        }
+      } catch (e) {
+        throw InvalidGenerationSource(
+          'Failed to analyze schema getter "${getter.name}": $e',
+          element: getter,
+          todo:
+              'Ensure the getter returns Ack schema syntax such as Ack.object(), Ack.string(), or another @AckType schema reference.',
+        );
+      }
+    }
+
+    final linkedModelInfos = _linkDiscriminatedModels(modelInfos);
+
+    _generateExtensionTypes(
+      annotatedVariables,
+      annotatedGetters,
+      linkedModelInfos,
+      typeBuilder,
+      helperMethods,
+      extensionTypes,
     );
 
-    final output = <String>[];
-    if (annotated.isNotEmpty) {
-      final graph = await SchemaModelGraphBuilder(library).build(annotated);
-      final specs = AckModelEmitter(
-        ackPrefix: _ackRuntimeQualifier(library, annotated.first),
-        ackTypePrefix: _ackTypeQualifier(library, annotated.first),
-      ).emit(graph);
-      output.add(
-        Library((b) => b.body.addAll(specs))
-            .accept(
-              DartEmitter(
-                allocator: Allocator.none,
-                orderDirectives: true,
-                useNullSafetySyntax: true,
-              ),
-            )
-            .toString(),
+    if (extensionTypes.isEmpty) {
+      return '';
+    }
+
+    final inputFileName = buildStep.inputId.pathSegments.last;
+    final generatedLibrary = Library(
+      (b) => b
+        ..directives.add(Directive.partOf(inputFileName))
+        ..body.addAll([...helperMethods, ...extensionTypes]),
+    );
+
+    final emitter = DartEmitter(
+      allocator: Allocator.none,
+      orderDirectives: true,
+      useNullSafetySyntax: true,
+    );
+
+    final generatedCode = generatedLibrary.accept(emitter).toString();
+
+    String formattedCode;
+    try {
+      formattedCode = _formatter.format(generatedCode);
+    } catch (e) {
+      _log.warning('Code formatting failed, using unformatted output: $e');
+      formattedCode = generatedCode;
+    }
+
+    final validation = CodeValidator.validate(formattedCode);
+    if (validation.isFailure) {
+      throw InvalidGenerationSource(
+        'Generated code validation failed: ${validation.errorMessage}\n'
+        'Generated output:\n$formattedCode',
+        todo: 'Fix the code generation logic to produce valid Dart syntax.',
       );
     }
-    if (annotatedModels.isNotEmpty) {
-      final ackPrefix = _classFirstAckQualifier(library, annotatedModels.first);
-      final graph = await ClassModelGraphBuilder(
-        library,
-        ackPrefix: ackPrefix,
-      ).build(annotatedModels);
-      output.add(AckClassModelEmitter(ackPrefix: ackPrefix).emit(graph));
-    }
-    return output.where((chunk) => chunk.trim().isNotEmpty).join('\n\n');
+
+    return formattedCode;
   }
 
-  String? _classFirstAckQualifier(
-    LibraryReader library,
-    Element annotatedElement,
-  ) => _visibleQualifier(
-    library,
-    annotatedElement,
-    requiredTypes: const {
-      'Ack': _ackChecker,
-      'AckSchema': _ackSchemaChecker,
-      'AckSchemaModel': _ackSchemaModelChecker,
-      'SchemaResult': _schemaResultChecker,
-    },
-    requiredElements: const {
-      'AckSchemaModelExtension':
-          'package:ack/src/schema_model/ack_schema_model_builder.dart',
-      'deepEquals': 'package:ack/src/utils/collection_utils.dart',
-      'deepHashCode': 'package:ack/src/utils/collection_utils.dart',
-    },
-    message:
-        'Generated @AckModel schemas require visible exact Ack, AckSchema, '
-        'AckSchemaModel, AckSchemaModelExtension, SchemaResult, deepEquals, '
-        'and deepHashCode imports in this library.',
-    todo: 'Import package:ack/ack.dart, directly or through a barrel.',
-  );
-
-  bool _hasAckType(Element element) =>
-      _ackTypeChecker.hasAnnotationOfExact(element);
-
-  /// Strips `./` segments so `part './user.ack.dart'` matches the file next to
-  /// the input, without treating `part 'sub/user.ack.dart'` as the same path.
-  String _normalizedPartUri(String uri) {
-    final segments = [
-      for (final segment in Uri.parse(uri).pathSegments)
-        if (segment.isNotEmpty && segment != '.') segment,
+  void _generateExtensionTypes(
+    List<TopLevelVariableElement> annotatedVariables,
+    List<GetterElement> annotatedGetters,
+    List<ModelInfo> models,
+    TypeBuilder typeBuilder,
+    List<Method> helperMethods,
+    List<Spec> extensionTypes,
+  ) {
+    final typedElements = <Element>[
+      for (final model in models)
+        _findAnnotatedSchemaElement(
+              model.schemaClassName,
+              annotatedVariables,
+              annotatedGetters,
+            ) ??
+            (throw InvalidGenerationSource(
+              'Could not find schema declaration "${model.schemaClassName}"',
+              todo:
+                  'Ensure the schema variable or getter exists and is annotated with @AckType.',
+            )),
     ];
-    return segments.join('/');
-  }
 
-  Future<void> _requirePartDirectives(
-    BuildStep buildStep,
-    Element annotatedElement,
-  ) async {
-    final inputName = buildStep.inputId.pathSegments.last;
-    final baseName = inputName.substring(0, inputName.length - '.dart'.length);
-    final expectedAckPart = '$baseName.ack.dart';
-    final expectedJsonPart = '$baseName.g.dart';
-    final unit = await buildStep.resolver.compilationUnitFor(buildStep.inputId);
-    final parts = {
-      for (final directive in unit.directives.whereType<PartDirective>())
-        if (directive.uri.stringValue case final uri?) _normalizedPartUri(uri),
-    };
-    if (parts.contains(expectedAckPart) && parts.contains(expectedJsonPart)) {
-      return;
+    List<ModelInfo> sortedModels;
+    try {
+      sortedModels = typeBuilder.topologicalSort(models);
+    } catch (e) {
+      final element = typedElements.first;
+      throw InvalidGenerationSource(
+        'Extension type dependency resolution failed: $e',
+        element: element,
+        todo:
+            'Check for circular dependencies in the typed schema graph and ensure nested schemas resolve to @AckType declarations.',
+      );
     }
-    throw InvalidGenerationSource(
-      "Ack model generation requires `part '$expectedAckPart';` and "
-      "`part '$expectedJsonPart';` in this library.",
-      element: annotatedElement,
-      todo:
-          "Add `part '$expectedAckPart';` and `part '$expectedJsonPart';` "
-          "next to the library's directives.",
-    );
+
+    final generatedTypeModels = <ModelInfo>[];
+
+    for (final model in sortedModels) {
+      final element = _findAnnotatedSchemaElement(
+        model.schemaClassName,
+        annotatedVariables,
+        annotatedGetters,
+      );
+      if (element == null) {
+        throw InvalidGenerationSource(
+          'Could not find schema declaration "${model.schemaClassName}"',
+          todo:
+              'Ensure the schema variable or getter exists and is annotated with @AckType.',
+        );
+      }
+
+      try {
+        if (model.isDiscriminatedBaseDefinition) {
+          final baseExtension = typeBuilder.buildDiscriminatedExtensionBase(
+            model,
+            sortedModels,
+          );
+          if (baseExtension != null) {
+            extensionTypes.add(baseExtension);
+          }
+
+          final subtypeNames = model.subtypeNames;
+          if (subtypeNames == null) {
+            continue;
+          }
+
+          final emittedSubtypeSchemaNames = <String>{};
+          for (final subtypeSchemaName in subtypeNames.values) {
+            if (!emittedSubtypeSchemaNames.add(subtypeSchemaName)) {
+              throw InvalidGenerationSource(
+                'Discriminated base "${model.schemaClassName}" maps multiple discriminator values to subtype "$subtypeSchemaName".',
+                element: element,
+                todo:
+                    'Ensure each discriminator value maps to a unique branch schema.',
+              );
+            }
+
+            final subtypeModel = sortedModels.firstWhere(
+              (candidate) => candidate.schemaClassName == subtypeSchemaName,
+              orElse: () => throw InvalidGenerationSource(
+                'Subtype "$subtypeSchemaName" was not found while generating "${model.schemaClassName}".',
+                element: element,
+              ),
+            );
+
+            final subtypeExtension = typeBuilder.buildDiscriminatedSubtype(
+              subtypeModel,
+              model,
+              sortedModels,
+            );
+            if (subtypeExtension != null) {
+              extensionTypes.add(subtypeExtension);
+              generatedTypeModels.add(subtypeModel);
+            }
+          }
+          continue;
+        }
+
+        if (model.isDiscriminatedSubtype) {
+          continue;
+        }
+
+        final extensionType = typeBuilder.buildExtensionType(
+          model,
+          sortedModels,
+        );
+        if (extensionType != null) {
+          extensionTypes.add(extensionType);
+          generatedTypeModels.add(model);
+        }
+      } catch (e) {
+        throw InvalidGenerationSource(
+          'Extension type generation failed for ${element.name}: $e',
+          element: element,
+          todo:
+              'Ensure nested schemas resolve to @AckType declarations and unsupported schema shapes are not annotated.',
+        );
+      }
+    }
+
+    if (generatedTypeModels.isNotEmpty) {
+      helperMethods.addAll(
+        typeBuilder.buildTopLevelHelpers(generatedTypeModels),
+      );
+    }
   }
 
-  /// Resolves the qualifier that exposes Ack's generated-model support types.
-  ///
-  /// Looking through import namespaces supports package barrels, local barrels,
-  /// prefixes, and combinators without tying generation to one exact URI.
-  String? _ackRuntimeQualifier(
-    LibraryReader library,
-    Element annotatedElement,
-  ) => _visibleQualifier(
-    library,
-    annotatedElement,
-    requiredTypes: const {
-      'AckModelAdapter': _ackModelAdapterChecker,
-      'SchemaResult': _schemaResultChecker,
-    },
-    requiredElements: const {
-      'deepEquals': 'package:ack/src/utils/collection_utils.dart',
-      'deepHashCode': 'package:ack/src/utils/collection_utils.dart',
-    },
-    message:
-        'Generated Ack models require visible exact AckModelAdapter, '
-        'SchemaResult, deepEquals, and deepHashCode imports in this library.',
-    todo:
-        'Import package:ack/ack.dart, directly or through a barrel, and '
-        'ensure AckModelAdapter, SchemaResult, deepEquals, and deepHashCode '
-        'are exposed.',
-  );
+  List<ModelInfo> _linkDiscriminatedModels(List<ModelInfo> models) {
+    final linked = List<ModelInfo>.from(models);
+    final modelIndexBySchemaClassName = <String, int>{
+      for (var i = 0; i < linked.length; i++) linked[i].schemaClassName: i,
+    };
+    final branchOwnerByCanonicalIdentity = <String, String>{};
 
-  /// Resolves the visible `AckType` qualifier for generated JSON markers.
-  ///
-  /// Uses import namespaces so barrel re-exports and `show` combinators work.
-  /// Prefixed imports win over unprefixed ones, in import order.
-  String? _ackTypeQualifier(
-    LibraryReader library,
-    Element annotatedElement,
-  ) => _visibleQualifier(
-    library,
-    annotatedElement,
-    requiredTypes: const {'AckType': _ackTypeChecker},
-    message:
-        'Generated @AckType.jsonSerializable requires a visible exact AckType '
-        'import in this library.',
-    todo:
-        'Import AckType from ack_annotations, using the same prefix as '
-        '@AckType() when one is present.',
-  );
-
-  String? _visibleQualifier(
-    LibraryReader library,
-    Element annotatedElement, {
-    required Map<String, TypeChecker> requiredTypes,
-    Map<String, String> requiredElements = const {},
-    required String message,
-    required String todo,
-  }) {
-    String? prefixed;
-    var hasUnprefixed = false;
-    for (final import in library.element.firstFragment.libraryImports) {
-      if (import.isSynthetic || (import.prefix?.isDeferred ?? false)) {
+    for (var i = 0; i < linked.length; i++) {
+      final baseModel = linked[i];
+      if (!baseModel.isDiscriminatedBaseDefinition) {
         continue;
       }
-      final prefix = import.prefix?.element.name;
-      final exposesRequiredTypes = requiredTypes.entries.every((entry) {
-        final candidate = prefix == null
-            ? import.namespace.get2(entry.key)
-            : import.namespace.getPrefixed2(prefix, entry.key);
-        return candidate != null && entry.value.isExactly(candidate);
-      });
-      final exposesRequiredElements = requiredElements.entries.every((entry) {
-        final candidate = prefix == null
-            ? import.namespace.get2(entry.key)
-            : import.namespace.getPrefixed2(prefix, entry.key);
-        return candidate?.library?.uri.toString() == entry.value;
-      });
-      if (!exposesRequiredTypes || !exposesRequiredElements) continue;
-      if (prefix != null && prefix.isNotEmpty) {
-        prefixed ??= prefix;
-      } else {
-        hasUnprefixed = true;
+
+      final discriminatorKey = baseModel.discriminatorKey;
+      final subtypeNames = baseModel.subtypeNames;
+      if (discriminatorKey == null || subtypeNames == null) {
+        continue;
+      }
+
+      for (final entry in subtypeNames.entries) {
+        final discriminatorValue = entry.key;
+        final branchSchemaClassName = entry.value;
+        final branchIndex = modelIndexBySchemaClassName[branchSchemaClassName];
+
+        if (branchIndex == null) {
+          throw InvalidGenerationSource(
+            'Could not resolve discriminated branch "$branchSchemaClassName" for base "${baseModel.schemaClassName}".',
+            todo:
+                'Ensure every Ack.discriminated(...) branch references an @AckType schema declared in the same library.',
+          );
+        }
+
+        final branchModel = linked[branchIndex];
+        final canonicalBranchIdentity =
+            branchModel.schemaIdentity ?? branchSchemaClassName;
+        final existingOwner =
+            branchOwnerByCanonicalIdentity[canonicalBranchIdentity];
+        if (existingOwner != null &&
+            existingOwner != baseModel.schemaClassName) {
+          throw InvalidGenerationSource(
+            'Branch schema "$branchSchemaClassName" is mapped to multiple discriminated bases: "$existingOwner" and "${baseModel.schemaClassName}".',
+            todo:
+                'A branch schema can only belong to one Ack.discriminated(...) base.',
+          );
+        }
+        branchOwnerByCanonicalIdentity[canonicalBranchIdentity] =
+            baseModel.schemaClassName;
+
+        linked[branchIndex] = _copyModelInfo(
+          branchModel,
+          discriminatorKey: discriminatorKey,
+          discriminatorValue: discriminatorValue,
+          discriminatedBaseClassName: baseModel.className,
+        );
       }
     }
-    if (prefixed != null) return prefixed;
-    if (hasUnprefixed) return null;
-    throw InvalidGenerationSource(
-      message,
-      element: annotatedElement,
-      todo: todo,
+
+    return linked;
+  }
+
+  ModelInfo _copyModelInfo(
+    ModelInfo model, {
+    String? discriminatorKey,
+    String? discriminatorValue,
+    Map<String, String>? subtypeNames,
+    String? discriminatedBaseClassName,
+  }) {
+    return ModelInfo(
+      className: model.className,
+      schemaClassName: model.schemaClassName,
+      description: model.description,
+      fields: model.fields,
+      additionalProperties: model.additionalProperties,
+      discriminatorKey: discriminatorKey ?? model.discriminatorKey,
+      discriminatorValue: discriminatorValue ?? model.discriminatorValue,
+      subtypeNames: subtypeNames ?? model.subtypeNames,
+      schemaIdentity: model.schemaIdentity,
+      discriminatedBaseClassName:
+          discriminatedBaseClassName ?? model.discriminatedBaseClassName,
+      representationType: model.representationType,
+      isNullableSchema: model.isNullableSchema,
     );
+  }
+
+  bool _hasAckTypeAnnotation(Element element) {
+    // ignore: deprecated_member_use
+    return TypeChecker.typeNamed(AckType).hasAnnotationOfExact(element);
+  }
+
+  String? _extractAckTypeName(Element element) {
+    final annotation = TypeChecker.typeNamed(
+      // ignore: deprecated_member_use
+      AckType,
+    ).firstAnnotationOfExact(element);
+    if (annotation == null) {
+      return null;
+    }
+
+    final nameField = ConstantReader(annotation).peek('name');
+    return nameField != null && !nameField.isNull
+        ? nameField.stringValue
+        : null;
+  }
+
+  Element? _findAnnotatedSchemaElement(
+    String schemaName,
+    List<TopLevelVariableElement> annotatedVariables,
+    List<GetterElement> annotatedGetters,
+  ) {
+    for (final variable in annotatedVariables) {
+      if (variable.name == schemaName) {
+        return variable;
+      }
+    }
+
+    for (final getter in annotatedGetters) {
+      if (getter.name == schemaName) {
+        return getter;
+      }
+    }
+
+    return null;
+  }
+
+  String? _resolveAckImportPrefix(LibraryReader library) {
+    for (final import in library.element.firstFragment.libraryImports) {
+      if (!_isAckImport(import)) {
+        continue;
+      }
+
+      final prefixElement = import.prefix?.element;
+      final prefix = prefixElement?.name;
+      if (prefix != null && prefix.isNotEmpty) {
+        return prefix;
+      }
+      return null;
+    }
+
+    return null;
+  }
+
+  bool _isAckImport(LibraryImport import) {
+    final importedLibrary = import.importedLibrary;
+    if (importedLibrary != null &&
+        importedLibrary.uri.toString() == 'package:ack/ack.dart') {
+      return true;
+    }
+
+    return import.uri.toString().contains('package:ack/ack.dart');
   }
 }

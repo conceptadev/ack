@@ -67,6 +67,13 @@ dependency_overrides:
   ack_annotations:
     path: ${p.join(projectRoot.path, 'packages', 'ack_annotations')}
 ''');
+        File(p.join(temporary.path, 'build.yaml')).writeAsStringSync('''
+targets:
+  \$default:
+    builders:
+      ack_generator:ack_generator:
+        enabled: false
+''');
         File(p.join(temporary.path, 'lib', 'alpha.dart')).writeAsStringSync(
           'final class Item { const Item(this.value); final String value; }\n',
         );
@@ -83,6 +90,7 @@ import 'alpha.dart' as alpha;
 import 'beta.dart' as beta;
 
 part 'models.ack.dart';
+part 'models.ack.g.dart';
 part 'models.g.dart';
 
 final class Color {
@@ -205,7 +213,7 @@ final class Dog extends Pet with _$DogAck {
   String get type => 'Dog';
 }
 
-@AckType()
+@AckInfer()
 final legacySchema = Ack.object({'enabled': Ack.boolean()});
 
 @JsonSerializable()
@@ -369,10 +377,14 @@ void main() {
         final generated = _generatedFiles(temporary);
         expect(
           generated.keys,
-          containsAll(['lib/models.ack.dart', 'lib/models.g.dart']),
+          containsAll([
+            'lib/models.ack.dart',
+            'lib/models.ack.g.dart',
+            'lib/models.g.dart',
+          ]),
         );
         expect(
-          generated['lib/models.g.dart'],
+          generated['lib/models.ack.g.dart'],
           contains('_ackProfileFromRuntimeName'),
         );
         expect(

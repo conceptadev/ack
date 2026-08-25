@@ -1,8 +1,8 @@
-## 2.0.0
+## 1.2.0
 
-### Breaking
+### Changed
 
-* Require Ack 2.0 and align this adapter with the coordinated Ack 2.0 release.
+* Align the adapter with Ack 1.2 and raise the minimum Dart SDK to 3.9.
 
 ## 1.1.0
 

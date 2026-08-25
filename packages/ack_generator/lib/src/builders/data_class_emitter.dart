@@ -186,7 +186,7 @@ ${_ack('SchemaResult')}<Map<String, Object?>> safeToJson() =>
 
   String _hash(String expression) => '${_ack('deepHashCode')}($expression)';
 
-  String _type(AckTypeRef type) => switch (type) {
+  String _type(AckInferRef type) => switch (type) {
     AckNullableTypeRef(:final inner) => '${_type(inner)}?',
     AckScalarTypeRef(:final dartType) => dartType,
     AckExternalTypeRef(:final visibleName, :final typeArguments) =>

@@ -23,7 +23,7 @@ void main() {
       ).readAsString();
 
       expect(content, contains('ack_annotations'));
-      expect(content, contains('@AckType()'));
+      expect(content, contains('@AckInfer()'));
       expect(content, contains('@AckModel()'));
       expect(content, contains('ack_generator'));
       expect(content, contains('build_runner'));

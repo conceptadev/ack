@@ -1,16 +1,16 @@
 name: ack_firebase_ai
 description: Firebase AI (Gemini) schema converter for ACK validation library
-version: 2.0.0
+version: 1.2.0
 repository: https://github.com/conceptadev/ack
 issue_tracker: https://github.com/conceptadev/ack/issues
 resolution: workspace
 
 environment:
-  sdk: '>=3.8.0 <4.0.0'
+  sdk: '>=3.9.0 <4.0.0'
   flutter: '>=3.16.0'
 
 dependencies:
-  ack: ^2.0.0
+  ack: ^1.2.0
   flutter:
     sdk: flutter
 

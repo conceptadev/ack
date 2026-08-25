@@ -1,18 +1,22 @@
-## 2.0.0
-
-### Breaking
-
-* Export `deepEquals` and `deepHashCode` as the shared collection equality
-  helpers used by generated Ack data classes.
-* Compare collection contents independently of growable/unmodifiable wrapper
-  implementations while preserving distinct scalar runtime types.
+## 1.2.0
 
 ### Added
 
 * Add `AckModelAdapter` as the non-nullable runtime bridge used by generated
   immutable Ack models. The adapter keeps schema parse/encode around model
-  mapping so public JSON methods stay schema-backed while structural field
-  mapping can be generated separately.
+  mapping so public JSON methods remain schema-backed.
+
+### Fixed
+
+* Preserve propagated `Error` objects during validation instead of converting
+  programming defects into recoverable schema failures.
+* Compare collection contents independently of growable or unmodifiable wrapper
+  implementations while preserving distinct scalar runtime types.
+
+### Changed
+
+* Export `deepEquals` and `deepHashCode` for generated Ack data classes.
+* Raise the minimum Dart SDK to 3.9.
 
 ## 1.1.0
 

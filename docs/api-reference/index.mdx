@@ -265,16 +265,16 @@ Schema reference for recursive object graphs.
 ## Code generation annotations
 
 Use the [`ack_generator`](https://pub.dev/packages/ack_generator) builders in
-either direction: `@AckType()` generates a model from a schema, and
+either direction: `@AckInfer()` generates a model from a schema, and
 `@AckModel()` generates a schema from a class. `AckSchema` is the runtime
 schema type; there is no `@AckSchema()` annotation. After adding matching
-`.ack.dart` and `.g.dart` part directives, run:
+`.ack.dart` and `.ack.g.dart` part directives, run:
 
 ```bash
 dart run build_runner build
 ```
 
-### `@AckType()`
+### `@AckInfer()`
 
 **Target**: Schema variables and getters
 
@@ -291,7 +291,7 @@ Annotate a top-level schema variable or getter. The schema stays in your source 
 
 **Unsupported:** nullable roots, one-way transforms, `Ack.any()`, `Ack.anyOf()`, bare `Ack.instance<T>()`, and anonymous inline objects
 
-For `Ack.discriminated(...)` constraints with `@AckType`, see
+For `Ack.discriminated(...)` constraints with `@AckInfer`, see
 [Model Code Generation](../core-concepts/typesafe-schemas.mdx#schema-first-unions).
 
 **Example:**
@@ -300,9 +300,9 @@ import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'user.ack.dart';
-part 'user.g.dart';
+part 'user.ack.g.dart';
 
-@AckType()
+@AckInfer()
 final userSchema = Ack.object({
   'name': Ack.string(),
   'email': Ack.string().email(),
@@ -375,13 +375,13 @@ class name.
 
 Nested class-first fields compose through `AddressSchema.schema`. Imports with
 combinators must expose both names (`show Address, AddressSchema`). A
-schema-first `@AckType()` declaration may also compose the facade explicitly,
+schema-first `@AckInfer()` declaration may also compose the facade explicitly,
 and class-first models can use schema-first generated model types on a clean
 build.
 
 `@AckModel()` cannot share a class with `@JsonSerializable()`. Class-first
 value roots, automatic recursive graphs, and undiscriminated `anyOf` shapes are
-unsupported; use schema-first `@AckType()` and named `Ack.lazy` for those
+unsupported; use schema-first `@AckInfer()` and named `Ack.lazy` for those
 cases. See
 [Model Code Generation](../core-concepts/typesafe-schemas.mdx) for the complete
 tutorial and comparison.
