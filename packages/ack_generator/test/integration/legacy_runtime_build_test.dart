@@ -71,12 +71,25 @@ final userSchema = Ack.object({
 import 'package:ack_legacy_compat/legacy.dart';
 import 'package:test/test.dart';
 
+List<String> sortedKeys(Map<String, Object?> value) =>
+    value.keys.toList()..sort();
+
 void main() {
   test('legacy extension type keeps its Ack 1.1 API', () {
     final user = LegacyUserType.parse({'name': 'Ada', 'role': 'admin'});
+    final Map<String, Object?> map = user;
     expect(user.name, 'Ada');
     expect(user['name'], 'Ada');
     expect(user.args, {'role': 'admin'});
+    expect(map.length, 2);
+    expect(sortedKeys(user), ['name', 'role']);
+    expect(map.values, containsAll(['Ada', 'admin']));
+    expect(
+      map.entries.map((entry) => '${entry.key}=${entry.value}'),
+      containsAll(['name=Ada', 'role=admin']),
+    );
+    expect(map.containsKey('name'), isTrue);
+    expect(map.containsValue('admin'), isTrue);
     expect(LegacyUserType.safeParse({'name': 'Ada'}).isOk, isTrue);
   });
 }

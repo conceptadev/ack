@@ -75,6 +75,31 @@ final userSchema = Ack.string();
     expect(sawError, isTrue);
   });
 
+  test('reports the required part directives for AckModel', () async {
+    var sawError = false;
+    await _build(
+      '''
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckModel()
+final class User with _\$UserAck {
+  const User({required this.name});
+
+  final String name;
+}
+''',
+      outputs: const {},
+      onLog: (log) {
+        if (log.level.name == 'SEVERE' &&
+            log.message.contains("part 'schema.ack.dart';") &&
+            log.message.contains("part 'schema.ack.g.dart';")) {
+          sawError = true;
+        }
+      },
+    );
+    expect(sawError, isTrue);
+  });
+
   test(
     'rejects a missing JSON part even when the Ack part is present',
     () async {

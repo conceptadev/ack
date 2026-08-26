@@ -244,7 +244,7 @@ mixin _$PetAck {
 
 final _accountObject = Ack.object({
   'display_name': Ack.string().minLength(2),
-  'website': Ack.uri().optional(),
+  'website': Ack.uri().optional().nullable(),
   'role': Ack.string().withDefault('member'),
 });
 

@@ -10,8 +10,10 @@
 
 ### Deprecated
 
-* Deprecate only `@AckType()` with its Ack 2.0 removal message. Its Ack 1.1
-  name suffixing and generated extension-type APIs remain unchanged.
+* Deprecate only `@AckType()`. It will be removed in Ack 2.0.0; use
+  `@AckInfer()` for schema-first models or `@AckModel()` for class-first
+  models. Its Ack 1.1 name suffixing and generated extension-type APIs remain
+  unchanged until removal.
 
 ### Changed
 

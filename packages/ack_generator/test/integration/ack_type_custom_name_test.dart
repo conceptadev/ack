@@ -179,6 +179,104 @@ class User {
       expect(sawError, isTrue);
     });
 
+    test('rejects @AckType on instance and static getters', () async {
+      for (final modifier in ['', 'static ']) {
+        var sawError = false;
+        await testBuilder(
+          ackGenerator(BuilderOptions.empty),
+          {
+            ...allAssets,
+            'test_pkg|lib/schema.dart':
+                '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+class Schemas {
+  @AckType()
+  ${modifier}AckSchema<String> get nameSchema => Ack.string();
+}
+''',
+          },
+          outputs: const {},
+          onLog: (log) {
+            if (log.level.name == 'SEVERE' &&
+                log.message.contains('top-level schema variables or getters')) {
+              sawError = true;
+            }
+          },
+        );
+        expect(sawError, isTrue, reason: 'modifier: "$modifier"');
+      }
+    });
+
+    test('ignores a consumer annotation class named AckType', () async {
+      final builder = ackGenerator(BuilderOptions.empty);
+      var sawConsumerAnnotationDiagnostic = false;
+
+      await testBuilder(
+        builder,
+        {
+          ...allAssets,
+          'test_pkg|lib/schema.dart': '''
+class AckType {
+  const AckType();
+}
+
+@AckType()
+final ordinaryValue = 1;
+''',
+        },
+        outputs: const {},
+        onLog: (log) {
+          if (log.level.name == 'SEVERE' &&
+              log.message.contains('ordinaryValue')) {
+            sawConsumerAnnotationDiagnostic = true;
+          }
+        },
+      );
+
+      expect(sawConsumerAnnotationDiagnostic, isFalse);
+    });
+
+    test(
+      'does not treat a consumer AckType annotation as a typed schema edge',
+      () async {
+        final builder = ackGenerator(BuilderOptions.empty);
+        var sawUntypedObjectDiagnostic = false;
+
+        await testBuilder(
+          builder,
+          {
+            ...allAssets,
+            'test_pkg|lib/schema.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart' as annotations;
+
+class AckType {
+  const AckType();
+}
+
+@AckType()
+final impostorSchema = Ack.object({'id': Ack.string()});
+
+@annotations.AckType()
+final userSchema = Ack.object({'nested': impostorSchema});
+''',
+          },
+          outputs: const {},
+          onLog: (log) {
+            if (log.level.name == 'SEVERE' &&
+                log.message.contains('impostorSchema') &&
+                log.message.contains('without @AckType')) {
+              sawUntypedObjectDiagnostic = true;
+            }
+          },
+        );
+
+        expect(sawUntypedObjectDiagnostic, isTrue);
+      },
+    );
+
     test('nullable object schemas do not generate extension types', () async {
       final builder = ackGenerator(BuilderOptions.empty);
 

@@ -125,6 +125,41 @@ final class User with _\$UserAck {
     );
   });
 
+  test('rejects a one-way transform returned by AckField', () async {
+    await _expectFailure(
+      '''
+AckSchema<String, String> normalizedSchema() => Ack.string().trim();
+
+@AckModel()
+final class User with _\$UserAck {
+  const User({required this.name});
+
+  @AckField(schema: normalizedSchema)
+  final String name;
+}
+''',
+      ['User.name', 'normalizedSchema', '.transform()'],
+    );
+  });
+
+  test('rejects a referenced one-way transform returned by AckField', () async {
+    await _expectFailure(
+      '''
+final normalized = Ack.string().trim();
+AckSchema<String, String> normalizedSchema() => normalized;
+
+@AckModel()
+final class User with _\$UserAck {
+  const User({required this.name});
+
+  @AckField(schema: normalizedSchema)
+  final String name;
+}
+''',
+      ['User.name', 'normalizedSchema', 'normalized', '.transform()'],
+    );
+  });
+
   test('requires AckField for Map<String, V>', () async {
     await _expectFailure(
       '''

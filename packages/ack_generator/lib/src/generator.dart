@@ -16,6 +16,12 @@ final _log = Logger('AckSchemaGenerator');
 
 /// Generates extension types for top-level schemas annotated with `@AckType`.
 class AckSchemaGenerator extends Generator {
+  static const _ackTypeChecker = TypeChecker.typeNamed(
+    // ignore: deprecated_member_use
+    AckType,
+    inPackage: 'ack_annotations',
+  );
+
   final _formatter = DartFormatter(
     languageVersion: DartFormatter.latestLanguageVersion,
   );
@@ -380,15 +386,11 @@ class AckSchemaGenerator extends Generator {
   }
 
   bool _hasAckTypeAnnotation(Element element) {
-    // ignore: deprecated_member_use
-    return TypeChecker.typeNamed(AckType).hasAnnotationOfExact(element);
+    return _ackTypeChecker.hasAnnotationOfExact(element);
   }
 
   String? _extractAckTypeName(Element element) {
-    final annotation = TypeChecker.typeNamed(
-      // ignore: deprecated_member_use
-      AckType,
-    ).firstAnnotationOfExact(element);
+    final annotation = _ackTypeChecker.firstAnnotationOfExact(element);
     if (annotation == null) {
       return null;
     }

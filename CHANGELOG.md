@@ -5,9 +5,11 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ## 1.2.0
 
-* Preserve `@AckType()` as the deprecated Ack 1.1 extension-type generator,
-  including the `*Type`, Map, `.args`, `parse`, `safeParse`, and `.g.dart`
-  contracts.
+* **Deprecated:** `@AckType()` remains available with its Ack 1.1
+  extension-type behavior frozen through 1.x, but it will be removed in
+  Ack 2.0.0. Use `@AckInfer()` for schema-first models or `@AckModel()` for
+  class-first models. Existing `*Type`, Map, `.args`, `parse`, `safeParse`,
+  naming, and `.g.dart` contracts remain unchanged until removal.
 * Add `@AckInfer()` for immutable schema-first models and retain
   `@AckModel()` for class-first schemas with private codecs and public
   UpperCamelCase schema facades.

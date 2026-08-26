@@ -46,6 +46,22 @@ part 'schema.ack.g.dart';
 ''';
 
 void main() {
+  test('rejects dynamic additionalProperties expressions', () async {
+    await _expectFailure(
+      '''
+$_head
+bool get allowExtras => true;
+
+@AckInfer()
+final userSchema = Ack.object(
+  {'name': Ack.string()},
+  additionalProperties: allowExtras,
+);
+''',
+      ['userSchema', 'additionalProperties', 'const variable'],
+    );
+  });
+
   test(
     'models custom bidirectional codecs from generic schema types',
     () async {
@@ -224,6 +240,22 @@ final ageFromString = Ack.string().transform(int.parse);
 final ageSchema = ageFromString;
 ''',
       ['ageSchema', 'ageFromString', '.transform()'],
+    );
+  });
+
+  test('rejects a referenced one-way transform below a codec', () async {
+    await _expectFailure(
+      '''
+$_head
+final normalized = Ack.string().trim();
+
+@AckInfer()
+final valueSchema = normalized.codec<String>(
+  decode: (value) => value,
+  encode: (value) => value,
+);
+''',
+      ['valueSchema', 'normalized', '.transform()'],
     );
   });
 

@@ -112,4 +112,117 @@ final userSchema = Ack.object({'address': addressSchema});
     );
     expect(sawDiagnostic, isTrue);
   });
+
+  test('class-first models reject a nested legacy generated type', () async {
+    var sawDiagnostic = false;
+    await _build(
+      ackModelBuilder(BuilderOptions.empty),
+      """
+$_parts
+@AckType()
+final addressSchema = Ack.object({'city': Ack.string()});
+
+@AckModel()
+final class User with _\$UserAck {
+  const User({required this.addresses});
+
+  final List<AddressType> addresses;
+}
+""",
+      outputs: const {},
+      onLog: (log) {
+        if (log.level.name == 'SEVERE' &&
+            log.message.contains('User.addresses') &&
+            log.message.contains('migrate this connected graph together')) {
+          sawDiagnostic = true;
+        }
+      },
+    );
+    expect(sawDiagnostic, isTrue);
+  });
+
+  test('class-first models reject a resolved legacy generated type', () async {
+    const source =
+        """
+$_parts
+@AckType()
+final addressSchema = Ack.object({'city': Ack.string()});
+
+@AckModel()
+final class User with _\$UserAck {
+  const User({required this.addresses});
+
+  final List<AddressType> addresses;
+}
+""";
+    final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
+    await readerWriter.testing.loadIsolateSources();
+    await testBuilder(
+      ackGenerator(BuilderOptions.empty),
+      {'test_pkg|lib/models.dart': source},
+      generateFor: const {'test_pkg|lib/models.dart'},
+      readerWriter: readerWriter,
+      outputs: {
+        'test_pkg|lib/models.g.dart': decodedMatches(
+          contains('extension type AddressType('),
+        ),
+      },
+    );
+    final generatedAsset = readerWriter.testing.assets.singleWhere(
+      (asset) => asset.path.endsWith('/models.g.dart'),
+    );
+    final generatedSource = readerWriter.testing.readString(generatedAsset);
+    final resolvedReaderWriter = TestReaderWriter(rootPackage: 'test_pkg');
+    await resolvedReaderWriter.testing.loadIsolateSources();
+
+    var sawDiagnostic = false;
+    await testBuilder(
+      ackModelBuilder(BuilderOptions.empty),
+      {
+        'test_pkg|lib/models.dart': source,
+        'test_pkg|lib/models.g.dart': generatedSource,
+      },
+      generateFor: const {'test_pkg|lib/models.dart'},
+      readerWriter: resolvedReaderWriter,
+      outputs: const {},
+      onLog: (log) {
+        if (log.level.name == 'SEVERE' &&
+            log.message.contains('User.addresses') &&
+            log.message.contains('migrate this connected graph together')) {
+          sawDiagnostic = true;
+        }
+      },
+    );
+    expect(sawDiagnostic, isTrue);
+  });
+
+  test('legacy schemas reject a nested class-first facade', () async {
+    var sawDiagnostic = false;
+    await _build(
+      ackGenerator(BuilderOptions.empty),
+      """
+$_parts
+@AckModel()
+final class Address with _\$AddressAck {
+  const Address({required this.city});
+
+  final String city;
+}
+
+@AckType()
+final userSchema = Ack.object({
+  'addresses': Ack.list(AddressSchema.schema),
+});
+""",
+      outputs: const {},
+      onLog: (log) {
+        if (log.level.name == 'SEVERE' &&
+            log.message.contains('userSchema.addresses') &&
+            log.message.contains('migrate this connected graph together')) {
+          sawDiagnostic = true;
+        }
+      },
+    );
+    expect(sawDiagnostic, isTrue);
+  });
 }

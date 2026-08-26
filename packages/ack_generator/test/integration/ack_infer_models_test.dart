@@ -61,6 +61,35 @@ final emptySchema = Ack.object({});
     },
   );
 
+  test('evaluates const additionalProperties references', () async {
+    await _build(
+      {
+        'user.dart':
+            '''
+$_imports
+part 'user.ack.dart';
+part 'user.ack.g.dart';
+
+const allowExtras = true;
+
+@AckInfer()
+final userSchema = Ack.object(
+  {'name': Ack.string()},
+  additionalProperties: allowExtras,
+);
+''',
+      },
+      outputs: {
+        'test_pkg|lib/user.ack.dart': decodedMatches(
+          allOf([
+            contains('final Map<String, Object?> additionalProperties'),
+            contains('additionalProperties.entries'),
+          ]),
+        ),
+      },
+    );
+  });
+
   test(
     'emits enums, num, literals, codecs, and nested immutable lists',
     () async {

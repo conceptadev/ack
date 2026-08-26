@@ -9,6 +9,7 @@ import 'package:analyzer/dart/element/type_provider.dart';
 import 'package:logging/logging.dart';
 import 'package:source_gen/source_gen.dart';
 
+import '../json/helper_names.dart';
 import '../models/field_info.dart';
 import '../models/model_info.dart';
 
@@ -73,6 +74,16 @@ class _ResolvedSchemaReference {
 /// (like `Ack.object({...})`) to extract field type information without
 /// requiring const evaluation or string parsing.
 class SchemaAstAnalyzer {
+  static const _ackTypeChecker = TypeChecker.typeNamed(
+    // ignore: deprecated_member_use
+    AckType,
+    inPackage: 'ack_annotations',
+  );
+  static const _ackModelChecker = TypeChecker.typeNamed(
+    AckModel,
+    inPackage: 'ack_annotations',
+  );
+
   final Map<String, String> _schemaVariableTypeCache = {};
   final Set<String> _schemaVariableTypeStack = {};
   final Map<String, _ResolvedSchemaReference?> _schemaReferenceCache = {};
@@ -167,6 +178,12 @@ class SchemaAstAnalyzer {
       );
     }
 
+    _rejectAckModelFacadeExpression(
+      initializer,
+      element,
+      diagnosticPath: element.name,
+    );
+
     if (initializer is MethodInvocation) {
       final model = _parseSchemaFromAST(
         element.name!,
@@ -251,6 +268,14 @@ class SchemaAstAnalyzer {
 
       final returnStatement = statements.first as ReturnStatement;
       schemaExpression = returnStatement.expression;
+    }
+
+    if (schemaExpression != null) {
+      _rejectAckModelFacadeExpression(
+        schemaExpression,
+        element,
+        diagnosticPath: element.name,
+      );
     }
 
     if (schemaExpression is MethodInvocation) {
@@ -734,6 +759,12 @@ class SchemaAstAnalyzer {
           element: element,
         );
       }
+
+      _rejectAckModelFacadeExpression(
+        schemaEntry.value,
+        element,
+        diagnosticPath: '$variableName.$discriminatorValue',
+      );
 
       final branchReference = _extractSchemaReference(schemaEntry.value);
       if (branchReference == null) {
@@ -1281,6 +1312,12 @@ class SchemaAstAnalyzer {
     Expression value,
     Element element,
   ) {
+    _rejectAckModelFacadeExpression(
+      value,
+      element,
+      diagnosticPath: '${element.name}.$fieldName',
+    );
+
     // Handle Ack.xxx() method calls
     if (value is MethodInvocation) {
       final schemaReferenceField = _parseSchemaReferenceMethod(
@@ -1485,7 +1522,12 @@ class SchemaAstAnalyzer {
     final typeProvider = element.library!.typeProvider;
     final listElementAnalysis =
         schemaMethod == 'list' && transformOutputTypeString == null
-        ? _analyzeListElement(baseInvocation, element, typeProvider)
+        ? _analyzeListElement(
+            baseInvocation,
+            element,
+            typeProvider,
+            diagnosticPath: '${element.name}.$fieldName',
+          )
         : null;
     // Map schema type to Dart type (passing full invocation for context)
     // Also captures schema variable reference and list metadata for typed wrappers.
@@ -2059,8 +2101,9 @@ class SchemaAstAnalyzer {
   _ListElementAnalysis _analyzeListElement(
     MethodInvocation listInvocation,
     Element element,
-    TypeProvider typeProvider,
-  ) {
+    TypeProvider typeProvider, {
+    String? diagnosticPath,
+  }) {
     final args = listInvocation.argumentList.arguments;
 
     if (args.isEmpty) {
@@ -2073,6 +2116,11 @@ class SchemaAstAnalyzer {
     }
 
     final firstArg = args.first;
+    _rejectAckModelFacadeExpression(
+      firstArg,
+      element,
+      diagnosticPath: diagnosticPath,
+    );
 
     final ref = _resolveListElementRef(firstArg);
     if (ref.invocation != null) {
@@ -2138,6 +2186,7 @@ class SchemaAstAnalyzer {
           baseInvocation,
           element,
           typeProvider,
+          diagnosticPath: diagnosticPath,
         );
         return (
           mapping: _wrapListElementMapping(nested.mapping, typeProvider),
@@ -2593,6 +2642,96 @@ class SchemaAstAnalyzer {
     return null;
   }
 
+  void _rejectAckModelFacadeExpression(
+    Expression expression,
+    Element contextElement, {
+    String? diagnosticPath,
+  }) {
+    final match = RegExp(
+      r'^(?:([A-Za-z$][A-Za-z0-9_$]*)\.)?'
+      r'([A-Z][A-Za-z0-9_$]*)\.schema(?:\.|$)',
+    ).firstMatch(expression.toSource());
+    if (match == null) return;
+
+    final prefix = match.group(1);
+    final facadeName = match.group(2)!;
+    final library = contextElement.library;
+    if (library == null) return;
+    final matches = <ClassElement>{};
+
+    void consider(ClassElement element, LibraryImport? import) {
+      if (_classFirstFacadeName(element) != facadeName) return;
+      if (import != null && !_importAllowsName(import, facadeName)) return;
+      matches.add(element);
+    }
+
+    if (prefix == null) {
+      for (final element in library.classes) {
+        consider(element, null);
+      }
+    }
+    for (final import in library.firstFragment.libraryImports) {
+      if (import.isSynthetic || (import.prefix?.isDeferred ?? false)) continue;
+      if (_elementName(import.prefix?.element) != prefix) continue;
+      final importedLibrary = import.importedLibrary;
+      if (importedLibrary == null) continue;
+      for (final element in importedLibrary.classes) {
+        consider(element, import);
+      }
+    }
+    if (matches.isEmpty) return;
+    if (matches.length > 1) {
+      throw InvalidGenerationSource(
+        'Modern @AckModel facade reference ${expression.toSource()} is '
+        'ambiguous.',
+        element: contextElement,
+      );
+    }
+
+    final path = diagnosticPath ?? contextElement.name ?? 'legacy schema';
+    throw InvalidGenerationSource(
+      '$path crosses from legacy @AckType into modern @AckModel facade '
+      '"$facadeName.schema". AckType and modern models intentionally use '
+      'isolated generators; migrate this connected graph together.',
+      element: contextElement,
+    );
+  }
+
+  String? _classFirstFacadeName(ClassElement element) {
+    final annotation = _ackModelChecker.firstAnnotationOfExact(element);
+    if (annotation != null) {
+      final configuredName = ConstantReader(annotation).read('schemaName');
+      return ackClassSchemaFacadeName(
+        element.name!,
+        override: configuredName.isNull ? null : configuredName.stringValue,
+      );
+    }
+    final isImplicitUnionBranch = element.allSupertypes.any((supertype) {
+      final base = supertype.element;
+      return base is ClassElement &&
+          base.library == element.library &&
+          base.isSealed &&
+          _ackModelChecker.hasAnnotationOfExact(base);
+    });
+    return isImplicitUnionBranch
+        ? ackClassSchemaFacadeName(element.name!)
+        : null;
+  }
+
+  bool _importAllowsName(LibraryImport import, String name) {
+    for (final combinator in import.combinators) {
+      if (combinator is ShowElementCombinator &&
+          !combinator.shownNames.contains(name)) {
+        return false;
+      }
+      if (combinator is HideElementCombinator &&
+          combinator.hiddenNames.contains(name)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   LibraryImport? _findImportDirectiveForElement(
     String name,
     Element element,
@@ -2627,8 +2766,7 @@ class SchemaAstAnalyzer {
   }
 
   bool _hasAckTypeAnnotation(Element element) {
-    // ignore: deprecated_member_use
-    return TypeChecker.typeNamed(AckType).hasAnnotationOfExact(element);
+    return _ackTypeChecker.hasAnnotationOfExact(element);
   }
 
   bool _hasAckInferAnnotation(Element element) {
@@ -2639,10 +2777,7 @@ class SchemaAstAnalyzer {
   }
 
   String? _extractAckTypeName(Element element) {
-    final annotation = TypeChecker.typeNamed(
-      // ignore: deprecated_member_use
-      AckType,
-    ).firstAnnotationOfExact(element);
+    final annotation = _ackTypeChecker.firstAnnotationOfExact(element);
     if (annotation == null) return null;
 
     final nameField = ConstantReader(annotation).peek('name');

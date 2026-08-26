@@ -129,12 +129,24 @@ final class ClassModelGraphBuilder {
     'yield',
   };
 
+  static const _oneWayTransformMethods = {
+    'transform',
+    'trim',
+    'toLowerCase',
+    'toUpperCase',
+  };
+
   static const _ackModelChecker = TypeChecker.typeNamed(
     annotations.AckModel,
     inPackage: 'ack_annotations',
   );
   static const _ackInferChecker = TypeChecker.typeNamed(
     annotations.AckInfer,
+    inPackage: 'ack_annotations',
+  );
+  static const _ackTypeChecker = TypeChecker.typeNamed(
+    // ignore: deprecated_member_use
+    annotations.AckType,
     inPackage: 'ack_annotations',
   );
   static const _ackFieldChecker = TypeChecker.typeNamed(
@@ -496,7 +508,9 @@ final class ClassModelGraphBuilder {
     final futureTypes = <String, _FutureGeneratedType>{};
     for (final field in fields.values) {
       final name = field.name;
-      if (name == null || !_containsInvalidType(field.type)) continue;
+      if (name == null) continue;
+      _rejectResolvedLegacyGeneratedType(field.type, field);
+      if (!_containsInvalidType(field.type)) continue;
       final futureType = await _futureGeneratedType(field);
       if (futureType != null) {
         futureTypes[name] = futureType;
@@ -766,6 +780,30 @@ final class ClassModelGraphBuilder {
       type is InvalidType ||
       (type is InterfaceType && type.typeArguments.any(_containsInvalidType));
 
+  void _rejectResolvedLegacyGeneratedType(DartType type, FieldElement field) {
+    if (type is! InterfaceType) return;
+    final element = type.element;
+    if (element is ExtensionTypeElement) {
+      final name = element.name;
+      if (name != null && _isGeneratedAckType(element, name)) {
+        _rejectLegacyGeneratedType(field, name);
+      }
+    }
+    for (final argument in type.typeArguments) {
+      _rejectResolvedLegacyGeneratedType(argument, field);
+    }
+  }
+
+  bool _isGeneratedAckType(ExtensionTypeElement element, String name) {
+    for (final candidate in LibraryReader(element.library).allElements) {
+      final declaration = _ackTypeDeclaration(candidate);
+      if (declaration != null && _generatedAckTypeName(declaration) == name) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   Future<_FutureGeneratedType?> _futureGeneratedType(FieldElement field) async {
     final resolved = await _resolvedLibraryFor(field.library);
     AstNode? node = resolved.getFragmentDeclaration(field.firstFragment)?.node;
@@ -805,6 +843,14 @@ final class ClassModelGraphBuilder {
         setListSchema: listSchema,
       );
     } else {
+      final legacyTarget = _futureAckTypeTarget(
+        generatedTypeName: name,
+        prefix: prefix,
+        field: field,
+      );
+      if (legacyTarget != null) {
+        _rejectLegacyGeneratedType(field, name);
+      }
       final target = _futureAckInferTarget(
         className: name,
         prefix: prefix,
@@ -894,6 +940,103 @@ final class ClassModelGraphBuilder {
     return matches.single;
   }
 
+  Element? _futureAckTypeTarget({
+    required String generatedTypeName,
+    required String? prefix,
+    required FieldElement field,
+  }) {
+    final matches = <Element>{};
+    String? hiddenDeclaration;
+
+    void consider(Element element, LibraryImport? import) {
+      final declaration = _ackTypeDeclaration(element);
+      if (declaration == null ||
+          _generatedAckTypeName(declaration) != generatedTypeName) {
+        return;
+      }
+      if (import != null && !_importAllowsName(import, generatedTypeName)) {
+        hiddenDeclaration = declaration.name;
+        return;
+      }
+      matches.add(declaration.baseElement);
+    }
+
+    if (prefix == null) {
+      for (final element in library.allElements) {
+        consider(element, null);
+      }
+    }
+    for (final import in library.element.firstFragment.libraryImports) {
+      if (import.isSynthetic || (import.prefix?.isDeferred ?? false)) continue;
+      final importPrefix = import.prefix?.element.name;
+      if (importPrefix != prefix) continue;
+      final importedLibrary = import.importedLibrary;
+      final elements = <Element>{
+        if (importedLibrary != null)
+          ...LibraryReader(importedLibrary).allElements,
+        ...import.namespace.definedNames2.values,
+      };
+      for (final element in elements) {
+        consider(element, import);
+      }
+    }
+    if (matches.isEmpty) {
+      if (hiddenDeclaration != null) {
+        throw InvalidGenerationSource(
+          'Generated legacy type "$generatedTypeName" is hidden by an '
+          'import combinator. Expose $generatedTypeName from the import.',
+          element: field,
+        );
+      }
+      return null;
+    }
+    if (matches.length > 1) {
+      throw InvalidGenerationSource(
+        '${field.enclosingElement.name}.${field.name} resolves future legacy '
+        'generated type "$generatedTypeName" ambiguously.',
+        element: field,
+      );
+    }
+    return matches.single;
+  }
+
+  Never _rejectLegacyGeneratedType(FieldElement field, String name) {
+    throw InvalidGenerationSource(
+      '${field.enclosingElement.name}.${field.name} crosses from modern '
+      '@AckModel into legacy @AckType generated type "$name". AckType '
+      'and modern models intentionally use isolated generators; migrate '
+      'this connected graph together.',
+      element: field,
+    );
+  }
+
+  Element? _ackTypeDeclaration(Element element) {
+    final declaration = switch (element) {
+      GetterElement(isOriginVariable: true) => element.variable.baseElement,
+      GetterElement() => element.baseElement,
+      TopLevelVariableElement() => element.baseElement,
+      _ => null,
+    };
+    return declaration != null &&
+            _ackTypeChecker.hasAnnotationOfExact(declaration)
+        ? declaration
+        : null;
+  }
+
+  String _generatedAckTypeName(Element declaration) {
+    final annotation = _ackTypeChecker.firstAnnotationOfExact(declaration)!;
+    final configuredName = ConstantReader(annotation).read('name');
+    var baseName = configuredName.isNull
+        ? declaration.name!
+        : configuredName.stringValue.trim();
+    if (configuredName.isNull && baseName.endsWith('Schema')) {
+      baseName = baseName.substring(0, baseName.length - 'Schema'.length);
+    }
+    if (baseName.isEmpty) baseName = 'Type';
+    baseName = '${baseName[0].toUpperCase()}${baseName.substring(1)}';
+    return '${baseName}Type';
+  }
+
   Element? _ackInferDeclaration(Element element) {
     final declaration = switch (element) {
       GetterElement(isOriginVariable: true) => element.variable.baseElement,
@@ -953,11 +1096,22 @@ final class ClassModelGraphBuilder {
     final declaration = resolved
         .getFragmentDeclaration(function.firstFragment)
         ?.node;
-    if (declaration is! FunctionDeclaration ||
-        _functionBodyExpression(declaration.functionExpression.body) == null) {
+    final bodyExpression = declaration is FunctionDeclaration
+        ? _functionBodyExpression(declaration.functionExpression.body)
+        : null;
+    if (bodyExpression == null) {
       throw InvalidGenerationSource(
         '${field.enclosingElement.name}.${field.name} @AckField function must '
         'have a statically resolvable expression or single return.',
+        element: field,
+      );
+    }
+    final oneWaySource = await _oneWayTransformSource(bodyExpression);
+    if (oneWaySource != null) {
+      throw InvalidGenerationSource(
+        '${field.enclosingElement.name}.${field.name} @AckField schema '
+        'function ${function.name} reaches one-way schema $oneWaySource. '
+        'Migrate this .transform() path to .codec() with an encoder.',
         element: field,
       );
     }
@@ -1377,6 +1531,63 @@ final class ClassModelGraphBuilder {
     return null;
   }
 
+  Future<String?> _oneWayTransformSource(
+    Expression expression, {
+    Set<Element> visited = const {},
+  }) async {
+    Expression? current = expression;
+    while (current is ParenthesizedExpression) {
+      current = current.expression;
+    }
+    Element? referenced;
+    while (current is MethodInvocation) {
+      if (_oneWayTransformMethods.contains(current.methodName.name)) {
+        return current.methodName.name;
+      }
+      final method = current.methodName.element;
+      if (method is TopLevelFunctionElement) referenced = method;
+      current = current.target;
+    }
+    referenced ??= switch (current) {
+      SimpleIdentifier() => current.element,
+      PrefixedIdentifier() => current.identifier.element,
+      PropertyAccess() => current.propertyName.element,
+      _ => null,
+    };
+    if (referenced == null) return null;
+
+    Element declaration = referenced.baseElement;
+    if (declaration is GetterElement && declaration.isOriginVariable) {
+      declaration = declaration.variable.baseElement;
+    }
+    if (declaration is! TopLevelVariableElement &&
+        declaration is! GetterElement &&
+        declaration is! TopLevelFunctionElement) {
+      return null;
+    }
+    final canonical = declaration.baseElement;
+    if (visited.contains(canonical) || visited.length >= 16) return null;
+    final owningLibrary = declaration.library;
+    if (owningLibrary == null) return null;
+    final resolved = await _resolvedLibraryFor(owningLibrary);
+    final node = resolved
+        .getFragmentDeclaration(declaration.firstFragment)
+        ?.node;
+    final referencedExpression = switch (node) {
+      VariableDeclaration() => node.initializer,
+      FunctionDeclaration() => _functionBodyExpression(
+        node.functionExpression.body,
+      ),
+      _ => null,
+    };
+    if (referencedExpression == null) return null;
+    final nested = await _oneWayTransformSource(
+      referencedExpression,
+      visited: {...visited, canonical},
+    );
+    return nested == null ? null : '${declaration.name} → $nested';
+  }
+
   void _requireMixin(ClassElement element) {
     final mixinName = ackClassMixinName(element.name!);
     if (_declaresMixin(element, mixinName)) return;
@@ -1544,6 +1755,8 @@ final class ClassModelGraphBuilder {
   }) {
     return switch (presence) {
       AckSchemaFieldPresence.defaulted => '$schema.withDefault($defaultCode)',
+      AckSchemaFieldPresence.optional when nullable =>
+        '$schema.optional().nullable()',
       AckSchemaFieldPresence.optional => '$schema.optional()',
       AckSchemaFieldPresence.required when nullable => '$schema.nullable()',
       AckSchemaFieldPresence.required => schema,

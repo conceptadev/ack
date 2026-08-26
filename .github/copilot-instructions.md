@@ -6,15 +6,15 @@
 
 ## Repository layout
 - `packages/ack`: core runtime validation library.
-- `packages/ack_annotations`: source annotation for `@AckType()` schema
-  generation.
+- `packages/ack_annotations`: annotations for schema-first `@AckInfer()`,
+  class-first `@AckModel()`, and frozen legacy `@AckType()` generation.
 - `packages/ack_generator`: build_runner generator + unit/integration tests.
 - `packages/ack_firebase_ai`: Firebase AI schema adapter.
 - `packages/ack_json_schema_builder`: JSON Schema adapter.
 - `example`: sample usage.
 
 ## Environment and setup
-- Required SDKs: Dart `>=3.8.0 <4.0.0`, Flutter `>=3.16.0` (see `/pubspec.yaml`).
+- Required SDKs: Dart `>=3.9.0 <4.0.0`, Flutter `>=3.16.0` (see `/pubspec.yaml`).
 - Use from repo root:
   1. `dart pub get`
   2. `dart run melos bootstrap`

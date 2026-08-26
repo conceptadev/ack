@@ -11,6 +11,12 @@
 * Add dedicated `.ack.dart` and `.ack.g.dart` builders so modern Ack output
   remains separate from legacy and ordinary `.g.dart` generators.
 
+### Deprecated
+
+* Deprecate the `@AckType()` generator path for removal in Ack 2.0.0. Use
+  `@AckInfer()` for schema-first models or `@AckModel()` for class-first
+  models. Existing Ack 1.1 output remains frozen and supported through 1.x.
+
 ### Compatibility
 
 * Restore the Ack 1.1 `@AckType()` analyzer, emitter, tests, and

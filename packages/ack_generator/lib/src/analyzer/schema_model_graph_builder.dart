@@ -448,7 +448,11 @@ final class SchemaModelGraphBuilder {
       );
     }
     final literal = arguments.first as SetOrMapLiteral;
-    final additionalProperties = _additionalProperties(declaration.expression);
+    final additionalProperties = _additionalProperties(
+      declaration.expression,
+      path: path,
+      element: declaration.element,
+    );
     final fields = <AckFieldNode>[];
     for (final entry in literal.elements) {
       if (entry is! MapLiteralEntry || entry.key is! SimpleStringLiteral) {
@@ -643,6 +647,11 @@ final class SchemaModelGraphBuilder {
     final chain = _chain(expression);
     _rejectTransform(chain, path, context);
     if (chain.hasCodec) {
+      await _rejectReferencedTransform(
+        chain.reference,
+        path: path,
+        context: context,
+      );
       return _schemaTypes(expression, path, context).runtime;
     }
     final baseName = chain.base?.methodName.name;
@@ -1489,6 +1498,41 @@ final class SchemaModelGraphBuilder {
     );
   }
 
+  Future<void> _rejectReferencedTransform(
+    Expression? reference, {
+    required String path,
+    required Element context,
+    Set<Element> visited = const {},
+  }) async {
+    if (reference == null) return;
+    final referenced = _referencedElement(reference);
+    if (referenced == null) return;
+    final declaration = _propertyDeclaration(referenced);
+    if (declaration is! TopLevelVariableElement &&
+        declaration is! GetterElement) {
+      return;
+    }
+    final canonical = declaration.baseElement;
+    if (visited.contains(canonical) || visited.length >= _maxReferenceDepth) {
+      return;
+    }
+    final owningLibrary = declaration.library;
+    if (owningLibrary == null) return;
+    final resolved = await _resolvedLibraryFor(owningLibrary);
+    final expression = _declarationExpression(resolved, declaration);
+    if (expression == null) return;
+
+    final referencePath = '$path(→ ${declaration.name})';
+    final chain = _chain(expression);
+    _rejectTransform(chain, referencePath, context);
+    await _rejectReferencedTransform(
+      chain.reference,
+      path: referencePath,
+      context: context,
+      visited: {...visited, canonical},
+    );
+  }
+
   Never _rejectUnsupportedRoot(String? name, String path, Element element) {
     final label = switch (name) {
       'any' => 'Ack.any()',
@@ -1503,23 +1547,49 @@ final class SchemaModelGraphBuilder {
     );
   }
 
-  bool _additionalProperties(Expression expression) {
+  bool _additionalProperties(
+    Expression expression, {
+    required String path,
+    required Element element,
+  }) {
     Expression? current = expression;
     while (current is MethodInvocation) {
       if (current.methodName.name == 'passthrough') return true;
       if (current.methodName.name == 'object') {
         for (final argumentNode in current.argumentList.arguments) {
           final argument = _namedArgument(argumentNode);
-          if (argument != null &&
-              argument.name == 'additionalProperties' &&
-              argument.expression is BooleanLiteral) {
-            return (argument.expression as BooleanLiteral).value;
+          if (argument != null && argument.name == 'additionalProperties') {
+            final value = _constantBool(argument.expression);
+            if (value != null) return value;
+            throw InvalidGenerationSource(
+              '$path additionalProperties must be a bool literal or const '
+              'variable reference.',
+              element: element,
+            );
           }
         }
       }
       current = current.target;
     }
     return false;
+  }
+
+  bool? _constantBool(Expression expression) {
+    while (expression is ParenthesizedExpression) {
+      expression = expression.expression;
+    }
+    if (expression is BooleanLiteral) return expression.value;
+
+    final element = switch (expression) {
+      SimpleIdentifier() => expression.element,
+      PrefixedIdentifier() => expression.identifier.element,
+      PropertyAccess() => expression.propertyName.element,
+      _ => null,
+    };
+    final declaration = element == null ? null : _propertyDeclaration(element);
+    return declaration is VariableElement
+        ? declaration.computeConstantValue()?.toBoolValue()
+        : null;
   }
 
   String? _description(Expression expression) {
@@ -1535,14 +1605,12 @@ final class SchemaModelGraphBuilder {
     return null;
   }
 
-  /// Normalizes analyzer 10's expression arguments and analyzer 13's
-  /// dedicated argument nodes into the expression API used by the graph.
+  /// Normalizes analyzer argument nodes into the expression API used by the
+  /// graph.
   ///
-  /// The `dynamic` shim exists because analyzer 10 represents arguments as
-  /// [Expression] / [NamedExpression], while analyzer 13+ wraps them in an
-  /// `Argument` interface that is not a compile-time type in analyzer 10.
-  /// Keeping `analyzer: ">=10.0.0 <15.0.0"` matches json_serializable 6.14.1
-  /// so consumers are not forced onto a narrower resolver.
+  /// The `dynamic` shim keeps AST shape-specific access localized. The package
+  /// currently supports `analyzer: ">=10.0.0 <11.0.0"`; this compatibility
+  /// code does not advertise support outside that pubspec constraint.
   List<Expression> _argumentExpressions(ArgumentList argumentList) =>
       argumentList.arguments
           .map((argument) => _argumentExpression(argument))
@@ -1555,25 +1623,24 @@ final class SchemaModelGraphBuilder {
 
     final dynamic dynamicArgument = argument;
     try {
-      // Analyzer 13+ wraps positional expressions in the Argument interface.
+      // Alternate AST shapes expose positional values as argumentExpression.
       // ignore: avoid_dynamic_calls
       return dynamicArgument.argumentExpression as Expression;
     } on Object {
       throw InvalidGenerationSource(
         'Unsupported analyzer argument node ${argument.runtimeType}; '
-        'ack_generator supports analyzer 10–14',
+        'ack_generator supports analyzer >=10.0.0 <11.0.0',
       );
     }
   }
 
   ({String name, Expression expression})? _namedArgument(AstNode argument) {
-    // NamedExpression (analyzer 10) and Argument (analyzer 13+) are not a
-    // shared compile-time type across analyzer 10–14. The build script is
-    // AOT-compiled against the resolved analyzer, so this must stay dynamic.
+    // The supported AST exposes either a Label or Token-like name. Keep the
+    // shape-specific access dynamic and local to this compatibility boundary.
     final dynamic dynamicArgument = argument;
     String? name;
     try {
-      // Analyzer 13+ exposes a Token directly.
+      // Token-like names expose lexeme directly.
       // ignore: avoid_dynamic_calls
       name = dynamicArgument.name.lexeme as String?;
     } on Object {
@@ -1585,14 +1652,14 @@ final class SchemaModelGraphBuilder {
         if (argument is Expression) return null;
         throw InvalidGenerationSource(
           'Unsupported analyzer argument node ${argument.runtimeType}; '
-          'ack_generator supports analyzer 10–14',
+          'ack_generator supports analyzer >=10.0.0 <11.0.0',
         );
       }
     }
     if (name == null) return null;
 
     try {
-      // Analyzer 13+ uses Argument.argumentExpression.
+      // Alternate AST shapes expose argumentExpression.
       // ignore: avoid_dynamic_calls
       final expression = dynamicArgument.argumentExpression as Expression;
       return (name: name, expression: expression);
@@ -1605,7 +1672,7 @@ final class SchemaModelGraphBuilder {
       } on Object {
         throw InvalidGenerationSource(
           'Unsupported analyzer argument node ${argument.runtimeType}; '
-          'ack_generator supports analyzer 10–14',
+          'ack_generator supports analyzer >=10.0.0 <11.0.0',
         );
       }
     }

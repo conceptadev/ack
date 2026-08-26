@@ -67,7 +67,7 @@ final class Profile with _\$ProfileAck {
             contains('_profileObject'),
             isNot(contains('final profileSchema =')),
             contains("'bio': Ack.string().minLength(1).maxLength(500)"),
-            contains("'website': Ack.uri().optional()"),
+            contains("'website': Ack.uri().optional().nullable()"),
             contains("'nickname': Ack.string().nullable()"),
             contains("'role': Ack.string().withDefault('member')"),
             contains('Ack.list(Ack.string())'),

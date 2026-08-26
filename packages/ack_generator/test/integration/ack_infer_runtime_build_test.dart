@@ -98,6 +98,8 @@ final AckSchema<JsonMap, JsonMap> bookSchema = Ack.object({
   'author': Ack.lazy('author', () => authorSchema).optional(),
 });
 
+const allowExtras = true;
+
 @AckInfer()
 final extrasSchema = Ack.object({
   'name': Ack.string(),
@@ -109,7 +111,7 @@ final extrasSchema = Ack.object({
     decode: Box.new,
     encode: (box) => box.values,
   ),
-}).passthrough();
+}, additionalProperties: allowExtras);
 
 @AckInfer()
 final catSchema = Ack.object({'lives': Ack.integer()});
@@ -235,6 +237,26 @@ void main() {
     });
     expect(person.home.city, 'New York');
     expect(person.history.single.city, 'Amsterdam');
+  });
+
+  test('generated list fields use deep equality, hashing, and copyWith', () {
+    final left = Node.parse({
+      'label': 'root',
+      'children': [
+        {'label': 'leaf'},
+      ],
+    });
+    final right = Node.parse({
+      'label': 'root',
+      'children': [
+        {'label': 'leaf'},
+      ],
+    });
+
+    expect(left, right);
+    expect(left.hashCode, right.hashCode);
+    expect(left.copyWith(), left);
+    expect(left.copyWith(label: 'changed'), isNot(left));
   });
 
   test('field semantics, codecs, and recursive immutability hold', () {

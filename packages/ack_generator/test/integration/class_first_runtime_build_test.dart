@@ -72,13 +72,41 @@ targets:
   \$default:
     builders:
       ack_generator:ack_generator:
-        enabled: false
+        generate_for:
+          - lib/coexist.dart
+      source_gen:combining_builder:
+        generate_for:
+          - lib/models.dart
 ''');
         File(p.join(temporary.path, 'lib', 'alpha.dart')).writeAsStringSync(
           'final class Item { const Item(this.value); final String value; }\n',
         );
         File(p.join(temporary.path, 'lib', 'beta.dart')).writeAsStringSync(
           'final class Item { const Item(this.value); final int value; }\n',
+        );
+        File(p.join(temporary.path, 'lib', 'coexist.dart')).writeAsStringSync(
+          r'''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+part 'coexist.g.dart';
+part 'coexist.ack.dart';
+part 'coexist.ack.g.dart';
+
+// ignore: deprecated_member_use
+@AckType()
+final frozenSchema = Ack.object({'id': Ack.string()});
+
+@AckInfer()
+final modernSchema = Ack.object({'name': Ack.string()});
+
+@AckModel()
+final class Handwritten with _$HandwrittenAck {
+  const Handwritten({required this.enabled});
+
+  final bool enabled;
+}
+''',
         );
         File(p.join(temporary.path, 'lib', 'models.dart')).writeAsStringSync(
           r'''
@@ -187,6 +215,13 @@ final class Normalized with _$NormalizedAck {
 }
 
 @AckModel()
+final class NullableDefault with _$NullableDefaultAck {
+  const NullableDefault({this.label = 'fallback'});
+
+  final String? label;
+}
+
+@AckModel()
 final class ImportedPair with _$ImportedPairAck {
   const ImportedPair({required this.left, required this.right});
   @AckField(schema: alphaItemSchema)
@@ -231,13 +266,16 @@ final class PlainJson {
         ).writeAsStringSync(r'''
 import 'package:ack_class_first_runtime/alpha.dart' as alpha;
 import 'package:ack_class_first_runtime/beta.dart' as beta;
+import 'package:ack_class_first_runtime/coexist.dart';
 import 'package:ack_class_first_runtime/models.dart';
+import 'package:ack/ack.dart';
 import 'package:test/test.dart';
 
 void main() {
   test('presence, defaults, collections, and escape hatches round-trip', () {
     final profile = Profile.fromJson({
       'name': 'Ada',
+      'website': null,
       'nickname': null,
       'tags': ['schema', 'dart'],
       'color': '#fff',
@@ -254,7 +292,10 @@ void main() {
       'tags': ['schema', 'dart'],
       'color': '#fff',
     });
-    expect(() => ProfileSchema.parse({'name': 'Ada'}), throwsA(anything));
+    expect(
+      () => ProfileSchema.parse({'name': 'Ada'}),
+      throwsA(isA<AckException>()),
+    );
     expect(ProfileSchema.safeParse({'name': 'Ada'}).isFail, isTrue);
     expect(ProfileSchema.toJsonSchema()['x-transformed'], isTrue);
     expect(
@@ -308,13 +349,19 @@ void main() {
         'color': '#fff',
         'extra': true,
       }),
-      throwsA(anything),
+      throwsA(isA<AckException>()),
     );
   });
 
   test('optional wire fields feed nullable normalization parameters', () {
     expect(NormalizedSchema.parse({}).value, '');
     expect(NormalizedSchema.parse({'value': 'set'}).value, 'set');
+  });
+
+  test('nullable constructor defaults apply to missing and null values', () {
+    expect(NullableDefaultSchema.parse({}).label, 'fallback');
+    expect(NullableDefaultSchema.parse({'label': null}).label, 'fallback');
+    expect(NullableDefaultSchema.parse({'label': 'set'}).label, 'set');
   });
 
   test('copyWith treats null as retain and equality is deep', () {
@@ -366,6 +413,12 @@ void main() {
     final plain = PlainJson.fromJson({'value': 'plain'});
     expect(plain.toJson(), {'value': 'plain'});
   });
+
+  test('all three Ack model generators coexist in one build-runner library', () {
+    expect(FrozenType.parse({'id': 'frozen'}).id, 'frozen');
+    expect(Modern.parse({'name': 'modern'}).name, 'modern');
+    expect(HandwrittenSchema.parse({'enabled': true}).enabled, isTrue);
+  });
 }
 ''');
 
@@ -378,6 +431,9 @@ void main() {
         expect(
           generated.keys,
           containsAll([
+            'lib/coexist.g.dart',
+            'lib/coexist.ack.dart',
+            'lib/coexist.ack.g.dart',
             'lib/models.ack.dart',
             'lib/models.ack.g.dart',
             'lib/models.g.dart',
@@ -403,6 +459,15 @@ void main() {
         expect(
           generated['lib/models.ack.dart'],
           contains('final _profileSchema'),
+        );
+        expect(
+          generated['lib/coexist.g.dart'],
+          contains('extension type FrozenType'),
+        );
+        expect(generated['lib/coexist.ack.dart'], contains('class Modern'));
+        expect(
+          generated['lib/coexist.ack.dart'],
+          contains(r'mixin _$HandwrittenAck'),
         );
         expect(
           generated['lib/models.ack.dart'],
