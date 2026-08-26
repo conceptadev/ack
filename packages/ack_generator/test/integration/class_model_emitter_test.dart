@@ -27,6 +27,40 @@ import 'package:ack_annotations/ack_annotations.dart';
 ''';
 
 void main() {
+  test('emits nullable constructor defaults without losing null', () async {
+    await _build(
+      {
+        'defaults.dart':
+            '''
+$_imports
+part 'defaults.ack.dart';
+part 'defaults.ack.g.dart';
+
+@AckModel()
+final class Defaults with _\$DefaultsAck {
+  const Defaults({this.fallback = 'fallback', this.empty = null});
+
+  final String? fallback;
+  final String? empty;
+}
+''',
+      },
+      outputs: {
+        'test_pkg|lib/defaults.ack.dart': decodedMatches(
+          allOf([
+            contains(
+              "'fallback': Ack.string().nullable().withDefault('fallback')",
+            ),
+            contains("'empty': Ack.string().optional().nullable()"),
+            contains("result['fallback'] = null"),
+            contains("result['empty'] = null"),
+            isNot(contains('withDefault(null)')),
+          ]),
+        ),
+      },
+    );
+  });
+
   test('emits a codec schema, presence semantics, mixin, and bridges', () async {
     await _build(
       {

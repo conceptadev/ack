@@ -1390,7 +1390,11 @@ class SchemaAstAnalyzer {
       );
     }
 
-    final resolvedReference = _resolveSchemaReference(schemaReference, element);
+    final resolvedReference = _resolveSchemaReference(
+      schemaReference,
+      element,
+      diagnosticPath: '${element.name}.$fieldName',
+    );
     if (resolvedReference == null) {
       throw InvalidGenerationSource(
         'Could not resolve schema reference "$schemaVarName" for field '
@@ -2445,8 +2449,9 @@ class SchemaAstAnalyzer {
 
   _ResolvedSchemaReference? _resolveSchemaReference(
     _SchemaReference reference,
-    Element contextElement,
-  ) {
+    Element contextElement, {
+    String? diagnosticPath,
+  }) {
     final library = contextElement.library;
     if (library == null) {
       return null;
@@ -2533,8 +2538,10 @@ class SchemaAstAnalyzer {
       }
 
       if (_hasAckInferAnnotation(declarationForMetadata)) {
+        final path = diagnosticPath ?? contextElement.name ?? 'legacy schema';
         throw InvalidGenerationSource(
-          'A legacy @AckType schema references a modern @AckInfer schema. '
+          '$path crosses from legacy @AckType into modern @AckInfer schema '
+          '"$schemaName". '
           'AckType and modern models intentionally use isolated generators; '
           'migrate this connected graph together.',
           element: contextElement,
@@ -2647,21 +2654,21 @@ class SchemaAstAnalyzer {
     Element contextElement, {
     String? diagnosticPath,
   }) {
-    final match = RegExp(
-      r'^(?:([A-Za-z$][A-Za-z0-9_$]*)\.)?'
-      r'([A-Z][A-Za-z0-9_$]*)\.schema(?:\.|$)',
-    ).firstMatch(expression.toSource());
-    if (match == null) return;
+    final reference = _ackModelFacadeReference(expression);
+    if (reference == null) return;
 
-    final prefix = match.group(1);
-    final facadeName = match.group(2)!;
+    final (:prefix, :facadeName) = reference;
     final library = contextElement.library;
     if (library == null) return;
     final matches = <ClassElement>{};
 
     void consider(ClassElement element, LibraryImport? import) {
       if (_classFirstFacadeName(element) != facadeName) return;
-      if (import != null && !_importAllowsName(import, facadeName)) return;
+      if (import != null &&
+          (!_importAllowsName(import, element.name!) ||
+              !_importAllowsName(import, facadeName))) {
+        return;
+      }
       matches.add(element);
     }
 
@@ -2673,9 +2680,11 @@ class SchemaAstAnalyzer {
     for (final import in library.firstFragment.libraryImports) {
       if (import.isSynthetic || (import.prefix?.isDeferred ?? false)) continue;
       if (_elementName(import.prefix?.element) != prefix) continue;
-      final importedLibrary = import.importedLibrary;
-      if (importedLibrary == null) continue;
-      for (final element in importedLibrary.classes) {
+      final elements = <Element>{
+        ...import.namespace.definedNames2.values,
+        ...?import.importedLibrary?.classes,
+      };
+      for (final element in elements.whereType<ClassElement>()) {
         consider(element, import);
       }
     }
@@ -2695,6 +2704,48 @@ class SchemaAstAnalyzer {
       'isolated generators; migrate this connected graph together.',
       element: contextElement,
     );
+  }
+
+  ({String? prefix, String facadeName})? _ackModelFacadeReference(
+    Expression expression,
+  ) {
+    final path = _schemaAccessPath(expression);
+    if (path == null ||
+        path.last != 'schema' ||
+        (path.length != 2 && path.length != 3)) {
+      return null;
+    }
+
+    return (
+      prefix: path.length == 3 ? path.first : null,
+      facadeName: path[path.length - 2],
+    );
+  }
+
+  List<String>? _schemaAccessPath(Expression expression) {
+    if (expression is ParenthesizedExpression) {
+      return _schemaAccessPath(expression.expression);
+    }
+    if (expression is PostfixExpression && expression.operator.lexeme == '!') {
+      return _schemaAccessPath(expression.operand);
+    }
+    if (expression is MethodInvocation) {
+      final target = expression.target;
+      return target == null ? null : _schemaAccessPath(target);
+    }
+    if (expression is PropertyAccess) {
+      final target = expression.target;
+      final targetPath = target == null ? null : _schemaAccessPath(target);
+      if (targetPath == null) return null;
+      return [...targetPath, expression.propertyName.name];
+    }
+    if (expression is PrefixedIdentifier) {
+      return [expression.prefix.name, expression.identifier.name];
+    }
+    if (expression is SimpleIdentifier) {
+      return [expression.name];
+    }
+    return null;
   }
 
   String? _classFirstFacadeName(ClassElement element) {

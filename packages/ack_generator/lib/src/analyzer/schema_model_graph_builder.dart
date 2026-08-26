@@ -261,13 +261,17 @@ final class SchemaModelGraphBuilder {
     final declaration = result.getFragmentDeclaration(element.firstFragment);
     final node = declaration?.node;
     if (node is VariableDeclaration) return node.initializer;
-    if (node is FunctionDeclaration && node.isGetter) {
-      final body = node.functionExpression.body;
-      if (body is ExpressionFunctionBody) return body.expression;
-      if (body is BlockFunctionBody && body.block.statements.length == 1) {
-        final statement = body.block.statements.single;
-        if (statement is ReturnStatement) return statement.expression;
-      }
+    if (node is FunctionDeclaration) {
+      return _functionBodyExpression(node.functionExpression.body);
+    }
+    return null;
+  }
+
+  Expression? _functionBodyExpression(FunctionBody body) {
+    if (body is ExpressionFunctionBody) return body.expression;
+    if (body is BlockFunctionBody && body.block.statements.length == 1) {
+      final statement = body.block.statements.single;
+      if (statement is ReturnStatement) return statement.expression;
     }
     return null;
   }
@@ -1125,6 +1129,10 @@ final class SchemaModelGraphBuilder {
       defaulted |= name == 'withDefault';
       transform |= _oneWayTransformMethods.contains(name);
       codec |= name == 'codec';
+      if (current.methodName.element is TopLevelFunctionElement) {
+        reference = current;
+        break;
+      }
       final target = current.target;
       if (_isAckTarget(target)) {
         base = current;
@@ -1157,6 +1165,9 @@ final class SchemaModelGraphBuilder {
   }
 
   Element? _referencedElement(Expression expression) {
+    if (expression is ParenthesizedExpression) {
+      return _referencedElement(expression.expression);
+    }
     if (expression is SimpleIdentifier) {
       final element = expression.element;
       return element == null ? null : _propertyDeclaration(element);
@@ -1166,6 +1177,10 @@ final class SchemaModelGraphBuilder {
       return element == null ? null : _propertyDeclaration(element);
     }
     if (expression is MethodInvocation) {
+      final method = expression.methodName.element;
+      if (method is TopLevelFunctionElement) {
+        return _propertyDeclaration(method);
+      }
       final chain = _chain(expression);
       final reference = chain.reference;
       return reference == null ? null : _referencedElement(reference);
@@ -1509,7 +1524,8 @@ final class SchemaModelGraphBuilder {
     if (referenced == null) return;
     final declaration = _propertyDeclaration(referenced);
     if (declaration is! TopLevelVariableElement &&
-        declaration is! GetterElement) {
+        declaration is! GetterElement &&
+        declaration is! TopLevelFunctionElement) {
       return;
     }
     final canonical = declaration.baseElement;

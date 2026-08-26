@@ -222,6 +222,13 @@ final class NullableDefault with _$NullableDefaultAck {
 }
 
 @AckModel()
+final class NullDefault with _$NullDefaultAck {
+  const NullDefault({this.label = null});
+
+  final String? label;
+}
+
+@AckModel()
 final class ImportedPair with _$ImportedPairAck {
   const ImportedPair({required this.left, required this.right});
   @AckField(schema: alphaItemSchema)
@@ -362,6 +369,15 @@ void main() {
     expect(NullableDefaultSchema.parse({}).label, 'fallback');
     expect(NullableDefaultSchema.parse({'label': null}).label, 'fallback');
     expect(NullableDefaultSchema.parse({'label': 'set'}).label, 'set');
+
+    final explicitNull = NullableDefault(label: null);
+    expect(explicitNull.toJson(), {'label': null});
+
+    final nullDefault = NullDefault();
+    expect(NullDefaultSchema.parse({}), nullDefault);
+    expect(NullDefaultSchema.parse({'label': null}), nullDefault);
+    expect(nullDefault.toJson(), {'label': null});
+    expect(NullDefaultSchema.parse(nullDefault.toJson()), nullDefault);
   });
 
   test('copyWith treats null as retain and equality is deep', () {

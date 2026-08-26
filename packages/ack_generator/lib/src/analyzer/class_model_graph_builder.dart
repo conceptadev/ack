@@ -374,7 +374,11 @@ final class ClassModelGraphBuilder {
     _rejectGeneratedMemberCollisions(base, includeValueMembers: false);
     final baseOptions = _options(base)!;
     final discriminatorKey = baseOptions.discriminatorKey!;
-    _rejectInvalidMemberName(discriminatorKey, base);
+    _rejectInvalidMemberName(
+      discriminatorKey,
+      base,
+      memberKind: 'discriminator member',
+    );
     if (_reservedMembers.contains(discriminatorKey)) {
       throw InvalidGenerationSource(
         '${base.name}.$discriminatorKey conflicts with a generated member.',
@@ -502,7 +506,11 @@ final class ClassModelGraphBuilder {
       );
     }
     if (captureFieldName != null) {
-      _rejectInvalidMemberName(captureFieldName, element);
+      _rejectInvalidMemberName(
+        captureFieldName,
+        element,
+        memberKind: 'additional-properties capture field',
+      );
     }
 
     final futureTypes = <String, _FutureGeneratedType>{};
@@ -630,6 +638,7 @@ final class ClassModelGraphBuilder {
         presence: presence,
         nullable: nullable,
         defaultCode: parameter?.defaultValueCode,
+        defaultIsNull: parameter?.computeConstantValue()?.isNull ?? false,
       );
       nodes.add(
         AckFieldNode(
@@ -1752,8 +1761,13 @@ final class ClassModelGraphBuilder {
     required AckSchemaFieldPresence presence,
     required bool nullable,
     required String? defaultCode,
+    required bool defaultIsNull,
   }) {
     return switch (presence) {
+      AckSchemaFieldPresence.defaulted when nullable && defaultIsNull =>
+        '$schema.optional().nullable()',
+      AckSchemaFieldPresence.defaulted when nullable =>
+        '$schema.nullable().withDefault($defaultCode)',
       AckSchemaFieldPresence.defaulted => '$schema.withDefault($defaultCode)',
       AckSchemaFieldPresence.optional when nullable =>
         '$schema.optional().nullable()',
@@ -1813,12 +1827,16 @@ final class ClassModelGraphBuilder {
     return result;
   }
 
-  void _rejectInvalidMemberName(String name, Element element) {
+  void _rejectInvalidMemberName(
+    String name,
+    Element element, {
+    required String memberKind,
+  }) {
     if (name.startsWith('_') ||
         !RegExp(r'^[A-Za-z$][A-Za-z0-9_$]*$').hasMatch(name) ||
         _dartKeywords.contains(name)) {
       throw InvalidGenerationSource(
-        '${element.name}.$name is not a valid public discriminator member.',
+        '${element.name}.$name is not a valid public $memberKind.',
         element: element,
       );
     }

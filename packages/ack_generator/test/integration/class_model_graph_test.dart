@@ -260,6 +260,26 @@ final class Config with _\$ConfigAck {
     );
   });
 
+  test(
+    'names invalid additional-properties capture fields correctly',
+    () async {
+      await _expectFailure(
+        '''
+@AckModel(
+  additionalProperties: AckAdditionalPropertiesMode.capture,
+  additionalPropertiesField: '_extras',
+)
+final class Config with _\$ConfigAck {
+  const Config({required this.name});
+
+  final String name;
+}
+''',
+        ['Config._extras', 'additional-properties capture field'],
+      );
+    },
+  );
+
   test('requires discriminatorKey on annotated sealed classes', () async {
     await _expectFailure(
       '''

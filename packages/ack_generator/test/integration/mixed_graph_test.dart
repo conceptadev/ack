@@ -9,12 +9,17 @@ Future<void> _build(
   String source, {
   required Map<String, Object> outputs,
   void Function(LogRecord log)? onLog,
+  Map<String, String> supportingSources = const {},
 }) async {
   final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
   await readerWriter.testing.loadIsolateSources();
   await testBuilder(
     builder,
-    {'test_pkg|lib/models.dart': source},
+    {
+      'test_pkg|lib/models.dart': source,
+      for (final entry in supportingSources.entries)
+        'test_pkg|lib/${entry.key}': entry.value,
+    },
     generateFor: const {'test_pkg|lib/models.dart'},
     readerWriter: readerWriter,
     outputs: outputs,
@@ -105,6 +110,7 @@ final userSchema = Ack.object({'address': addressSchema});
       outputs: const {},
       onLog: (log) {
         if (log.level.name == 'SEVERE' &&
+            log.message.contains('userSchema.address') &&
             log.message.contains('migrate this connected graph together')) {
           sawDiagnostic = true;
         }
@@ -218,6 +224,84 @@ final userSchema = Ack.object({
       onLog: (log) {
         if (log.level.name == 'SEVERE' &&
             log.message.contains('userSchema.addresses') &&
+            log.message.contains('migrate this connected graph together')) {
+          sawDiagnostic = true;
+        }
+      },
+    );
+    expect(sawDiagnostic, isTrue);
+  });
+
+  for (final entry in {
+    'scalar': 'AddressSchema.schema',
+    'parenthesized': '(AddressSchema.schema)',
+    'postfix non-null assertion': 'AddressSchema.schema!',
+  }.entries) {
+    test(
+      'legacy schemas reject ${entry.key} class-first facade references',
+      () async {
+        var sawDiagnostic = false;
+        await _build(
+          ackGenerator(BuilderOptions.empty),
+          '''
+$_parts
+@AckModel()
+final class Address with _\$AddressAck {
+  const Address({required this.city});
+
+  final String city;
+}
+
+@AckType()
+final userSchema = Ack.object({'address': ${entry.value}});
+''',
+          outputs: const {},
+          onLog: (log) {
+            if (log.level.name == 'SEVERE' &&
+                log.message.contains('userSchema.address') &&
+                log.message.contains('migrate this connected graph together')) {
+              sawDiagnostic = true;
+            }
+          },
+        );
+        expect(sawDiagnostic, isTrue);
+      },
+    );
+  }
+
+  test('legacy schemas reject class-first facades through barrels', () async {
+    var sawDiagnostic = false;
+    await _build(
+      ackGenerator(BuilderOptions.empty),
+      '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+import 'address_models.dart';
+
+part 'models.g.dart';
+part 'models.ack.dart';
+part 'models.ack.g.dart';
+
+@AckType()
+final userSchema = Ack.object({'address': AddressSchema.schema});
+''',
+      supportingSources: const {
+        'address_models.dart': "export 'address.dart';\n",
+        'address.dart': '''
+import 'package:ack_annotations/ack_annotations.dart';
+
+@AckModel()
+final class Address {
+  const Address({required this.city});
+
+  final String city;
+}
+''',
+      },
+      outputs: const {},
+      onLog: (log) {
+        if (log.level.name == 'SEVERE' &&
+            log.message.contains('userSchema.address') &&
             log.message.contains('migrate this connected graph together')) {
           sawDiagnostic = true;
         }

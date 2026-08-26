@@ -259,6 +259,38 @@ final valueSchema = normalized.codec<String>(
     );
   });
 
+  test('rejects a function-backed one-way transform below a codec', () async {
+    await _expectFailure(
+      '''
+$_head
+AckSchema<String, String> normalized() => Ack.string().trim();
+
+@AckInfer()
+final valueSchema = normalized().codec<String>(
+  decode: (value) => value,
+  encode: (value) => value,
+);
+''',
+      ['valueSchema', 'normalized', '.transform()'],
+    );
+  });
+
+  test('rejects a parenthesized one-way transform below a codec', () async {
+    await _expectFailure(
+      '''
+$_head
+final normalized = Ack.string().trim();
+
+@AckInfer()
+final valueSchema = (normalized).codec<String>(
+  decode: (value) => value,
+  encode: (value) => value,
+);
+''',
+      ['valueSchema', 'normalized', '.transform()'],
+    );
+  });
+
   test('rejects a local Ack.any() field by following the variable', () async {
     await _expectFailure(
       '''
