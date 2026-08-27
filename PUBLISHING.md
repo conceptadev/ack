@@ -66,9 +66,17 @@ This release introduces [brief description of major changes].
 
 When the `v*` tag is pushed, the GitHub Actions workflow will automatically:
 
-1. Run package tests (Dart/Flutter, depending on package type)
-2. Run `dart pub publish --dry-run` for each package
-3. Publish each package to pub.dev
+1. Test and publish the independent `ack` and `ack_annotations` foundation
+   packages.
+2. After both hosted versions are available, test and publish `ack_generator`.
+3. After the generator stage completes, test and publish
+   `ack_json_schema_builder` and `ack_firebase_ai`.
+4. Run `dart pub publish --dry-run` immediately before each package upload.
+
+This staging is required for coordinated releases because workspace resolution
+uses local packages, while published consumers resolve the hosted versions. The
+reusable workflow calls are deliberately sequential because the shared workflow
+uses one cancel-in-progress concurrency group per caller workflow and tag.
 
 The workflow does **not** modify versions or changelogs, and does **not** commit changes back to the repository.
 

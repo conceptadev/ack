@@ -9,7 +9,8 @@ on:
       - 'v[0-9]*.[0-9]*.[0-9]*-*'
 
 jobs:
-  publish:
+  publish-foundations:
+    name: Publish foundation packages
     # The dart-actions repo moved from the btwld org to conceptadev. The REST
     # API follows that rename redirect, but the Actions reusable-workflow
     # resolver does not, so the old path fails startup with "workflow was not
@@ -22,6 +23,29 @@ jobs:
       packages: |
         ack
         ack_annotations
+
+  publish-generator:
+    name: Publish generator package
+    needs: publish-foundations
+    uses: conceptadev/dart-actions/.github/workflows/publish.yml@main
+    permissions:
+      id-token: write
+    with:
+      packages_folder_path: "packages"
+      packages: |
         ack_generator
+
+  publish-adapters:
+    name: Publish adapter packages
+    # The shared reusable workflow uses the caller workflow name and ref as a
+    # cancel-in-progress concurrency key. Keep reusable calls sequential so
+    # one release stage cannot cancel another stage from the same tag run.
+    needs: publish-generator
+    uses: conceptadev/dart-actions/.github/workflows/publish.yml@main
+    permissions:
+      id-token: write
+    with:
+      packages_folder_path: "packages"
+      packages: |
         ack_json_schema_builder
         ack_firebase_ai

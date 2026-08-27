@@ -104,7 +104,7 @@ targets:
 getters. Classes, instance members, and local variables are rejected.
 
 `@AckModel()` annotates public, constructable classes. See the
-[Model Code Generation guide](../../docs/core-concepts/typesafe-schemas.mdx)
+[Model Code Generation guide](https://concepta.dev/ack/core-concepts/typesafe-schemas)
 for both directions, field inference, sealed unions, passthrough properties,
 and build configuration.
 
@@ -119,8 +119,8 @@ the conventional one-argument entry point. Imported nested models compose as
 `prefix.AddressSchema.schema`; `show`/`hide` combinators must expose both the
 model and facade.
 
-For design details and migration notes, see
-[`docs/architecture/ackinfer-model-generation.md`](../../docs/architecture/ackinfer-model-generation.md).
+For design details and migration notes, see the
+[AckInfer model-generation architecture](https://github.com/conceptadev/ack/blob/main/docs/architecture/ackinfer-model-generation.md).
 
 ## Deprecated AckType compatibility
 

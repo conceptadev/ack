@@ -34,16 +34,14 @@ int _helperDefinitionCount(String source, String className, String suffix) {
 }
 
 void main() {
-  test(
-    'ack_generator alone generates json_serializable Ack helpers',
-    () async {
-      final projectRoot = _projectRoot();
-      final temporary = await Directory.systemTemp.createTemp(
-        'ack_json_ack_only_',
-      );
-      try {
-        Directory(p.join(temporary.path, 'lib')).createSync();
-        File(p.join(temporary.path, 'pubspec.yaml')).writeAsStringSync('''
+  test('ack_generator alone generates json_serializable Ack helpers', () async {
+    final projectRoot = _projectRoot();
+    final temporary = await Directory.systemTemp.createTemp(
+      'ack_json_ack_only_',
+    );
+    try {
+      Directory(p.join(temporary.path, 'lib')).createSync();
+      File(p.join(temporary.path, 'pubspec.yaml')).writeAsStringSync('''
 name: ack_json_ack_only
 publish_to: none
 environment:
@@ -63,7 +61,7 @@ dependency_overrides:
   ack_annotations:
     path: ${p.join(projectRoot.path, 'packages', 'ack_annotations')}
 ''');
-        File(p.join(temporary.path, 'lib', 'user.dart')).writeAsStringSync(r'''
+      File(p.join(temporary.path, 'lib', 'user.dart')).writeAsStringSync(r'''
 import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
@@ -77,38 +75,36 @@ final userSchema = Ack.object({
 });
 ''');
 
-        _expectSuccess(await _run(temporary, ['pub', 'get']), 'dart pub get');
-        _expectSuccess(
-          await _run(temporary, ['run', 'build_runner', 'build']),
-          'clean build_runner build',
-        );
+      _expectSuccess(await _run(temporary, ['pub', 'get']), 'dart pub get');
+      _expectSuccess(
+        await _run(temporary, ['run', 'build_runner', 'build']),
+        'clean build_runner build',
+      );
 
-        final ackPart = File(
-          p.join(temporary.path, 'lib', 'user.ack.dart'),
-        ).readAsStringSync();
-        final jsonPart = File(
-          p.join(temporary.path, 'lib', 'user.ack.g.dart'),
-        ).readAsStringSync();
+      final ackPart = File(
+        p.join(temporary.path, 'lib', 'user.ack.dart'),
+      ).readAsStringSync();
+      final jsonPart = File(
+        p.join(temporary.path, 'lib', 'user.ack.g.dart'),
+      ).readAsStringSync();
 
-        expect(ackPart, contains('@AckInfer.jsonSerializable'));
-        expect(ackPart, contains(r'_$UserFromJson'));
-        expect(ackPart, contains('_ackFromRuntimeCreatedAt'));
-        expect(jsonPart, contains('JsonSerializableGenerator'));
-        expect(jsonPart, contains('User._ackFromRuntimeName(json[\'name\'])'));
-        expect(
-          jsonPart,
-          contains('User._ackFromRuntimeCreatedAt(json[\'createdAt\'])'),
-        );
-        expect(jsonPart, contains('User._ackToRuntimeName(instance.name)'));
-        expect(_helperDefinitionCount(jsonPart, 'User', 'FromJson'), 1);
-        expect(_helperDefinitionCount(jsonPart, 'User', 'ToJson'), 1);
-        expect(jsonPart, isNot(contains("value['name']")));
-      } finally {
-        temporary.deleteSync(recursive: true);
-      }
-    },
-    timeout: const Timeout(Duration(minutes: 3)),
-  );
+      expect(ackPart, contains('@AckInfer.jsonSerializable'));
+      expect(ackPart, contains(r'_$UserFromJson'));
+      expect(ackPart, contains('_ackFromRuntimeCreatedAt'));
+      expect(jsonPart, contains('JsonSerializableGenerator'));
+      expect(jsonPart, contains('User._ackFromRuntimeName(json[\'name\'])'));
+      expect(
+        jsonPart,
+        contains('User._ackFromRuntimeCreatedAt(json[\'createdAt\'])'),
+      );
+      expect(jsonPart, contains('User._ackToRuntimeName(instance.name)'));
+      expect(_helperDefinitionCount(jsonPart, 'User', 'FromJson'), 1);
+      expect(_helperDefinitionCount(jsonPart, 'User', 'ToJson'), 1);
+      expect(jsonPart, isNot(contains("value['name']")));
+    } finally {
+      temporary.deleteSync(recursive: true);
+    }
+  }, timeout: const Timeout(Duration(minutes: 3)));
 
   test(
     'ordinary json_serializable coexists without duplicate Ack helpers',

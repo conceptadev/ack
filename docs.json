@@ -89,7 +89,7 @@
   "variables": {
     "versions": {
       "default": "1.2.0",
-      "isPrerelease": true
+      "isPrerelease": false
     }
   },
   "search": {},

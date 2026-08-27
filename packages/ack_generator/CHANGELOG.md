@@ -73,7 +73,7 @@
 ### Breaking
 
 * Remove class-based schema generation. `ack_generator` now supports only
-  top-level `@Ack()` schema variables and getters.
+  top-level `@AckType()` schema variables and getters.
 
 ## 1.0.0-beta.11
 
@@ -106,7 +106,7 @@
 * **Analyzer**: Refactored field analyzer, model analyzer, and schema AST analyzer for correctness (#50).
 * **Builders**: Improved type builder, field builder, and schema builder (#50).
 * **Generator**: Centralized null/default handling in generator output (#65).
-* **Ack factories**: Generate direct `schema.parseAs(...)` / `schema.safeParseAs(...)` calls and stop emitting `_$ackParse` / `_$ackSafeParse` helpers.
+* **AckType factories**: Generate direct `schema.parseAs(...)` / `schema.safeParseAs(...)` calls and stop emitting `_$ackParse` / `_$ackSafeParse` helpers.
 
 ## 1.0.0-beta.5 (2026-01-14)
 
@@ -117,7 +117,7 @@
 ### Bug Fixes
 
 * **List types**: Resolve list element types with method chain modifiers (#60). Fixed type resolution for complex list schemas with chained method calls.
-* **Ack casts**: Fix @Ack schema ref casts and improve nested schema handling (#59).
+* **AckType casts**: Fix @AckType schema ref casts and improve nested schema handling (#59).
 
 ### Improvements
 
@@ -130,7 +130,7 @@
 * **Primitives**: Comprehensive fixes for primitive schema generation and correctness.
 * **Typed list getters**: Support `Ack.list(schemaRef)` for typed list getters (#47).
 * **Field descriptions**: Add field descriptions to generated schema output (#44).
-* **Extension types**: Generate extension types for all Ack schemas; skip for nullable Ack schemas.
+* **Extension types**: Generate extension types for all AckType schemas; skip for nullable AckType schemas.
 
 ### Improvements
 

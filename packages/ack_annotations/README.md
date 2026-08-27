@@ -74,4 +74,4 @@ class name and must be UpperCamelCase.
 
 Unknown properties use `AckAdditionalPropertiesMode` (`reject`, `discard`,
 `capture`). `@AckField` can override `schema` and/or `AckFieldPresence`. See the
-[Model Code Generation guide](../../docs/core-concepts/typesafe-schemas.mdx).
+[Model Code Generation guide](https://concepta.dev/ack/core-concepts/typesafe-schemas).

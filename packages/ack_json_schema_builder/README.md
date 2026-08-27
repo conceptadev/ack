@@ -133,7 +133,8 @@ dart test
 
 ## Contributing
 
-For contribution guidelines, see [CONTRIBUTING.md](../../CONTRIBUTING.md) in the root repository.
+For contribution guidelines, see the repository's
+[CONTRIBUTING.md](https://github.com/conceptadev/ack/blob/main/CONTRIBUTING.md).
 
 ## License
 
