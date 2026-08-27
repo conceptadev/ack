@@ -314,6 +314,7 @@ final class ClassModelGraphBuilder {
       }
       claim(metadata.facadeName, node);
       claim(metadata.backingName, node);
+      claim(ackClassWireSchemaName(node.className), node);
       claim(ackClassMixinName(node.className), node);
       claim(ackClassRawObjectName(node.className), node);
       if (node is! AckObjectModelNode) continue;

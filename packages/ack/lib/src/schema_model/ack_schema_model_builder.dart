@@ -69,9 +69,9 @@ final class _SchemaModelBuilder {
   AckSchemaModel _build(AckSchema<dynamic, dynamic> schema) {
     if (schema is WrapperSchema) {
       final base = _build(schema.inner);
-      // Defaults wrap their inner without transforming the boundary value, so
-      // they should not advertise themselves as a transformed schema.
-      final extensions = schema is DefaultSchema
+      // Defaults and boundary-preserving wrappers do not transform the wire
+      // value, so they should not advertise themselves as transformed.
+      final extensions = schema is DefaultSchema || schema is BoundarySchema
           ? base.extensions
           : {...base.extensions, 'x-transformed': true};
       final layered = base

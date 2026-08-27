@@ -62,14 +62,17 @@ final class AckClassModelEmitter {
   }) {
     final metadata = _metadata(graph, node);
     final rawName = ackClassRawObjectName(node.className);
+    final wireName = ackClassWireSchemaName(node.className);
     output
       ..writeln('final $rawName = ${_objectSchema(node)};')
+      ..writeln()
+      ..writeln('final $wireName = ${_ack('Ack')}.preserveBoundary($rawName);')
       ..writeln()
       ..writeln(
         _codecSchema(node, backingName: metadata.backingName, input: rawName),
       )
       ..writeln()
-      ..writeln(_facade(node.className, metadata, rawName: rawName))
+      ..writeln(_facade(node.className, metadata, wireName: wireName))
       ..writeln()
       ..writeln(_fromRuntimeFunction(node))
       ..writeln()
@@ -114,12 +117,15 @@ final class AckClassModelEmitter {
       );
     }
     final rawName = ackClassRawObjectName(node.className);
+    final wireName = ackClassWireSchemaName(node.className);
     output
       ..writeln('''
 final $rawName = ${_ack('Ack')}.discriminated(
   discriminatorKey: ${_literal(node.discriminatorKey)},
   schemas: {${schemaEntries.join(', ')}},
 );
+
+final $wireName = ${_ack('Ack')}.preserveBoundary($rawName);
 
 final ${metadata.backingName} = $rawName.codec<${node.className}>(
   decode: (value) => switch (value[${_literal(node.discriminatorKey)}]) {
@@ -133,7 +139,7 @@ final ${metadata.backingName} = $rawName.codec<${node.className}>(
   },
 );''')
       ..writeln()
-      ..writeln(_facade(node.className, metadata, rawName: rawName))
+      ..writeln(_facade(node.className, metadata, wireName: wireName))
       ..writeln()
       ..writeln(
         _dataClasses.mixin(
@@ -163,7 +169,7 @@ final $backingName = $expression.codec<${node.className}>(
   String _facade(
     String className,
     AckClassModelMetadata metadata, {
-    required String rawName,
+    required String wireName,
   }) =>
       '''
 abstract final class ${metadata.facadeName} {
@@ -171,7 +177,7 @@ abstract final class ${metadata.facadeName} {
       ${metadata.backingName};
 
   static ${_ack('AckSchema')}<Map<String, Object?>, Map<String, Object?>>
-      get wireSchema => $rawName;
+      get wireSchema => $wireName;
 
   static $className parse(Object? value, {String? debugName}) =>
       ${metadata.backingName}.parse(value, debugName: debugName)!;

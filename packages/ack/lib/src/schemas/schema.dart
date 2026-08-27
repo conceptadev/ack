@@ -14,6 +14,7 @@ import '../validation/schema_result.dart';
 
 part 'any_of_schema.dart';
 part 'any_schema.dart';
+part 'boundary_schema.dart';
 part 'boolean_schema.dart';
 part 'codec_schema.dart';
 part 'default_schema.dart';

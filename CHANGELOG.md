@@ -19,6 +19,8 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 * Generate copy/value APIs with collection-wrapper-independent equality and
   preserve propagated `Error` objects rather than converting programming
   defects into validation failures.
+* Preserve original boundary values from generated class-first `wireSchema`
+  facades while still validating nested codecs and models.
 * Raise the Dart floor to 3.9 and pin `ack_generator` to Analyzer
   `>=10.0.0 <11.0.0`.
 * Align all published Ack packages on the coordinated 1.2.0 release line.

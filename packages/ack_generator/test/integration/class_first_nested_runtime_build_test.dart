@@ -413,6 +413,36 @@ void main() {
       ],
     });
   });
+
+  test('wire schemas preserve nested boundary values', () {
+    final input = {
+      'shipping': {'city': 'Amsterdam'},
+      'history': [
+        [
+          {'city': 'Lisbon'},
+        ],
+      ],
+      'uniqueAddresses': [
+        {'city': 'Paris'},
+      ],
+      'pet': {'type': 'Cat', 'id': 'p1', 'lives': 9},
+      'cat': {'type': 'Cat', 'id': 'c1', 'lives': 8},
+    };
+
+    final wire = OrderSchema.wireSchema.parse(input)!;
+
+    expect(wire, input);
+    expect(wire['shipping'], isA<Map<String, Object?>>());
+    expect(wire['uniqueAddresses'], isA<List<Object?>>());
+    expect(wire['pet'], isA<Map<String, Object?>>());
+    expect(
+      OrderSchema.wireSchema.safeParse({
+        ...input,
+        'shipping': {'city': 1},
+      }).isFail,
+      isTrue,
+    );
+  });
 }
 ''');
 

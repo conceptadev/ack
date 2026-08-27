@@ -96,9 +96,13 @@ final class Profile with _\$ProfileAck {
         'test_pkg|lib/profile.ack.dart': decodedMatches(
           allOf([
             contains('final _profileObject = Ack.object'),
+            contains(
+              'final _profileWireSchema = '
+              'Ack.preserveBoundary(_profileObject)',
+            ),
             contains('final _profileSchema = _profileObject.codec<Profile>'),
             contains('get wireSchema'),
-            contains('_profileObject'),
+            contains('_profileWireSchema;'),
             isNot(contains('final profileSchema =')),
             contains("'bio': Ack.string().minLength(1).maxLength(500)"),
             contains("'website': Ack.uri().optional().nullable()"),

@@ -515,6 +515,10 @@ abstract final class CatSchema {}
     ),
     (name: r'_$UserAck', declaration: r'mixin _$UserAck {}'),
     (name: r'_userObject', declaration: r'final _userObject = Ack.object({});'),
+    (
+      name: r'_userWireSchema',
+      declaration: r'final _userWireSchema = Ack.string();',
+    ),
   ]) {
     test('rejects local ${collision.name} helper collisions', () async {
       await _expectFailure(

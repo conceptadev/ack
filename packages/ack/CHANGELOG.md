@@ -5,6 +5,8 @@
 * Add `AckModelAdapter` as the non-nullable runtime bridge used by generated
   immutable Ack models. The adapter keeps schema parse/encode around model
   mapping so public JSON methods remain schema-backed.
+* Add `Ack.preserveBoundary`, which validates through a schema while returning
+  the original wire value instead of values decoded by nested codecs.
 
 ### Fixed
 

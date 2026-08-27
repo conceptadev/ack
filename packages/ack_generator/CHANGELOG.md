@@ -32,6 +32,8 @@
 * Emit strict-lint-compatible equality guards.
 * Keep model equality independent of collection wrapper implementations and
   preserve propagated `Error` objects through runtime validation.
+* Keep generated class-first `wireSchema` results in their original boundary
+  representation when nested models, collections, enums, or codecs decode.
 
 ### Changed
 
