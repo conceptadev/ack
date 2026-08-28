@@ -27,34 +27,38 @@ void main() {
     skip: Platform.isWindows ? 'Uses POSIX test executables.' : false,
   );
 
-  test('stale reports do not satisfy the current API check', () async {
-    final fakeBin = Directory.systemTemp.createTempSync('ack-api-check-');
-    final workingDirectory = Directory.systemTemp.createTempSync(
-      'ack-api-report-',
-    );
-    addTearDown(() => fakeBin.deleteSync(recursive: true));
-    addTearDown(() => workingDirectory.deleteSync(recursive: true));
+  test(
+    'stale reports do not satisfy the current API check',
+    () async {
+      final fakeBin = Directory.systemTemp.createTempSync('ack-api-check-');
+      final workingDirectory = Directory.systemTemp.createTempSync(
+        'ack-api-report-',
+      );
+      addTearDown(() => fakeBin.deleteSync(recursive: true));
+      addTearDown(() => workingDirectory.deleteSync(recursive: true));
 
-    _writeExecutable(fakeBin, 'dart', '#!/bin/sh\nexit 0\n');
-    final staleReport = File(
-      '${workingDirectory.path}/api-compat-ack-vs-1.0.0.md',
-    )..writeAsStringSync('stale report');
-    final scriptPath = File('scripts/api_check.dart').absolute.path;
+      _writeExecutable(fakeBin, 'dart', '#!/bin/sh\nexit 0\n');
+      final staleReport = File(
+        '${workingDirectory.path}/api-compat-ack-vs-1.0.0.md',
+      )..writeAsStringSync('stale report');
+      final scriptPath = File('scripts/api_check.dart').absolute.path;
 
-    final result = await Process.run(
-      Platform.resolvedExecutable,
-      [scriptPath, 'ack', '1.0.0'],
-      workingDirectory: workingDirectory.path,
-      environment: {
-        ...Platform.environment,
-        'PATH': '${fakeBin.path}:/usr/bin:/bin',
-      },
-    );
+      final result = await Process.run(
+        Platform.resolvedExecutable,
+        [scriptPath, 'ack', '1.0.0'],
+        workingDirectory: workingDirectory.path,
+        environment: {
+          ...Platform.environment,
+          'PATH': '${fakeBin.path}:/usr/bin:/bin',
+        },
+      );
 
-    expect(result.exitCode, 1);
-    expect(result.stderr, contains('did not create'));
-    expect(staleReport.existsSync(), isFalse);
-  }, skip: Platform.isWindows ? 'Uses POSIX test executables.' : false);
+      expect(result.exitCode, 1);
+      expect(result.stderr, contains('did not create'));
+      expect(staleReport.existsSync(), isFalse);
+    },
+    skip: Platform.isWindows ? 'Uses POSIX test executables.' : false,
+  );
 }
 
 void _writeExecutable(Directory directory, String name, String contents) {
