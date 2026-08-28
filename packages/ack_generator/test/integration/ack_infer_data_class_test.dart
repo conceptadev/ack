@@ -200,10 +200,10 @@ final class Normalized with _\$NormalizedAck {
             allOf([
               contains("'value': Ack.string().optional()"),
               contains(
-                'Normalized copyWith({Object? value = _ackCopyWithOmitted})',
+                'Normalized copyWith({Object? value = _ackCopyWithUnset})',
               ),
               contains(
-                'identical(value, _ackCopyWithOmitted) '
+                'identical(value, _ackCopyWithUnset) '
                 '? self.value '
                 ': value as String?',
               ),

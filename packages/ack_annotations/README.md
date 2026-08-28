@@ -84,11 +84,12 @@ an intentional `Type` suffix is kept exactly.
 
 `@AckInfer()` is not supported on classes or instance members.
 
-`@AckModel()` targets a public, constructable class and derives an Ack codec
-schema from its constructor-backed fields. Instantiable models apply the
-generated `_$ClassAck` mixin. The public `<ClassName>Schema` facade exposes
-typed `schema` and raw `wireSchema`; `schemaName:` overrides the exact facade
-class name and must be UpperCamelCase.
+`@AckModel()` targets a public, constructable `final class` with final stored
+fields and derives an Ack codec schema from its constructor-backed fields.
+Annotated sealed union bases remain supported; each concrete branch must be
+final. Instantiable models apply the generated `_$ClassAck` mixin. The public
+`<ClassName>Schema` facade exposes typed `schema` and raw `wireSchema`;
+`schemaName:` overrides the exact facade class name and must be UpperCamelCase.
 
 Unknown properties use `AckAdditionalPropertiesMode` (`reject`, `discard`,
 `capture`). `@AckField` can override `schema` and/or `AckFieldPresence`. See the

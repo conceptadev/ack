@@ -12,7 +12,7 @@ import 'package:json_annotation/json_annotation.dart';
 /// reads annotation fields via `ConstantReader`, and source_gen's null reader
 /// throws `UnsupportedError`. That is why `json_annotation` is a runtime
 /// dependency of this package.
-class AckGeneratedJson {
+final class AckGeneratedJson {
   /// Creates the internal JSON-mapping marker.
   const AckGeneratedJson({
     this.config = const JsonSerializable(includeIfNull: false),

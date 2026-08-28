@@ -62,9 +62,10 @@ nullable field.
 For a hand-written `Account`, `@AckModel()` emits a private `_accountObject`
 wire schema, a private `_accountSchema` codec, and a public `AccountSchema`
 abstract-final facade. Instantiable models and implicit union branches must
-apply the generated `_$AccountAck` mixin, which supplies `toJson`,
-`safeToJson`, `copyWith`, and deep collection-aware `==`, `hashCode`, and
-`toString`. A sealed abstract base receives union serialization only.
+be `final class` declarations with final stored fields and apply the generated
+`_$AccountAck` mixin, which supplies `toJson`, `safeToJson`, `copyWith`, and
+deep collection-aware `==`, `hashCode`, and `toString`. A sealed abstract base
+receives union serialization only.
 
 The facade delegates `parse`, `safeParse`, `fromJson`, `encode`, `safeEncode`,
 `toJsonSchema`, and `toSchemaModel` to the codec. `schema` is the typed model
@@ -160,14 +161,18 @@ nullable rather than as `withDefault(null)`, whose runtime generic contract
 does not accept null defaults; encoding still preserves the explicitly stored
 null key.
 
-Every represented list, set, and map is recursively copied into an unmodifiable
-collection by the public constructor. Generated map runtime types must use
-`String` keys because the generator's structural map contract is string-keyed.
-Class-first unknown properties follow `AckAdditionalPropertiesMode`: reject
-fails validation, discard accepts extras without storing them, and capture
-stores them in an unmodifiable capture field. Encoding writes captured extras
-first and declared fields second, so unknown data can't replace a declared
-property. Schema-first passthrough objects still use
+Schema-first public constructors recursively copy every represented list, set,
+and map into unmodifiable collections. Class-first parsing recursively freezes
+the collections passed to the hand-written constructor, including captured
+additional properties. Because Ack does not own that constructor, direct
+constructor calls and collection replacements passed to `copyWith` must make
+their own defensive copies when immutability is required. Generated map runtime
+types must use `String` keys because the generator's structural map contract is
+string-keyed. Class-first unknown properties follow
+`AckAdditionalPropertiesMode`: reject fails validation, discard accepts extras
+without storing them, and capture freezes them during parsing. Encoding writes
+captured extras first and declared fields second, so unknown data can't replace
+a declared property. Schema-first passthrough objects still use
 `Ack.object(..., additionalProperties: true)` and store extras in
 `additionalProperties`.
 `toJson()` returns a fresh top-level collection; nested values are the

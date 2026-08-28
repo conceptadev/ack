@@ -24,8 +24,11 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
   and recursive class-first graphs across libraries.
 * Preserve original boundary values from generated class-first `wireSchema`
   facades while still validating nested codecs and models.
+* Enforce final class-first value types and fields, recursively freeze parsed
+  class-first collections and captured extras, and use collision-safe private
+  `copyWith` sentinels.
 * Raise the Dart floor to 3.9 and pin `ack_generator` to Analyzer
-  `>=10.0.0 <11.0.0`.
+  `>=10.0.0 <11.0.0`. Flutter packages now require Flutter 3.35.
 * Align all published Ack packages on the coordinated 1.2.0 release line.
 
 ## 1.1.0 - 2026-07-12

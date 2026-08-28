@@ -296,18 +296,23 @@ Map<String, Object?> _$AccountToRuntime(Account model) => <String, Object?>{
   ..._$AccountToJson(model),
 };
 
+final class _AccountCopyWithUnset {
+  const _AccountCopyWithUnset();
+}
+
 mixin _$AccountAck {
-  static const Object _ackCopyWithOmitted = Object();
+  static const _AccountCopyWithUnset _ackCopyWithUnset =
+      _AccountCopyWithUnset();
 
   Account copyWith({
     String? displayName,
-    Object? website = _ackCopyWithOmitted,
+    Object? website = _ackCopyWithUnset,
     String? role,
   }) {
     final self = this as Account;
     return Account(
       displayName: displayName ?? self.displayName,
-      website: identical(website, _ackCopyWithOmitted)
+      website: identical(website, _ackCopyWithUnset)
           ? self.website
           : website as Uri?,
       role: role ?? self.role,

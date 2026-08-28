@@ -3,7 +3,7 @@ description: ACK workspace root package
 
 environment:
   sdk: '>=3.9.0 <4.0.0'
-  flutter: '>=3.16.0'
+  flutter: '>=3.35.0'
 
 workspace:
   - packages/ack

@@ -2,7 +2,8 @@
 
 ### Changed
 
-* Align the adapter with Ack 1.2 and raise the minimum Dart SDK to 3.9.
+* Align the adapter with Ack 1.2, raise the minimum Dart SDK to 3.9, and require
+  Flutter 3.35 or newer.
 
 ## 1.1.0
 

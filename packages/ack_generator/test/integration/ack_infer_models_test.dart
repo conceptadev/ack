@@ -109,10 +109,13 @@ final userSchema = Ack.object({
       outputs: {
         'test_pkg|lib/user.ack.dart': decodedMatches(
           allOf([
-            contains('static const Object _ackCopyWithOmitted = Object();'),
-            contains('Object? nickname = _ackCopyWithOmitted'),
-            contains('nickname: identical(nickname, _ackCopyWithOmitted)'),
+            contains('final class _UserCopyWithUnset'),
+            contains('const _UserCopyWithUnset()'),
+            contains('static const _UserCopyWithUnset _ackCopyWithUnset ='),
+            contains('Object? nickname = _ackCopyWithUnset'),
+            contains('nickname: identical(nickname, _ackCopyWithUnset)'),
             contains(': nickname as String?'),
+            isNot(contains('_ackCopyWithOmitted')),
           ]),
         ),
       },

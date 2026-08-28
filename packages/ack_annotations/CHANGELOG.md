@@ -18,6 +18,7 @@
 ### Changed
 
 * Raise the minimum Dart SDK to 3.9.
+* Make the new `AckInfer` and internal JSON marker annotation classes final.
 
 ## 1.1.0
 

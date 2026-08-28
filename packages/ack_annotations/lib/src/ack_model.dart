@@ -22,7 +22,9 @@ enum AckAdditionalPropertiesMode { reject, discard, capture }
 ///
 /// The declaring library must include both generated parts, for example
 /// `part 'user.ack.dart';` and `part 'user.ack.g.dart';`. Instantiable models and
-/// implicit sealed-union branches must apply the generated `_$ClassAck` mixin.
+/// implicit sealed-union branches must be `final class` declarations, use only
+/// final stored fields, and apply the generated `_$ClassAck` mixin. Annotated
+/// sealed union bases remain supported.
 @Target({TargetKind.classType})
 final class AckModel {
   /// Creates a class-first Ack model annotation.

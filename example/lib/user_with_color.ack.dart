@@ -60,6 +60,10 @@ final class ColorModel {
   static Object? _ackToRuntimeValue(Color value) => value;
 }
 
+final class _ProfileCopyWithUnset {
+  const _ProfileCopyWithUnset();
+}
+
 /// Immutable model generated from `profileSchema`.
 @AckInfer.jsonSerializable
 final class Profile {
@@ -73,7 +77,8 @@ final class Profile {
     return $ack.parse(json);
   }
 
-  static const Object _ackCopyWithOmitted = Object();
+  static const _ProfileCopyWithUnset _ackCopyWithUnset =
+      _ProfileCopyWithUnset();
 
   final String bio;
 
@@ -92,10 +97,10 @@ final class Profile {
 
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
 
-  Profile copyWith({String? bio, Object? website = _ackCopyWithOmitted}) =>
+  Profile copyWith({String? bio, Object? website = _ackCopyWithUnset}) =>
       Profile(
         bio: bio ?? this.bio,
-        website: identical(website, _ackCopyWithOmitted)
+        website: identical(website, _ackCopyWithUnset)
             ? this.website
             : website as Uri?,
       );
@@ -131,6 +136,10 @@ final class Profile {
   static Object? _ackToRuntimeWebsite(Uri? value) => value;
 }
 
+final class _UserWithColorCopyWithUnset {
+  const _UserWithColorCopyWithUnset();
+}
+
 /// Immutable model generated from `userWithColorSchema`.
 @AckInfer.jsonSerializable
 final class UserWithColor {
@@ -153,7 +162,8 @@ final class UserWithColor {
     return $ack.parse(json);
   }
 
-  static const Object _ackCopyWithOmitted = Object();
+  static const _UserWithColorCopyWithUnset _ackCopyWithUnset =
+      _UserWithColorCopyWithUnset();
 
   final String firstName;
 
@@ -190,7 +200,7 @@ final class UserWithColor {
     int? age,
     Profile? profile,
     ColorModel? color,
-    Object? favoriteColor = _ackCopyWithOmitted,
+    Object? favoriteColor = _ackCopyWithUnset,
     Pet? pet,
     List<Pet>? pets,
   }) => UserWithColor(
@@ -199,7 +209,7 @@ final class UserWithColor {
     age: age ?? this.age,
     profile: profile ?? this.profile,
     color: color ?? this.color,
-    favoriteColor: identical(favoriteColor, _ackCopyWithOmitted)
+    favoriteColor: identical(favoriteColor, _ackCopyWithUnset)
         ? this.favoriteColor
         : favoriteColor as ColorModel?,
     pet: pet ?? this.pet,

@@ -275,6 +275,10 @@ void main() {
     expect(extras.role, 'member');
     expect(extras.copyWith().nickname, 'Countess');
     expect(extras.copyWith(nickname: null).nickname, isNull);
+    expect(
+      () => extras.copyWith(nickname: const Object()),
+      throwsA(isA<TypeError>()),
+    );
     expect(extras.box.values, ['a', 'b']);
     expect(() => extras.numbers.single.add(3), throwsUnsupportedError);
     final dynamic = extras.additionalProperties['dynamic']! as Map;

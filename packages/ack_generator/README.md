@@ -85,7 +85,10 @@ The generator supports objects, empty objects, scalar and collection roots,
 literals, enums, defaults, additional properties, built-in and custom
 bidirectional codecs, named nested models, aliases, named `Ack.lazy` recursion,
 and same-library discriminated unions. Lists, sets, and maps stored by a model
-are copied recursively into unmodifiable collections.
+generated with `@AckInfer()` are copied recursively into unmodifiable
+collections. `@AckModel()` parsing provides the same guarantee, including for
+captured extras. Hand-written constructors and collection replacements passed
+to `copyWith` remain responsible for their own defensive copies.
 
 Generation rejects shapes without a useful static, encodable model contract:
 
@@ -132,7 +135,9 @@ targets:
 `@AckInfer()` can annotate top-level schema variables and top-level schema
 getters. Classes, instance members, and local variables are rejected.
 
-`@AckModel()` annotates public, constructable classes. See the
+`@AckModel()` annotates public, constructable `final class` declarations whose
+stored fields are final. Annotated sealed union bases remain supported, and
+their concrete branches must also be final. See the
 [Model Code Generation guide](https://concepta.dev/documentation/ack/advanced/typesafe-schemas)
 for both directions, field inference, sealed unions, passthrough properties,
 and build configuration.

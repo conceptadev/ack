@@ -143,6 +143,15 @@ AckSchema<String, alpha.Item> alphaItemSchema() => Ack.string()
 AckSchema<int, beta.Item> betaItemSchema() => Ack.integer()
     .codec<beta.Item>(decode: beta.Item.new, encode: (item) => item.value);
 
+AckSchema<Map<String, Object?>, Map<String, List<String>>> groupsSchema() =>
+    Ack.object({}, additionalProperties: true)
+        .codec<Map<String, List<String>>>(
+          decode: (value) => value.map(
+            (key, item) => MapEntry(key, (item! as List).cast<String>()),
+          ),
+          encode: (value) => value,
+        );
+
 @AckModel()
 final class Profile with _$ProfileAck {
   const Profile({
@@ -237,6 +246,21 @@ final class ImportedPair with _$ImportedPairAck {
   final beta.Item right;
 }
 
+@AckModel()
+final class ImmutableCollections with _$ImmutableCollectionsAck {
+  const ImmutableCollections({
+    required this.matrix,
+    required this.labels,
+    required this.groups,
+  });
+
+  final List<List<String>> matrix;
+  @UniqueItems()
+  final Set<String> labels;
+  @AckField(schema: groupsSchema)
+  final Map<String, List<String>> groups;
+}
+
 @AckModel(discriminatorKey: 'type')
 sealed class Pet with _$PetAck {
   const Pet({required this.id});
@@ -327,13 +351,53 @@ void main() {
   });
 
   test('additional properties decode and encode extras first', () {
-    final config = ConfigSchema.parse({'name': 'declared', 'theme': 'dark'});
-    expect(config.additionalProperties, {'theme': 'dark'});
+    final config = ConfigSchema.parse({
+      'name': 'declared',
+      'theme': 'dark',
+      'nested': {
+        'items': [1, 2],
+      },
+    });
+    expect(config.additionalProperties, {
+      'theme': 'dark',
+      'nested': {
+        'items': [1, 2],
+      },
+    });
+    expect(
+      () => config.additionalProperties['new'] = true,
+      throwsUnsupportedError,
+    );
+    final nested = config.additionalProperties['nested']! as Map;
+    expect(() => nested['new'] = true, throwsUnsupportedError);
+    final items = nested['items']! as List;
+    expect(() => items.add(3), throwsUnsupportedError);
     final spoofed = Config(
       name: 'declared',
       additionalProperties: const {'name': 'spoofed', 'theme': 'dark'},
     );
     expect(spoofed.toJson(), {'theme': 'dark', 'name': 'declared'});
+  });
+
+  test('parsed class-first collections are recursively unmodifiable', () {
+    final model = ImmutableCollectionsSchema.parse({
+      'matrix': [
+        ['a'],
+      ],
+      'labels': ['a'],
+      'groups': {
+        'primary': ['a'],
+      },
+    });
+
+    expect(() => model.matrix.add(const []), throwsUnsupportedError);
+    expect(() => model.matrix.single.add('b'), throwsUnsupportedError);
+    expect(() => model.labels.add('b'), throwsUnsupportedError);
+    expect(
+      () => model.groups['secondary'] = const ['b'],
+      throwsUnsupportedError,
+    );
+    expect(() => model.groups['primary']!.add('b'), throwsUnsupportedError);
   });
 
   test('custom capture fields honor the configured case style', () {
@@ -393,6 +457,10 @@ void main() {
     expect(renamed.name, 'Grace');
     expect(renamed.nickname, 'Countess');
     expect(profile.copyWith(nickname: null).nickname, isNull);
+    expect(
+      () => profile.copyWith(nickname: const Object()),
+      throwsA(isA<TypeError>()),
+    );
     expect(renamed.role, 'member');
     expect(renamed.tags, {'schema', 'dart'});
     expect(profile.copyWith(), profile);

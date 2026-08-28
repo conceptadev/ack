@@ -318,6 +318,9 @@ final class ClassModelGraphBuilder {
       claim(ackClassMixinName(node.className), node);
       claim(ackClassRawObjectName(node.className), node);
       if (node is! AckObjectModelNode) continue;
+      if (node.fields.any((field) => field.nullable || !field.isRequired)) {
+        claim(ackCopyWithUnsetTypeName(node.className), node);
+      }
       claim(ackClassFromRuntimeName(node.className), node);
       claim(ackClassToRuntimeName(node.className), node);
       claim(jsonFromHelperName(node.className), node);
@@ -330,6 +333,17 @@ final class ClassModelGraphBuilder {
         claim(ackClassToRuntimeBridgeName(node.className, fieldName), node);
       }
     }
+    AckObjectModelNode? captureOwner;
+    for (final node in _graph.nodes.whereType<AckObjectModelNode>()) {
+      if (node.captureFieldName == null) continue;
+      captureOwner = node;
+      break;
+    }
+
+    if (captureOwner != null) {
+      claim(ackClassImmutableCopyValueName, captureOwner);
+      claim(ackClassImmutableCopyMapName, captureOwner);
+    }
   }
 
   void _validateAnnotatedClass(ClassElement element) {
@@ -341,6 +355,7 @@ final class ClassModelGraphBuilder {
         todo: 'Annotate a public class.',
       );
     }
+    _requireFinalConcreteClass(element);
     if (_jsonSerializableChecker.hasAnnotationOfExact(element)) {
       throw InvalidGenerationSource(
         '$name cannot use @AckModel and @JsonSerializable together because '
@@ -404,6 +419,7 @@ final class ClassModelGraphBuilder {
           element: candidate,
         );
       }
+      _requireFinalConcreteClass(candidate);
     }
     if (candidates.isEmpty) {
       throw InvalidGenerationSource(
@@ -492,6 +508,16 @@ final class ClassModelGraphBuilder {
     _rejectGeneratedMemberCollisions(element, includeValueMembers: true);
 
     final fields = _instanceFields(element);
+    for (final field in fields.values) {
+      if (field.isFinal) continue;
+      throw InvalidGenerationSource(
+        '${element.name}.${field.name} must be final because @AckModel '
+        'generates immutable value semantics.',
+        element: field,
+        todo: 'Declare the stored field as final.',
+      );
+    }
+
     final captureFieldName =
         options.additionalProperties ==
             annotations.AckAdditionalPropertiesMode.capture
@@ -1402,6 +1428,16 @@ final class ClassModelGraphBuilder {
       if (name != null) result[name] = field;
     }
     return result;
+  }
+
+  void _requireFinalConcreteClass(ClassElement element) {
+    if (element.isAbstract || element.isSealed || element.isFinal) return;
+    throw InvalidGenerationSource(
+      '${element.name} must be declared as a final class because @AckModel '
+      'generates immutable value semantics.',
+      element: element,
+      todo: 'Add the final class modifier.',
+    );
   }
 
   bool _isStoredField(FieldElement field) =>

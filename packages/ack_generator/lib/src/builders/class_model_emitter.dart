@@ -35,6 +35,15 @@ final class AckClassModelEmitter {
           _emitUnion(output, graph, node, nodes);
       }
     }
+    if (graph.nodes.whereType<AckObjectModelNode>().any(
+      (node) => node.captureFieldName != null,
+    )) {
+      output
+        ..writeln(_immutableValueHelper())
+        ..writeln()
+        ..writeln(_immutableMapHelper());
+    }
+
     return output.toString();
   }
 
@@ -332,10 +341,13 @@ Map<String, Object?> $function(${node.className} model) {
       output
         ..writeln(
           'Map<String, Object?>? $fromName(Object? value) => '
-          'value as Map<String, Object?>?;',
+          'value == null ? null : '
+          '$ackClassImmutableCopyMapName('
+          'value as Map<String, Object?>);',
         )
         ..writeln('Object? $toName(Map<String, Object?> value) => value;');
     }
+
     return output.toString();
   }
 
@@ -350,14 +362,17 @@ Map<String, Object?> $function(${node.className} model) {
       '$visibleName.\$ack.fromRuntime('
           '$expression as ${_type(runtimeRef)})',
     AckListTypeRef(:final elementType) =>
-      '($expression as List).map((item) => '
-          '${_fromRuntime(elementType, 'item')}).toList()',
+      'List<${_type(elementType)}>.unmodifiable(('
+          '$expression as List).map((item) => '
+          '${_fromRuntime(elementType, 'item')}))',
     AckSetTypeRef(:final elementType) =>
-      '($expression as Set).map((item) => '
-          '${_fromRuntime(elementType, 'item')}).toSet()',
+      'Set<${_type(elementType)}>.unmodifiable(('
+          '$expression as Set).map((item) => '
+          '${_fromRuntime(elementType, 'item')}))',
     AckMapTypeRef(:final valueType) =>
-      '($expression as Map).map((key, item) => MapEntry('
-          'key as String, ${_fromRuntime(valueType, 'item')}))',
+      'Map<String, ${_type(valueType)}>.unmodifiable(('
+          '$expression as Map).map((key, item) => MapEntry('
+          'key as String, ${_fromRuntime(valueType, 'item')})))',
     _ => '$expression as ${_type(type)}',
   };
 
@@ -392,6 +407,35 @@ Map<String, Object?> $function(${node.className} model) {
     AckSetTypeRef(:final elementType) => 'Set<${_type(elementType)}>',
     AckMapTypeRef(:final valueType) => 'Map<String, ${_type(valueType)}>',
   };
+
+  String _immutableValueHelper() =>
+      '''
+Object? $ackClassImmutableCopyValueName(Object? value) => switch (value) {
+  List() => List.unmodifiable(value.map($ackClassImmutableCopyValueName)),
+  Set() => Set.unmodifiable(value.map($ackClassImmutableCopyValueName)),
+  Map() => Map.unmodifiable(
+      value.map(
+        (key, item) => MapEntry(
+          key,
+          $ackClassImmutableCopyValueName(item),
+        ),
+      ),
+    ),
+  _ => value,
+};''';
+
+  String _immutableMapHelper() =>
+      '''
+Map<String, Object?> $ackClassImmutableCopyMapName(
+  Map<String, Object?> value,
+) => Map<String, Object?>.unmodifiable(
+  value.map(
+    (key, item) => MapEntry(
+      key,
+      $ackClassImmutableCopyValueName(item),
+    ),
+  ),
+);''';
 
   Set<String> _declaredKeys(AckObjectModelNode node) => {
     for (final field in node.fields) field.jsonKey,

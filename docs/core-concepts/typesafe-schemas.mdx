@@ -179,11 +179,17 @@ entry point:
 - `ProfileSchema.wireSchema` is the raw structural `Map` schema.
 
 Every instantiable `@AckModel` class and implicit sealed-union branch must
-apply its generated `_$ClassAck` mixin. The mixin supplies `toJson()`,
-`safeToJson()`, a generated `copyWith` where omission keeps the current value and
-explicit `null` clears a nullable field, and deep collection-aware `==`,
-`hashCode`, and `toString`. A sealed
-abstract base receives union serialization only.
+be declared `final class`, contain only final stored fields, and apply its
+generated `_$ClassAck` mixin. The mixin supplies `toJson()`, `safeToJson()`, a
+generated `copyWith` where omission keeps the current value and explicit
+`null` clears a nullable field, and deep collection-aware `==`, `hashCode`, and
+`toString`. A sealed abstract base receives union serialization only.
+
+Values created by `ProfileSchema.parse` or `Profile.fromJson` receive recursive
+unmodifiable copies of list, set, map, and captured-extra values. Ack cannot
+rewrite a hand-written constructor, so direct construction and collection
+replacements passed to `copyWith` must defensively copy mutable inputs in the
+source class when that guarantee is required.
 
 Generated `toJson()` and `safeToJson()` methods delegate through that same
 facade. Ack cannot inject a constructor into a hand-written class, so the

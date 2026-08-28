@@ -32,7 +32,7 @@ import 'ack_generated_json.dart';
 /// - Instance members
 /// - Local variables
 @Target({TargetKind.topLevelVariable, TargetKind.getter})
-class AckInfer {
+final class AckInfer {
   /// Internal marker used on generated model classes.
   ///
   /// Typed as [Object] so generated code only needs a constant annotation

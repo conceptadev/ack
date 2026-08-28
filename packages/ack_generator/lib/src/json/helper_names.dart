@@ -56,6 +56,16 @@ String ackInferModelClassName(String declarationName, {String? override}) {
 String ackClassRawObjectName(String className) =>
     '_${className[0].toLowerCase()}${className.substring(1)}Object';
 
+/// Private per-model type used to distinguish an omitted copyWith argument.
+String ackCopyWithUnsetTypeName(String className) =>
+    '_${className}CopyWithUnset';
+
+/// Recursively freezes values captured by class-first additional properties.
+const ackClassImmutableCopyValueName = '_ackClassImmutableCopyValue';
+
+/// Freezes the top-level class-first additional-properties map.
+const ackClassImmutableCopyMapName = '_ackClassImmutableCopyMap';
+
 /// json_serializable `fromJson` helper for a generated model class.
 String jsonFromHelperName(String className) => '_\$${className}FromJson';
 

@@ -36,6 +36,10 @@
   representation when nested models, collections, enums, or codecs decode.
 * Distinguish omitted `copyWith` arguments from explicit `null`, so nullable
   fields can be cleared in both schema-first and class-first models.
+* Use a dedicated private sentinel type for nullable `copyWith` arguments so a
+  consumer's `const Object()` cannot be mistaken for omission.
+* Require concrete class-first models and branches plus all stored fields to be
+  final, and recursively freeze parsed collections and captured extras.
 * Reject unsupported `JsonKey` options and parameter placement, cross-library
   class-first cycles, direct one-way transforms beneath codecs, and legacy
   object fields whose schema expressions cannot be analyzed.

@@ -218,6 +218,50 @@ final class _User {
     );
   });
 
+  test('requires final concrete AckModel classes', () async {
+    await _expectFailure(
+      '''
+@AckModel()
+class User with _\$UserAck {
+  const User({required this.name});
+
+  final String name;
+}
+''',
+      ['User', 'final class', 'value semantics'],
+    );
+  });
+
+  test('requires final concrete union branches', () async {
+    await _expectFailure(
+      '''
+@AckModel(discriminatorKey: 'type')
+sealed class Pet with _\$PetAck {
+  const Pet();
+}
+
+class Cat extends Pet with _\$CatAck {
+  const Cat();
+}
+''',
+      ['Cat', 'final class', 'value semantics'],
+    );
+  });
+
+  test('rejects mutable stored fields', () async {
+    await _expectFailure(
+      '''
+@AckModel()
+final class User with _\$UserAck {
+  User({required this.name});
+
+  String name;
+}
+''',
+      ['User.name', 'final', 'value semantics'],
+    );
+  });
+
   test('rejects private constructor-backed fields', () async {
     await _expectFailure(
       '''

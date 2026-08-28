@@ -321,6 +321,11 @@ print(user.toJson());
 
 ### `@AckModel()`
 
+Concrete models and union branches must be `final class` declarations with
+final stored fields. Annotated sealed union bases remain supported. Parsed
+collections and captured extras are recursively unmodifiable; hand-written
+constructors remain responsible for defensively copying direct inputs.
+
 **Target**: Public, constructable classes
 
 **Generates**: A public `<ClassName>Schema` facade backed by a private raw

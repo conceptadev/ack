@@ -7,7 +7,7 @@ import '../models/schema_model_graph.dart';
 final class AckModelEmitter {
   AckModelEmitter({this.ackPrefix, this.ackInferPrefix});
 
-  static const _copyWithOmitted = '_ackCopyWithOmitted';
+  static const _copyWithUnset = '_ackCopyWithUnset';
 
   final String? ackPrefix;
   final String? ackInferPrefix;
@@ -20,14 +20,23 @@ final class AckModelEmitter {
         case AckObjectModelNode(:final unionId) when unionId != null:
           continue;
         case AckObjectModelNode():
+          if (_usesCopyWithSentinel(_storedFields(node))) {
+            output.add(_copyWithSentinelClass(node.className));
+          }
           output.add(_object(node));
         case AckValueModelNode():
+          if (_fieldUsesCopyWithSentinel(_valueField(node))) {
+            output.add(_copyWithSentinelClass(node.className));
+          }
           output.add(_value(node));
         case AckUnionModelNode():
           output.add(_union(node, nodes));
           for (final branchId in node.branches.values) {
             final branch = nodes[branchId];
             if (branch is AckObjectModelNode) {
+              if (_usesCopyWithSentinel(_storedFields(branch))) {
+                output.add(_copyWithSentinelClass(branch.className));
+              }
               output.add(_branch(branch, node));
             }
           }
@@ -39,6 +48,7 @@ final class AckModelEmitter {
     if (needsDynamicMapCopy) {
       output.addAll([_immutableValueHelper(), _immutableMapHelper()]);
     }
+
     return output;
   }
 
@@ -51,7 +61,8 @@ final class AckModelEmitter {
         ..annotations.add(_jsonMarker())
         ..docs.addAll(_docs(node, 'Immutable model'))
         ..fields.addAll([
-          if (_usesCopyWithSentinel(fields)) _copyWithSentinelField(),
+          if (_usesCopyWithSentinel(fields))
+            _copyWithSentinelField(node.className),
           for (final field in fields) _field(field),
           if (node.additionalProperties) _additionalPropertiesField(),
           _adapter(node, node.id.declarationName),
@@ -85,7 +96,8 @@ final class AckModelEmitter {
         ..annotations.add(_jsonMarker())
         ..docs.addAll(_docs(node, 'Immutable value model'))
         ..fields.addAll([
-          if (_fieldUsesCopyWithSentinel(valueField)) _copyWithSentinelField(),
+          if (_fieldUsesCopyWithSentinel(valueField))
+            _copyWithSentinelField(node.className),
           Field(
             (f) => f
               ..name = 'value'
@@ -217,7 +229,8 @@ return switch (value[${_literal(node.discriminatorKey)}]) {
         ..annotations.add(_jsonMarker())
         ..docs.addAll(_docs(node, 'Discriminated model branch'))
         ..fields.addAll([
-          if (_usesCopyWithSentinel(fields)) _copyWithSentinelField(),
+          if (_usesCopyWithSentinel(fields))
+            _copyWithSentinelField(node.className),
           for (final field in fields) _field(field),
           if (node.additionalProperties) _additionalPropertiesField(),
           _adapter(
@@ -560,7 +573,7 @@ ${_ack('AckModelAdapter')}(
         _fieldUsesCopyWithSentinel(field) ? 'Object?' : _copyWithType(field),
       );
     if (_fieldUsesCopyWithSentinel(field)) {
-      builder.defaultTo = const Code(_copyWithOmitted);
+      builder.defaultTo = const Code(_copyWithUnset);
     }
   });
 
@@ -569,7 +582,7 @@ ${_ack('AckModelAdapter')}(
     AckFieldNode field,
   ) {
     final replacement = _fieldUsesCopyWithSentinel(field)
-        ? 'identical(${parameter.name}, $_copyWithOmitted) '
+        ? 'identical(${parameter.name}, $_copyWithUnset) '
               '? this.${parameter.fieldName} '
               ': ${parameter.name} as ${_fieldType(field)}'
         : '${parameter.name} ?? this.${parameter.fieldName}';
@@ -587,13 +600,22 @@ ${_ack('AckModelAdapter')}(
         runtimeRef: parameter.typeRef,
       );
 
-  Field _copyWithSentinelField() => Field(
+  Class _copyWithSentinelClass(String className) => Class(
+    (builder) => builder
+      ..name = ackCopyWithUnsetTypeName(className)
+      ..modifier = ClassModifier.final$
+      ..constructors.add(
+        Constructor((constructor) => constructor.constant = true),
+      ),
+  );
+
+  Field _copyWithSentinelField(String className) => Field(
     (field) => field
-      ..name = _copyWithOmitted
+      ..name = _copyWithUnset
       ..static = true
       ..modifier = FieldModifier.constant
-      ..type = refer('Object')
-      ..assignment = const Code('Object()'),
+      ..type = refer(ackCopyWithUnsetTypeName(className))
+      ..assignment = Code('${ackCopyWithUnsetTypeName(className)}()'),
   );
 
   bool _usesCopyWithSentinel(Iterable<AckFieldNode> fields) =>

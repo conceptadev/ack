@@ -478,6 +478,10 @@ final class Employee {
       Address.$ack.toRuntime(value);
 }
 
+final class _ModifierCopyWithUnset {
+  const _ModifierCopyWithUnset();
+}
+
 /// Immutable model generated from `modifierSchema`.
 @AckInfer.jsonSerializable
 final class Modifier {
@@ -497,7 +501,8 @@ final class Modifier {
     return $ack.parse(json);
   }
 
-  static const Object _ackCopyWithOmitted = Object();
+  static const _ModifierCopyWithUnset _ackCopyWithUnset =
+      _ModifierCopyWithUnset();
 
   final String requiredField;
 
@@ -524,22 +529,22 @@ final class Modifier {
 
   Modifier copyWith({
     String? requiredField,
-    Object? optionalField = _ackCopyWithOmitted,
-    Object? nullableField = _ackCopyWithOmitted,
-    Object? optionalNullable = _ackCopyWithOmitted,
-    Object? nullableOptional = _ackCopyWithOmitted,
+    Object? optionalField = _ackCopyWithUnset,
+    Object? nullableField = _ackCopyWithUnset,
+    Object? optionalNullable = _ackCopyWithUnset,
+    Object? nullableOptional = _ackCopyWithUnset,
   }) => Modifier(
     requiredField: requiredField ?? this.requiredField,
-    optionalField: identical(optionalField, _ackCopyWithOmitted)
+    optionalField: identical(optionalField, _ackCopyWithUnset)
         ? this.optionalField
         : optionalField as String?,
-    nullableField: identical(nullableField, _ackCopyWithOmitted)
+    nullableField: identical(nullableField, _ackCopyWithUnset)
         ? this.nullableField
         : nullableField as String?,
-    optionalNullable: identical(optionalNullable, _ackCopyWithOmitted)
+    optionalNullable: identical(optionalNullable, _ackCopyWithUnset)
         ? this.optionalNullable
         : optionalNullable as String?,
-    nullableOptional: identical(nullableOptional, _ackCopyWithOmitted)
+    nullableOptional: identical(nullableOptional, _ackCopyWithUnset)
         ? this.nullableOptional
         : nullableOptional as String?,
   );
@@ -605,6 +610,10 @@ final class Modifier {
   static Object? _ackToRuntimeNullableOptional(String? value) => value;
 }
 
+final class _TaggedItemCopyWithUnset {
+  const _TaggedItemCopyWithUnset();
+}
+
 /// Immutable model generated from `taggedItemSchema`.
 @AckInfer.jsonSerializable
 final class TaggedItem {
@@ -637,7 +646,8 @@ final class TaggedItem {
     return $ack.parse(json);
   }
 
-  static const Object _ackCopyWithOmitted = Object();
+  static const _TaggedItemCopyWithUnset _ackCopyWithUnset =
+      _TaggedItemCopyWithUnset();
 
   final String name;
 
@@ -663,15 +673,15 @@ final class TaggedItem {
   TaggedItem copyWith({
     String? name,
     List<String>? requiredTags,
-    Object? optionalTags = _ackCopyWithOmitted,
-    Object? nullableTags = _ackCopyWithOmitted,
+    Object? optionalTags = _ackCopyWithUnset,
+    Object? nullableTags = _ackCopyWithUnset,
   }) => TaggedItem(
     name: name ?? this.name,
     requiredTags: requiredTags ?? this.requiredTags,
-    optionalTags: identical(optionalTags, _ackCopyWithOmitted)
+    optionalTags: identical(optionalTags, _ackCopyWithUnset)
         ? this.optionalTags
         : optionalTags as List<String>?,
-    nullableTags: identical(nullableTags, _ackCopyWithOmitted)
+    nullableTags: identical(nullableTags, _ackCopyWithUnset)
         ? this.nullableTags
         : nullableTags as List<String>?,
   );

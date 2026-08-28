@@ -1357,6 +1357,7 @@ final class SchemaModelGraphBuilder {
           _validateClassHelperNames(
             className: node.className,
             fieldNames: const ['value'],
+            needsCopyWithSentinel: false,
             path: node.id.declarationName,
             element: declaration.element,
             localNames: localNames,
@@ -1369,6 +1370,11 @@ final class SchemaModelGraphBuilder {
                 if (field.jsonKey != node.discriminatorKey) field.dartName,
               if (node.additionalProperties) 'additionalProperties',
             ],
+            needsCopyWithSentinel: node.fields.any(
+              (field) =>
+                  field.jsonKey != node.discriminatorKey &&
+                  (field.nullable || !field.isRequired),
+            ),
             path: node.id.declarationName,
             element: declaration.element,
             localNames: localNames,
@@ -1380,6 +1386,7 @@ final class SchemaModelGraphBuilder {
   void _validateClassHelperNames({
     required String className,
     required List<String> fieldNames,
+    required bool needsCopyWithSentinel,
     required String path,
     required Element element,
     required Set<String> localNames,
@@ -1417,6 +1424,13 @@ final class SchemaModelGraphBuilder {
       if (!localNames.contains(helperName)) continue;
       throw InvalidGenerationSource(
         'Generated helper "$helperName" conflicts with a local declaration.',
+        element: element,
+      );
+    }
+    final sentinelType = ackCopyWithUnsetTypeName(className);
+    if (needsCopyWithSentinel && localNames.contains(sentinelType)) {
+      throw InvalidGenerationSource(
+        'Generated helper "$sentinelType" conflicts with a local declaration.',
         element: element,
       );
     }

@@ -1,3 +1,4 @@
+import '../json/helper_names.dart';
 import '../models/schema_model_graph.dart';
 
 /// Shared copy/equality/hash/string emission for class-first and schema-first
@@ -5,7 +6,7 @@ import '../models/schema_model_graph.dart';
 final class AckDataClassEmitter {
   const AckDataClassEmitter({this.ackPrefix});
 
-  static const _copyWithOmitted = '_ackCopyWithOmitted';
+  static const _copyWithUnset = '_ackCopyWithUnset';
 
   final String? ackPrefix;
 
@@ -49,11 +50,15 @@ final class AckDataClassEmitter {
         includeValueMembers &&
         constructorParameters.any((parameter) {
           final field = storedByField[parameter.fieldName];
+
           return field != null && _usesCopyWithSentinel(field);
         });
+    final sentinelType = ackCopyWithUnsetTypeName(className);
+
     return '''
+${needsCopyWithSentinel ? 'final class $sentinelType {\n  const $sentinelType();\n}\n\n' : ''}
 mixin ${'_\$${className}Ack'} {
-  ${needsCopyWithSentinel ? 'static const Object $_copyWithOmitted = Object();\n\n  ' : ''}${members.join('\n\n  ')}
+  ${needsCopyWithSentinel ? 'static const $sentinelType $_copyWithUnset = $sentinelType();\n\n  ' : ''}${members.join('\n\n  ')}
 }''';
   }
 
@@ -70,7 +75,7 @@ mixin ${'_\$${className}Ack'} {
         if (_usesCopyWithSentinel(
           byField[parameter.fieldName] ?? _synthetic(parameter),
         ))
-          'Object? ${parameter.name} = $_copyWithOmitted'
+          'Object? ${parameter.name} = $_copyWithUnset'
         else
           '${_copyWithType(byField[parameter.fieldName] ?? _synthetic(parameter))} ${parameter.name}',
     ];
@@ -195,7 +200,7 @@ ${_ack('SchemaResult')}<Map<String, Object?>> safeToJson() =>
     String receiver,
   ) {
     final replacement = _usesCopyWithSentinel(field)
-        ? 'identical(${parameter.name}, $_copyWithOmitted) '
+        ? 'identical(${parameter.name}, $_copyWithUnset) '
               '? $receiver.${parameter.fieldName} '
               ': ${parameter.name} as ${fieldDartType(field)}'
         : '${parameter.name} ?? $receiver.${parameter.fieldName}';
