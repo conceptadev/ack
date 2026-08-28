@@ -10,13 +10,8 @@
     "dark": "/assets/logo-dark.svg"
   },
 
-  "theme": {
-    "defaultTheme": "dark"
-  },
   "header": {
-    "showName": true,
-    "showThemeToggle": false,
-    "showGitHubCard": true
+    "showName": true
   },
   "social": {
     "github": "conceptadev/ack"
