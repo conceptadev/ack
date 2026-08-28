@@ -153,6 +153,13 @@ null fields are omitted during encoding; required nullable fields encode null.
 Defaulted fields stay required in the unchecked constructor because arbitrary
 schema defaults can't become Dart parameter defaults safely.
 
+Class-first models keep constructor defaults in source. A nullable non-null
+default applies to missing input and JSON null, but a directly constructed null
+still encodes as null. An explicit null default is modeled as optional and
+nullable rather than as `withDefault(null)`, whose runtime generic contract
+does not accept null defaults; encoding still preserves the explicitly stored
+null key.
+
 Every represented list, set, and map is recursively copied into an unmodifiable
 collection by the public constructor. Generated map runtime types must use
 `String` keys because the generator's structural map contract is string-keyed.

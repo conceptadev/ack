@@ -192,7 +192,22 @@ together.
 Already own the model class? Use `@AckModel()` to derive a codec schema from
 constructor-backed fields while keeping the class hand-written. A class named
 `Account` receives an `AccountSchema` facade for parsing, encoding, schema
-export, and nested composition; the backing codec remains private. See the
+export, and nested composition; the backing codec remains private:
+
+```dart
+@AckModel()
+final class Account with _$AccountAck {
+  const Account({required this.name});
+
+  @MinLength(2)
+  final String name;
+
+  static final fromJson = AccountSchema.fromJson;
+}
+```
+
+`Account.fromJson({'name': 'Ada'})` validates and constructs the model, while
+`account.toJson()` validates and encodes it. See the
 [Model Code Generation guide](docs/core-concepts/typesafe-schemas.mdx).
 
 ## Codecs
@@ -279,7 +294,7 @@ dart run melos run publish
 dart run melos run validate-jsonschema
 
 # API compatibility check (for semantic versioning)
-dart run melos run api-check -- v0.2.0
+dart run melos run api-check -- 1.1.0
 
 # See all available scripts
 dart run melos run --list

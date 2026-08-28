@@ -1,5 +1,5 @@
 name: ack_generator
-description: Code generators for legacy Ack types and immutable Ack models
+description: Generates immutable models from Ack schemas and validated schemas from Dart classes
 version: 1.2.0
 repository: https://github.com/conceptadev/ack
 issue_tracker: https://github.com/conceptadev/ack/issues

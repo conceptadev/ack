@@ -1,11 +1,11 @@
 # Ack Generator
 
-`ack_generator` supports two modern directions: `@AckInfer()` turns a top-level Ack
-schema into an immutable model, while `@AckModel()` derives an Ack codec schema
-from a hand-written class. It also retains the deprecated Ack 1.1 `@AckType()`
-generator unchanged.
+`ack_generator` supports two modern directions: `@AckInfer()` turns a
+top-level Ack schema into an immutable model, while `@AckModel()` derives an
+Ack codec schema from a hand-written class. It also retains the deprecated Ack
+1.1 `@AckType()` generator unchanged.
 
-## Usage
+## Schema-first usage
 
 ```dart
 import 'package:ack/ack.dart';
@@ -25,20 +25,14 @@ Run `dart run build_runner build`. A declaration ending in `Schema` loses that
 suffix, so `userSchema` generates `User`:
 
 ```dart
-final class User {
-  User({required String name, required String email});
+void main() {
+  final user = User.parse({
+    'name': 'Ada',
+    'email': 'ada@example.com',
+  });
 
-  final String name;
-  final String email;
-
-  factory User.parse(Object? input);
-  static SchemaResult<User> safeParse(Object? input);
-  factory User.fromJson(Map<String, dynamic> json);
-  Map<String, dynamic> toJson();
-  SchemaResult<Map<String, Object?>> safeToJson();
-  User copyWith({String? name, String? email});
-
-  static final $ack = AckModelAdapter(/* ... */);
+  print(user.name);     // String
+  print(user.toJson()); // {'name': 'Ada', 'email': 'ada@example.com'}
 }
 ```
 
@@ -47,8 +41,43 @@ Constructors don't validate immediately. Use `parse` for untrusted input;
 it. Generated models don't implement `Map`, and there are no `fromMap` or
 `toMap` aliases.
 
-Use `@AckInfer(name: 'MemberType')` to choose an exact class name. Custom names
-must be unchanged UpperCamelCase identifiers.
+Omit `name` when the inferred class name is right. Use
+`@AckInfer(name: 'Member')` only when you need an exact custom name. Custom
+names must be unchanged UpperCamelCase identifiers.
+
+## Class-first usage
+
+In a class-first library, keep the model in source and apply the generated
+mixin:
+
+```dart
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+part 'account.ack.dart';
+part 'account.ack.g.dart';
+
+@AckModel()
+final class Account with _$AccountAck {
+  const Account({required this.name});
+
+  @MinLength(2)
+  final String name;
+
+  static final fromJson = AccountSchema.fromJson;
+}
+```
+
+After generation, the public facade and model JSON methods use the same Ack
+codec boundary:
+
+```dart
+void main() {
+  final account = Account.fromJson({'name': 'Ada'});
+  print(account.toJson());
+  print(AccountSchema.toJsonSchema());
+}
+```
 
 ## Schema support
 
@@ -104,7 +133,7 @@ targets:
 getters. Classes, instance members, and local variables are rejected.
 
 `@AckModel()` annotates public, constructable classes. See the
-[Model Code Generation guide](https://concepta.dev/ack/core-concepts/typesafe-schemas)
+[Model Code Generation guide](https://concepta.dev/documentation/ack/advanced/typesafe-schemas)
 for both directions, field inference, sealed unions, passthrough properties,
 and build configuration.
 
@@ -120,7 +149,7 @@ the conventional one-argument entry point. Imported nested models compose as
 model and facade.
 
 For design details and migration notes, see the
-[AckInfer model-generation architecture](https://github.com/conceptadev/ack/blob/main/docs/architecture/ackinfer-model-generation.md).
+[model and schema generation architecture](https://github.com/conceptadev/ack/blob/main/docs/architecture/ackinfer-model-generation.md).
 
 ## Deprecated AckType compatibility
 

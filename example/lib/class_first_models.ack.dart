@@ -13,6 +13,8 @@ final _catObject = Ack.object({
   'lives': Ack.integer().min(1).max(9),
 });
 
+final _catWireSchema = Ack.preserveBoundary(_catObject);
+
 final _catSchema = _catObject.codec<Cat>(
   decode: _$CatFromRuntime,
   encode: _$CatToRuntime,
@@ -22,7 +24,7 @@ abstract final class CatSchema {
   static AckSchema<Map<String, Object?>, Cat> get schema => _catSchema;
 
   static AckSchema<Map<String, Object?>, Map<String, Object?>> get wireSchema =>
-      _catObject;
+      _catWireSchema;
 
   static Cat parse(Object? value, {String? debugName}) =>
       _catSchema.parse(value, debugName: debugName)!;
@@ -104,6 +106,8 @@ final _dogObject = Ack.object({
   'breed': Ack.string(),
 });
 
+final _dogWireSchema = Ack.preserveBoundary(_dogObject);
+
 final _dogSchema = _dogObject.codec<Dog>(
   decode: _$DogFromRuntime,
   encode: _$DogToRuntime,
@@ -113,7 +117,7 @@ abstract final class DogSchema {
   static AckSchema<Map<String, Object?>, Dog> get schema => _dogSchema;
 
   static AckSchema<Map<String, Object?>, Map<String, Object?>> get wireSchema =>
-      _dogObject;
+      _dogWireSchema;
 
   static Dog parse(Object? value, {String? debugName}) =>
       _dogSchema.parse(value, debugName: debugName)!;
@@ -194,6 +198,8 @@ final _petObject = Ack.discriminated(
   schemas: {'cat': _catObject, 'Dog': _dogObject},
 );
 
+final _petWireSchema = Ack.preserveBoundary(_petObject);
+
 final _petSchema = _petObject.codec<Pet>(
   decode: (value) => switch (value['type']) {
     'cat' => _$CatFromRuntime(value),
@@ -210,7 +216,7 @@ abstract final class PetSchema {
   static AckSchema<Map<String, Object?>, Pet> get schema => _petSchema;
 
   static AckSchema<Map<String, Object?>, Map<String, Object?>> get wireSchema =>
-      _petObject;
+      _petWireSchema;
 
   static Pet parse(Object? value, {String? debugName}) =>
       _petSchema.parse(value, debugName: debugName)!;
@@ -248,6 +254,8 @@ final _accountObject = Ack.object({
   'role': Ack.string().withDefault('member'),
 });
 
+final _accountWireSchema = Ack.preserveBoundary(_accountObject);
+
 final _accountSchema = _accountObject.codec<Account>(
   decode: _$AccountFromRuntime,
   encode: _$AccountToRuntime,
@@ -257,7 +265,7 @@ abstract final class AccountSchema {
   static AckSchema<Map<String, Object?>, Account> get schema => _accountSchema;
 
   static AckSchema<Map<String, Object?>, Map<String, Object?>> get wireSchema =>
-      _accountObject;
+      _accountWireSchema;
 
   static Account parse(Object? value, {String? debugName}) =>
       _accountSchema.parse(value, debugName: debugName)!;

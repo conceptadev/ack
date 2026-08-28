@@ -3,6 +3,12 @@
   "name": "Ack",
   "description": "Documentation for the Ack project",
   "socialPreview": "/assets/ack-social.png",
+  "favicon": "/assets/favicon.svg",
+
+  "logo": {
+    "light": "/assets/logo-light.svg",
+    "dark": "/assets/logo-dark.svg"
+  },
 
   "theme": {
     "defaultTheme": "dark"

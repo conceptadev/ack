@@ -47,6 +47,24 @@ Generate the model with:
 dart run build_runner build
 ```
 
+For class-first generation, keep the class in source and apply its generated
+mixin:
+
+```dart
+@AckModel()
+final class Account with _$AccountAck {
+  const Account({required this.name});
+
+  @MinLength(2)
+  final String name;
+
+  static final fromJson = AccountSchema.fromJson;
+}
+```
+
+This generates the public `AccountSchema` facade plus validated `toJson`,
+`safeToJson`, `copyWith`, equality, and `toString` implementations.
+
 ## Custom names
 
 Use `name` to set the exact generated class name:
@@ -74,4 +92,4 @@ class name and must be UpperCamelCase.
 
 Unknown properties use `AckAdditionalPropertiesMode` (`reject`, `discard`,
 `capture`). `@AckField` can override `schema` and/or `AckFieldPresence`. See the
-[Model Code Generation guide](https://concepta.dev/ack/core-concepts/typesafe-schemas).
+[Model Code Generation guide](https://concepta.dev/documentation/ack/advanced/typesafe-schemas).

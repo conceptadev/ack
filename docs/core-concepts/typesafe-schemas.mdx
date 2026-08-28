@@ -219,7 +219,13 @@ generated.
 | `required T` | Required, non-null | Always present |
 | `required T?` | Required, may be null | Present even when null |
 | Optional `T?` | May be omitted | Omitted when null |
-| Constructor default | Schema applies `.withDefault(...)` | Encodes the stored value |
+| Constructor default | Missing input uses the default | Encodes the stored value, including null |
+
+Nullable defaults keep their source-level behavior. With
+`this.label = 'fallback'`, missing input and JSON `null` both parse as
+`'fallback'`, while a directly constructed `label: null` still encodes as JSON
+null. With `this.label = null`, missing input and JSON `null` parse as null and
+the encoded object keeps the key with a null value.
 
 The generator infers `String`, `bool`, numeric types, `DateTime`, `Uri`,
 `Duration`, enums, nested lists, and sets. Sets use a list codec.

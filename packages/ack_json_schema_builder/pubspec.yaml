@@ -1,5 +1,5 @@
 name: ack_json_schema_builder
-description: JSON Schema Builder converter for ACK validation library
+description: JSON Schema Builder converter for the Ack validation library
 version: 1.2.0
 repository: https://github.com/conceptadev/ack
 issue_tracker: https://github.com/conceptadev/ack/issues

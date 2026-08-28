@@ -1,5 +1,5 @@
 name: ack_annotations
-description: Annotations for legacy Ack types and immutable Ack model generation
+description: Annotations for Ack schema-first models and class-first schema generation
 version: 1.2.0
 repository: https://github.com/conceptadev/ack
 resolution: workspace
