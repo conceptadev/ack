@@ -11,12 +11,9 @@ on:
 jobs:
   publish-foundations:
     name: Publish foundation packages
-    # The dart-actions repo moved from the btwld org to conceptadev. The REST
-    # API follows that rename redirect, but the Actions reusable-workflow
-    # resolver does not, so the old path fails startup with "workflow was not
-    # found". Keep this owner in sync with the repo's actual location.
-    uses: conceptadev/dart-actions/.github/workflows/publish.yml@main
+    uses: ./.github/workflows/publish-packages.yml
     permissions:
+      contents: read
       id-token: write
     with:
       packages_folder_path: "packages"
@@ -27,8 +24,9 @@ jobs:
   publish-generator:
     name: Publish generator package
     needs: publish-foundations
-    uses: conceptadev/dart-actions/.github/workflows/publish.yml@main
+    uses: ./.github/workflows/publish-packages.yml
     permissions:
+      contents: read
       id-token: write
     with:
       packages_folder_path: "packages"
@@ -37,12 +35,10 @@ jobs:
 
   publish-adapters:
     name: Publish adapter packages
-    # The shared reusable workflow uses the caller workflow name and ref as a
-    # cancel-in-progress concurrency key. Keep reusable calls sequential so
-    # one release stage cannot cancel another stage from the same tag run.
     needs: publish-generator
-    uses: conceptadev/dart-actions/.github/workflows/publish.yml@main
+    uses: ./.github/workflows/publish-packages.yml
     permissions:
+      contents: read
       id-token: write
     with:
       packages_folder_path: "packages"

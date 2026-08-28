@@ -1298,9 +1298,15 @@ class SchemaAstAnalyzer {
       _validateFieldName(fieldName, element);
 
       final fieldInfo = _parseFieldValue(fieldName, value, element);
-      if (fieldInfo != null) {
-        fields.add(fieldInfo);
+      if (fieldInfo == null) {
+        throw InvalidGenerationSource(
+          '${element.name}.$fieldName uses unsupported schema expression '
+          '`${value.toSource()}`. Use a directly analyzable Ack schema call '
+          'or named schema reference.',
+          element: element,
+        );
       }
+      fields.add(fieldInfo);
     }
 
     return fields;

@@ -497,6 +497,8 @@ final class Modifier {
     return $ack.parse(json);
   }
 
+  static const Object _ackCopyWithOmitted = Object();
+
   final String requiredField;
 
   final String? optionalField;
@@ -522,16 +524,24 @@ final class Modifier {
 
   Modifier copyWith({
     String? requiredField,
-    String? optionalField,
-    String? nullableField,
-    String? optionalNullable,
-    String? nullableOptional,
+    Object? optionalField = _ackCopyWithOmitted,
+    Object? nullableField = _ackCopyWithOmitted,
+    Object? optionalNullable = _ackCopyWithOmitted,
+    Object? nullableOptional = _ackCopyWithOmitted,
   }) => Modifier(
     requiredField: requiredField ?? this.requiredField,
-    optionalField: optionalField ?? this.optionalField,
-    nullableField: nullableField ?? this.nullableField,
-    optionalNullable: optionalNullable ?? this.optionalNullable,
-    nullableOptional: nullableOptional ?? this.nullableOptional,
+    optionalField: identical(optionalField, _ackCopyWithOmitted)
+        ? this.optionalField
+        : optionalField as String?,
+    nullableField: identical(nullableField, _ackCopyWithOmitted)
+        ? this.nullableField
+        : nullableField as String?,
+    optionalNullable: identical(optionalNullable, _ackCopyWithOmitted)
+        ? this.optionalNullable
+        : optionalNullable as String?,
+    nullableOptional: identical(nullableOptional, _ackCopyWithOmitted)
+        ? this.nullableOptional
+        : nullableOptional as String?,
   );
 
   @override
@@ -627,6 +637,8 @@ final class TaggedItem {
     return $ack.parse(json);
   }
 
+  static const Object _ackCopyWithOmitted = Object();
+
   final String name;
 
   final List<String> requiredTags;
@@ -651,13 +663,17 @@ final class TaggedItem {
   TaggedItem copyWith({
     String? name,
     List<String>? requiredTags,
-    List<String>? optionalTags,
-    List<String>? nullableTags,
+    Object? optionalTags = _ackCopyWithOmitted,
+    Object? nullableTags = _ackCopyWithOmitted,
   }) => TaggedItem(
     name: name ?? this.name,
     requiredTags: requiredTags ?? this.requiredTags,
-    optionalTags: optionalTags ?? this.optionalTags,
-    nullableTags: nullableTags ?? this.nullableTags,
+    optionalTags: identical(optionalTags, _ackCopyWithOmitted)
+        ? this.optionalTags
+        : optionalTags as List<String>?,
+    nullableTags: identical(nullableTags, _ackCopyWithOmitted)
+        ? this.nullableTags
+        : nullableTags as List<String>?,
   );
 
   @override

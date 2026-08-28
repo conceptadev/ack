@@ -80,8 +80,8 @@ Generated object models provide:
 - an unchecked constructor with stored typed fields;
 - `User.parse(data)` and `User.safeParse(data)` for schema validation;
 - `User.fromJson(json)`, `toJson()`, and `safeToJson()` for the JSON boundary;
-- generated `copyWith` (null means keep the current value), deep
-  collection-aware `==`/`hashCode`, and `toString`;
+- generated `copyWith` (omitted means keep; explicit `null` clears a nullable
+  field), deep collection-aware `==`/`hashCode`, and `toString`;
 - a public static `User.$ack` adapter for nested generated models;
 - an unmodifiable `additionalProperties` map for passthrough objects.
 
@@ -112,6 +112,10 @@ classes use `@AckModel(discriminatorKey: ...)`; same-library concrete branches
 are included automatically. Use `@AckField` to override `schema` and/or
 `AckFieldPresence`. Unknown properties use `AckAdditionalPropertiesMode`
 (`reject` by default; `discard` or `capture`).
+
+For a single wire-name override, put `@JsonKey(name: 'wire_name')` on the
+field. Other `JsonKey` options and constructor-parameter placement are rejected
+so Ack validation and JSON serialization cannot diverge.
 
 Nested class-first models compose through `AddressSchema.schema`, preserving
 import prefixes. Import combinators and barrels must expose both `Address` and

@@ -529,6 +529,7 @@ final class ClassModelGraphBuilder {
     final parameters = <String, FormalParameterElement>{};
     final constructorParameters = <AckConstructorParameter>[];
     for (final parameter in constructor.formalParameters) {
+      _rejectJsonKeyOnParameter(element, parameter);
       final field = _parameterField(parameter) ?? fields[parameter.name];
       final fieldName = field?.name;
       if (fieldName == null) {
@@ -686,9 +687,7 @@ final class ClassModelGraphBuilder {
   ) {
     if (type is! InterfaceType) return;
     final target = type.element;
-    if (target is ClassElement &&
-        target.library == owner.library &&
-        _classFirstFacadeName(target) != null) {
+    if (target is ClassElement && _classFirstFacadeName(target) != null) {
       _dependencies.putIfAbsent(owner, () => []).add((
         target: target,
         field: field,
@@ -703,10 +702,21 @@ final class ClassModelGraphBuilder {
     final visiting = <ClassElement>{};
     final visited = <ClassElement>{};
 
+    List<_ClassFirstDependency> dependenciesFor(ClassElement owner) {
+      final recorded = _dependencies[owner];
+      if (recorded != null) return recorded;
+
+      _dependencies[owner] = <_ClassFirstDependency>[];
+      for (final field in _instanceFields(owner).values) {
+        _recordClassFirstDependencies(owner, field.type, field);
+      }
+      return _dependencies[owner]!;
+    }
+
     void visit(ClassElement owner) {
       if (visited.contains(owner)) return;
       visiting.add(owner);
-      for (final dependency in _dependencies[owner] ?? const []) {
+      for (final dependency in dependenciesFor(owner)) {
         if (visiting.contains(dependency.target)) {
           final field = dependency.field;
           throw InvalidGenerationSource(
@@ -723,7 +733,7 @@ final class ClassModelGraphBuilder {
       visited.add(owner);
     }
 
-    for (final owner in _dependencies.keys) {
+    for (final owner in _dependencies.keys.toList(growable: false)) {
       visit(owner);
     }
   }
@@ -1738,8 +1748,48 @@ final class ClassModelGraphBuilder {
   String? _jsonKey(FieldElement field) {
     final annotation = _jsonKeyChecker.firstAnnotationOfExact(field);
     if (annotation == null) return null;
-    final value = ConstantReader(annotation).read('name');
+    final reader = ConstantReader(annotation);
+    const unsupportedOptions = [
+      'defaultValue',
+      'disallowNullValue',
+      'explicitJsonNullWhenNonNullField',
+      'fromJson',
+      'ignore',
+      'includeFromJson',
+      'includeIfNull',
+      'includeToJson',
+      'readValue',
+      'required',
+      'toJson',
+      'unknownEnumValue',
+    ];
+    final configuredUnsupported = [
+      for (final option in unsupportedOptions)
+        if (!reader.read(option).isNull) option,
+    ];
+    if (configuredUnsupported.isNotEmpty) {
+      throw InvalidGenerationSource(
+        '${field.enclosingElement.name}.${field.name} uses unsupported '
+        '@JsonKey options: ${configuredUnsupported.join(', ')}. @AckModel '
+        'supports only @JsonKey(name: ...) on fields so validation and JSON '
+        'serialization cannot diverge.',
+        element: field,
+      );
+    }
+    final value = reader.read('name');
     return value.isNull ? null : value.stringValue;
+  }
+
+  void _rejectJsonKeyOnParameter(
+    ClassElement owner,
+    FormalParameterElement parameter,
+  ) {
+    if (!_jsonKeyChecker.hasAnnotationOfExact(parameter)) return;
+    throw InvalidGenerationSource(
+      '${owner.name}.${parameter.name} places @JsonKey on a constructor '
+      'parameter. Put @JsonKey(name: ...) on the field instead.',
+      element: parameter,
+    );
   }
 
   String _rename(String name, String style) => switch (style) {

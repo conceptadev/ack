@@ -73,6 +73,8 @@ final class Profile {
     return $ack.parse(json);
   }
 
+  static const Object _ackCopyWithOmitted = Object();
+
   final String bio;
 
   final Uri? website;
@@ -90,8 +92,13 @@ final class Profile {
 
   SchemaResult<Map<String, Object?>> safeToJson() => $ack.safeEncode(this);
 
-  Profile copyWith({String? bio, Uri? website}) =>
-      Profile(bio: bio ?? this.bio, website: website ?? this.website);
+  Profile copyWith({String? bio, Object? website = _ackCopyWithOmitted}) =>
+      Profile(
+        bio: bio ?? this.bio,
+        website: identical(website, _ackCopyWithOmitted)
+            ? this.website
+            : website as Uri?,
+      );
 
   @override
   bool operator ==(Object other) =>
@@ -146,6 +153,8 @@ final class UserWithColor {
     return $ack.parse(json);
   }
 
+  static const Object _ackCopyWithOmitted = Object();
+
   final String firstName;
 
   final String lastName;
@@ -181,7 +190,7 @@ final class UserWithColor {
     int? age,
     Profile? profile,
     ColorModel? color,
-    ColorModel? favoriteColor,
+    Object? favoriteColor = _ackCopyWithOmitted,
     Pet? pet,
     List<Pet>? pets,
   }) => UserWithColor(
@@ -190,7 +199,9 @@ final class UserWithColor {
     age: age ?? this.age,
     profile: profile ?? this.profile,
     color: color ?? this.color,
-    favoriteColor: favoriteColor ?? this.favoriteColor,
+    favoriteColor: identical(favoriteColor, _ackCopyWithOmitted)
+        ? this.favoriteColor
+        : favoriteColor as ColorModel?,
     pet: pet ?? this.pet,
     pets: pets ?? this.pets,
   );

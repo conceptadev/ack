@@ -263,6 +263,7 @@ void main() {
     final extras = Extras.parse({
       'name': 'Ada',
       'maybe': null,
+      'nickname': 'Countess',
       'numbers': [
         [1, 2],
       ],
@@ -272,7 +273,8 @@ void main() {
       },
     });
     expect(extras.role, 'member');
-    expect(extras.nickname, isNull);
+    expect(extras.copyWith().nickname, 'Countess');
+    expect(extras.copyWith(nickname: null).nickname, isNull);
     expect(extras.box.values, ['a', 'b']);
     expect(() => extras.numbers.single.add(3), throwsUnsupportedError);
     final dynamic = extras.additionalProperties['dynamic']! as Map;

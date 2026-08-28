@@ -14,6 +14,8 @@
   programming defects into recoverable schema failures.
 * Compare collection contents independently of growable or unmodifiable wrapper
   implementations while preserving distinct scalar runtime types.
+* Keep deep map-key equality consistent with `deepHashCode`, and apply JSON
+  Schema Draft 7 numeric equality to `uniqueItems` (including nested values).
 
 ### Changed
 

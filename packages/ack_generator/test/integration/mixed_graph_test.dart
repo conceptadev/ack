@@ -147,6 +147,34 @@ final class User with _\$UserAck {
     expect(sawDiagnostic, isTrue);
   });
 
+  test('class-first models reject a scalar legacy generated type', () async {
+    var sawDiagnostic = false;
+    await _build(
+      ackModelBuilder(BuilderOptions.empty),
+      """
+$_parts
+@AckType()
+final addressSchema = Ack.object({'city': Ack.string()});
+
+@AckModel()
+final class User with _\$UserAck {
+  const User({required this.address});
+
+  final AddressType address;
+}
+""",
+      outputs: const {},
+      onLog: (log) {
+        if (log.level.name == 'SEVERE' &&
+            log.message.contains('User.address') &&
+            log.message.contains('migrate this connected graph together')) {
+          sawDiagnostic = true;
+        }
+      },
+    );
+    expect(sawDiagnostic, isTrue);
+  });
+
   test('class-first models reject a resolved legacy generated type', () async {
     const source =
         """
@@ -194,6 +222,61 @@ final class User with _\$UserAck {
       onLog: (log) {
         if (log.level.name == 'SEVERE' &&
             log.message.contains('User.addresses') &&
+            log.message.contains('migrate this connected graph together')) {
+          sawDiagnostic = true;
+        }
+      },
+    );
+    expect(sawDiagnostic, isTrue);
+  });
+
+  test('class-first models reject a resolved scalar legacy type', () async {
+    const source =
+        """
+$_parts
+@AckType()
+final addressSchema = Ack.object({'city': Ack.string()});
+
+@AckModel()
+final class User with _\$UserAck {
+  const User({required this.address});
+
+  final AddressType address;
+}
+""";
+    final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
+    await readerWriter.testing.loadIsolateSources();
+    await testBuilder(
+      ackGenerator(BuilderOptions.empty),
+      {'test_pkg|lib/models.dart': source},
+      generateFor: const {'test_pkg|lib/models.dart'},
+      readerWriter: readerWriter,
+      outputs: {
+        'test_pkg|lib/models.g.dart': decodedMatches(
+          contains('extension type AddressType('),
+        ),
+      },
+    );
+    final generatedAsset = readerWriter.testing.assets.singleWhere(
+      (asset) => asset.path.endsWith('/models.g.dart'),
+    );
+    final generatedSource = readerWriter.testing.readString(generatedAsset);
+    final resolvedReaderWriter = TestReaderWriter(rootPackage: 'test_pkg');
+    await resolvedReaderWriter.testing.loadIsolateSources();
+
+    var sawDiagnostic = false;
+    await testBuilder(
+      ackModelBuilder(BuilderOptions.empty),
+      {
+        'test_pkg|lib/models.dart': source,
+        'test_pkg|lib/models.g.dart': generatedSource,
+      },
+      generateFor: const {'test_pkg|lib/models.dart'},
+      readerWriter: resolvedReaderWriter,
+      outputs: const {},
+      onLog: (log) {
+        if (log.level.name == 'SEVERE' &&
+            log.message.contains('User.address') &&
             log.message.contains('migrate this connected graph together')) {
           sawDiagnostic = true;
         }
@@ -309,4 +392,28 @@ final class Address {
     );
     expect(sawDiagnostic, isTrue);
   });
+
+  test(
+    'legacy schemas reject an unparsed field instead of dropping it',
+    () async {
+      var sawDiagnostic = false;
+      await _build(
+        ackGenerator(BuilderOptions.empty),
+        '''
+$_parts
+@AckType()
+final userSchema = Ack.object({'name': (Ack.string())});
+''',
+        outputs: const {},
+        onLog: (log) {
+          if (log.level.name == 'SEVERE' &&
+              log.message.contains('userSchema.name') &&
+              log.message.contains('unsupported schema expression')) {
+            sawDiagnostic = true;
+          }
+        },
+      );
+      expect(sawDiagnostic, isTrue);
+    },
+  );
 }

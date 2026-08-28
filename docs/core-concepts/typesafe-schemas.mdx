@@ -180,8 +180,9 @@ entry point:
 
 Every instantiable `@AckModel` class and implicit sealed-union branch must
 apply its generated `_$ClassAck` mixin. The mixin supplies `toJson()`,
-`safeToJson()`, a typed `copyWith` that treats `null` as "keep the current
-value", and deep collection-aware `==`, `hashCode`, and `toString`. A sealed
+`safeToJson()`, a generated `copyWith` where omission keeps the current value and
+explicit `null` clears a nullable field, and deep collection-aware `==`,
+`hashCode`, and `toString`. A sealed
 abstract base receives union serialization only.
 
 Generated `toJson()` and `safeToJson()` methods delegate through that same
@@ -238,8 +239,10 @@ Constraint annotations follow the field type:
 
 Use `caseStyle` for model-wide JSON names. Supported values are `none`,
 `snake`, `kebab`, `pascal`, and `screamingSnake`. Use the re-exported
-`@JsonKey(name: 'wire_name')` for a single field override. Ack resolves each
-wire key once and uses it for both validation and JSON mapping.
+`@JsonKey(name: 'wire_name')` on the field for a single override. Ack resolves
+each wire key once and uses it for both validation and JSON mapping. Other
+`JsonKey` options and constructor-parameter placement are rejected so the Ack
+schema and generated JSON mapping cannot diverge.
 
 ### Custom field schemas
 

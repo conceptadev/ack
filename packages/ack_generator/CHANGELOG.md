@@ -34,6 +34,11 @@
   preserve propagated `Error` objects through runtime validation.
 * Keep generated class-first `wireSchema` results in their original boundary
   representation when nested models, collections, enums, or codecs decode.
+* Distinguish omitted `copyWith` arguments from explicit `null`, so nullable
+  fields can be cleared in both schema-first and class-first models.
+* Reject unsupported `JsonKey` options and parameter placement, cross-library
+  class-first cycles, direct one-way transforms beneath codecs, and legacy
+  object fields whose schema expressions cannot be analyzed.
 
 ### Changed
 

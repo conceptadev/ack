@@ -141,12 +141,16 @@ For a hand-written `Account`, class-first generation exposes an
 `AccountSchema` facade backed by a private `_accountSchema` codec. The facade
 provides parsing, safe parsing, encoding, JSON Schema/schema-model export,
 typed `schema`, and raw `wireSchema`. Instantiable models apply the generated
-`_$AccountAck` mixin, which supplies `toJson`, `copyWith` (null means keep the
-current value), and deep collection-aware equality. Add
+`_$AccountAck` mixin, which supplies `toJson`, `copyWith` (omitted means keep;
+explicit `null` clears a nullable field), and deep collection-aware equality. Add
 `static final fromJson = AccountSchema.fromJson;` when the class should expose
 the conventional one-argument entry point. Imported nested models compose as
 `prefix.AddressSchema.schema`; `show`/`hide` combinators must expose both the
 model and facade.
+
+Class-first wire-name overrides support `@JsonKey(name: 'wire_name')` on the
+field. Other `JsonKey` options and constructor-parameter placement fail
+generation so schema validation and JSON mapping remain identical.
 
 For design details and migration notes, see the
 [model and schema generation architecture](https://github.com/conceptadev/ack/blob/main/docs/architecture/ackinfer-model-generation.md).

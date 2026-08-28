@@ -16,9 +16,12 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 * Isolate modern output in `.ack.dart` and `.ack.g.dart`, including
   cross-library model reuse and explicit rejection of mixed nested
   legacy/modern graphs.
-* Generate copy/value APIs with collection-wrapper-independent equality and
-  preserve propagated `Error` objects rather than converting programming
-  defects into validation failures.
+* Generate copy/value APIs with collection-wrapper-independent equality,
+  explicit-null clearing for nullable `copyWith` fields, and propagated
+  `Error` objects that are not converted into validation failures.
+* Align `uniqueItems` with Draft 7 numeric equality and fail generation on
+  unsupported `JsonKey` behavior, mixed legacy fields, one-way transforms,
+  and recursive class-first graphs across libraries.
 * Preserve original boundary values from generated class-first `wireSchema`
   facades while still validating nested codecs and models.
 * Raise the Dart floor to 3.9 and pin `ack_generator` to Analyzer

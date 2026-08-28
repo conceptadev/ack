@@ -1520,7 +1520,16 @@ final class SchemaModelGraphBuilder {
     Set<Element> visited = const {},
   }) async {
     if (reference == null) return;
-    final referenced = _referencedElement(reference);
+    var directExpression = reference;
+    while (directExpression is ParenthesizedExpression) {
+      directExpression = directExpression.expression;
+    }
+    final directChain = _chain(directExpression);
+    _rejectTransform(directChain, path, context);
+
+    final referenced = _referencedElement(
+      directChain.reference ?? directExpression,
+    );
     if (referenced == null) return;
     final declaration = _propertyDeclaration(referenced);
     if (declaration is! TopLevelVariableElement &&

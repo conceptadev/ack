@@ -7,6 +7,8 @@ import '../models/schema_model_graph.dart';
 final class AckModelEmitter {
   AckModelEmitter({this.ackPrefix, this.ackInferPrefix});
 
+  static const _copyWithOmitted = '_ackCopyWithOmitted';
+
   final String? ackPrefix;
   final String? ackInferPrefix;
 
@@ -49,6 +51,7 @@ final class AckModelEmitter {
         ..annotations.add(_jsonMarker())
         ..docs.addAll(_docs(node, 'Immutable model'))
         ..fields.addAll([
+          if (_usesCopyWithSentinel(fields)) _copyWithSentinelField(),
           for (final field in fields) _field(field),
           if (node.additionalProperties) _additionalPropertiesField(),
           _adapter(node, node.id.declarationName),
@@ -74,6 +77,7 @@ final class AckModelEmitter {
   Class _value(AckValueModelNode node) {
     final runtimeRef = _type(node.runtimeRef);
     final boundaryType = _type(node.boundaryType);
+    final valueField = _valueField(node);
     return Class(
       (b) => b
         ..name = node.className
@@ -81,6 +85,7 @@ final class AckModelEmitter {
         ..annotations.add(_jsonMarker())
         ..docs.addAll(_docs(node, 'Immutable value model'))
         ..fields.addAll([
+          if (_fieldUsesCopyWithSentinel(valueField)) _copyWithSentinelField(),
           Field(
             (f) => f
               ..name = 'value'
@@ -212,6 +217,7 @@ return switch (value[${_literal(node.discriminatorKey)}]) {
         ..annotations.add(_jsonMarker())
         ..docs.addAll(_docs(node, 'Discriminated model branch'))
         ..fields.addAll([
+          if (_usesCopyWithSentinel(fields)) _copyWithSentinelField(),
           for (final field in fields) _field(field),
           if (node.additionalProperties) _additionalPropertiesField(),
           _adapter(
@@ -408,7 +414,7 @@ ${_ack('AckModelAdapter')}(
         AckFieldNode(
           dartName: capture,
           jsonKey: capture,
-          presence: AckSchemaFieldPresence.optional,
+          presence: AckSchemaFieldPresence.required,
           nullable: false,
           runtimeRef: const AckMapTypeRef(
             AckNullableTypeRef(AckScalarTypeRef('Object')),
@@ -440,15 +446,7 @@ ${_ack('AckModelAdapter')}(
   List<Method> _valueDataClassMethods(AckValueModelNode node) {
     return _valueMembers(
       className: node.className,
-      fields: [
-        AckFieldNode(
-          dartName: 'value',
-          jsonKey: 'value',
-          presence: AckSchemaFieldPresence.required,
-          nullable: false,
-          runtimeRef: node.runtimeRef,
-        ),
-      ],
+      fields: [_valueField(node)],
       constructorParameters: [
         AckConstructorParameter(
           name: 'value',
@@ -460,6 +458,14 @@ ${_ack('AckModelAdapter')}(
     );
   }
 
+  AckFieldNode _valueField(AckValueModelNode node) => AckFieldNode(
+    dartName: 'value',
+    jsonKey: 'value',
+    presence: AckSchemaFieldPresence.required,
+    nullable: node.runtimeRef is AckNullableTypeRef,
+    runtimeRef: node.runtimeRef,
+  );
+
   List<Method> _valueMembers({
     required String className,
     required List<AckFieldNode> fields,
@@ -468,9 +474,10 @@ ${_ack('AckModelAdapter')}(
     final byField = {for (final field in fields) field.dartName: field};
     final arguments = [
       for (final parameter in constructorParameters)
-        parameter.kind == AckConstructorParameterKind.named
-            ? '${parameter.name}: ${parameter.name} ?? this.${parameter.fieldName}'
-            : '${parameter.name} ?? this.${parameter.fieldName}',
+        _copyWithArgument(
+          parameter,
+          byField[parameter.fieldName] ?? _syntheticField(parameter),
+        ),
     ];
     final comparisons = [
       'other is $className',
@@ -492,22 +499,9 @@ ${_ack('AckModelAdapter')}(
           ..returns = refer(className)
           ..optionalParameters.addAll([
             for (final parameter in constructorParameters)
-              Parameter(
-                (p) => p
-                  ..name = parameter.name
-                  ..named = true
-                  ..type = refer(
-                    _copyWithType(
-                      byField[parameter.fieldName] ??
-                          AckFieldNode(
-                            dartName: parameter.fieldName,
-                            jsonKey: parameter.fieldName,
-                            presence: AckSchemaFieldPresence.required,
-                            nullable: parameter.typeRef is AckNullableTypeRef,
-                            runtimeRef: parameter.typeRef,
-                          ),
-                    ),
-                  ),
+              _copyWithParameter(
+                parameter,
+                byField[parameter.fieldName] ?? _syntheticField(parameter),
               ),
           ])
           ..lambda = true
@@ -554,6 +548,59 @@ ${_ack('AckModelAdapter')}(
     final type = _fieldType(field);
     return type.endsWith('?') ? type : '$type?';
   }
+
+  Parameter _copyWithParameter(
+    AckConstructorParameter parameter,
+    AckFieldNode field,
+  ) => Parameter((builder) {
+    builder
+      ..name = parameter.name
+      ..named = true
+      ..type = refer(
+        _fieldUsesCopyWithSentinel(field) ? 'Object?' : _copyWithType(field),
+      );
+    if (_fieldUsesCopyWithSentinel(field)) {
+      builder.defaultTo = const Code(_copyWithOmitted);
+    }
+  });
+
+  String _copyWithArgument(
+    AckConstructorParameter parameter,
+    AckFieldNode field,
+  ) {
+    final replacement = _fieldUsesCopyWithSentinel(field)
+        ? 'identical(${parameter.name}, $_copyWithOmitted) '
+              '? this.${parameter.fieldName} '
+              ': ${parameter.name} as ${_fieldType(field)}'
+        : '${parameter.name} ?? this.${parameter.fieldName}';
+    return parameter.kind == AckConstructorParameterKind.named
+        ? '${parameter.name}: $replacement'
+        : replacement;
+  }
+
+  AckFieldNode _syntheticField(AckConstructorParameter parameter) =>
+      AckFieldNode(
+        dartName: parameter.fieldName,
+        jsonKey: parameter.fieldName,
+        presence: AckSchemaFieldPresence.required,
+        nullable: parameter.typeRef is AckNullableTypeRef,
+        runtimeRef: parameter.typeRef,
+      );
+
+  Field _copyWithSentinelField() => Field(
+    (field) => field
+      ..name = _copyWithOmitted
+      ..static = true
+      ..modifier = FieldModifier.constant
+      ..type = refer('Object')
+      ..assignment = const Code('Object()'),
+  );
+
+  bool _usesCopyWithSentinel(Iterable<AckFieldNode> fields) =>
+      fields.any(_fieldUsesCopyWithSentinel);
+
+  bool _fieldUsesCopyWithSentinel(AckFieldNode field) =>
+      _fieldType(field).endsWith('?');
 
   Method _objectToJson() => Method(
     (m) => m

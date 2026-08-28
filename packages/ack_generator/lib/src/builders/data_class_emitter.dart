@@ -5,6 +5,8 @@ import '../models/schema_model_graph.dart';
 final class AckDataClassEmitter {
   const AckDataClassEmitter({this.ackPrefix});
 
+  static const _copyWithOmitted = '_ackCopyWithOmitted';
+
   final String? ackPrefix;
 
   /// Private mixin applied by a hand-written `@AckModel` class.
@@ -42,9 +44,16 @@ final class AckDataClassEmitter {
       ],
       jsonMembers(className: className, facadeName: facadeName),
     ];
+    final storedByField = {for (final field in stored) field.dartName: field};
+    final needsCopyWithSentinel =
+        includeValueMembers &&
+        constructorParameters.any((parameter) {
+          final field = storedByField[parameter.fieldName];
+          return field != null && _usesCopyWithSentinel(field);
+        });
     return '''
 mixin ${'_\$${className}Ack'} {
-  ${members.join('\n\n  ')}
+  ${needsCopyWithSentinel ? 'static const Object $_copyWithOmitted = Object();\n\n  ' : ''}${members.join('\n\n  ')}
 }''';
   }
 
@@ -58,13 +67,20 @@ mixin ${'_\$${className}Ack'} {
     final receiver = castSelf ? 'self' : 'this';
     final parameters = [
       for (final parameter in constructorParameters)
-        '${_copyWithType(byField[parameter.fieldName] ?? _synthetic(parameter))} ${parameter.name}',
+        if (_usesCopyWithSentinel(
+          byField[parameter.fieldName] ?? _synthetic(parameter),
+        ))
+          'Object? ${parameter.name} = $_copyWithOmitted'
+        else
+          '${_copyWithType(byField[parameter.fieldName] ?? _synthetic(parameter))} ${parameter.name}',
     ];
     final arguments = [
       for (final parameter in constructorParameters)
-        parameter.kind == AckConstructorParameterKind.named
-            ? '${parameter.name}: ${parameter.name} ?? $receiver.${parameter.fieldName}'
-            : '${parameter.name} ?? $receiver.${parameter.fieldName}',
+        _copyWithArgument(
+          parameter,
+          byField[parameter.fieldName] ?? _synthetic(parameter),
+          receiver,
+        ),
     ];
     final parameterList = parameters.isEmpty
         ? ''
@@ -172,6 +188,24 @@ ${_ack('SchemaResult')}<Map<String, Object?>> safeToJson() =>
     final type = fieldDartType(field);
     return type.endsWith('?') ? type : '$type?';
   }
+
+  String _copyWithArgument(
+    AckConstructorParameter parameter,
+    AckFieldNode field,
+    String receiver,
+  ) {
+    final replacement = _usesCopyWithSentinel(field)
+        ? 'identical(${parameter.name}, $_copyWithOmitted) '
+              '? $receiver.${parameter.fieldName} '
+              ': ${parameter.name} as ${fieldDartType(field)}'
+        : '${parameter.name} ?? $receiver.${parameter.fieldName}';
+    return parameter.kind == AckConstructorParameterKind.named
+        ? '${parameter.name}: $replacement'
+        : replacement;
+  }
+
+  bool _usesCopyWithSentinel(AckFieldNode field) =>
+      fieldDartType(field).endsWith('?');
 
   AckFieldNode _synthetic(AckConstructorParameter parameter) => AckFieldNode(
     dartName: parameter.fieldName,

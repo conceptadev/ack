@@ -390,6 +390,70 @@ final class User with _\$UserAck {
     );
   });
 
+  test('rejects every unsupported JsonKey serialization option', () async {
+    await _expectFailure(
+      '''
+enum Role { member, unknown }
+
+Role decodeRole(Object? value) => Role.member;
+String encodeRole(Role value) => value.name;
+Object? readRole(Map<dynamic, dynamic> map, String key) => map[key];
+
+@AckModel()
+final class User with _\$UserAck {
+  const User({required this.role});
+
+  @JsonKey(
+    name: 'wire_role',
+    defaultValue: Role.member,
+    disallowNullValue: true,
+    explicitJsonNullWhenNonNullField: true,
+    fromJson: decodeRole,
+    ignore: true,
+    includeFromJson: false,
+    includeIfNull: false,
+    includeToJson: false,
+    readValue: readRole,
+    required: true,
+    toJson: encodeRole,
+    unknownEnumValue: Role.unknown,
+  )
+  final Role role;
+}
+''',
+      [
+        'User.role',
+        '@JsonKey',
+        'defaultValue',
+        'disallowNullValue',
+        'explicitJsonNullWhenNonNullField',
+        'fromJson',
+        'ignore',
+        'includeFromJson',
+        'includeIfNull',
+        'includeToJson',
+        'readValue',
+        'required',
+        'toJson',
+        'unknownEnumValue',
+      ],
+    );
+  });
+
+  test('requires JsonKey name overrides on the field', () async {
+    await _expectFailure(
+      '''
+@AckModel()
+final class User with _\$UserAck {
+  const User({@JsonKey(name: 'wire_name') required this.name});
+
+  final String name;
+}
+''',
+      ['User.name', '@JsonKey', 'constructor parameter', 'field'],
+    );
+  });
+
   test('requires the schema-model extension to be visible', () async {
     await _expectFailure(
       '''
@@ -609,6 +673,44 @@ final class Child with _\$ChildAck {
 }
 ''',
       ['Child.parent', 'recursive class-first', 'Ack.lazy', 'schema-first'],
+    );
+  });
+
+  test('rejects class-first cycles across libraries', () async {
+    await _expectFailure(
+      '''
+@AckModel()
+final class Parent with _\$ParentAck {
+  const Parent({required this.child});
+
+  final Child child;
+}
+''',
+      ['Child.parent', 'recursive class-first', 'Ack.lazy', 'schema-first'],
+      head: '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+import 'child.dart';
+
+part 'model.ack.dart';
+part 'model.ack.g.dart';
+''',
+      extraSources: {
+        'child.dart': '''
+import 'package:ack_annotations/ack_annotations.dart';
+import 'model.dart';
+
+part 'child.ack.dart';
+part 'child.ack.g.dart';
+
+@AckModel()
+final class Child with _\$ChildAck {
+  const Child({required this.parent});
+
+  final Parent parent;
+}
+''',
+      },
     );
   });
 

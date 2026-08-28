@@ -291,6 +291,23 @@ final valueSchema = (normalized).codec<String>(
     );
   });
 
+  test(
+    'rejects a direct parenthesized one-way transform below a codec',
+    () async {
+      await _expectFailure(
+        '''
+$_head
+@AckInfer()
+final valueSchema = (Ack.string().trim()).codec<String>(
+  decode: (value) => value,
+  encode: (value) => value,
+);
+''',
+        ['valueSchema', '.transform()'],
+      );
+    },
+  );
+
   test('rejects a local Ack.any() field by following the variable', () async {
     await _expectFailure(
       '''

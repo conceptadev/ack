@@ -75,8 +75,10 @@ When the `v*` tag is pushed, the GitHub Actions workflow will automatically:
 
 This staging is required for coordinated releases because workspace resolution
 uses local packages, while published consumers resolve the hosted versions. The
-reusable workflow calls are deliberately sequential because the shared workflow
-uses one cancel-in-progress concurrency group per caller workflow and tag.
+local reusable workflow calls are deliberately sequential so each dependent
+package resolves the foundation version published by the preceding stage. Its
+external actions are commit-pinned, and its pinned Flutter archive is verified
+against a checked-in SHA-256 value before execution.
 
 The workflow does **not** modify versions or changelogs, and does **not** commit changes back to the repository.
 

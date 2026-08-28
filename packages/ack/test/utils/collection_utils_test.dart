@@ -47,4 +47,53 @@ void main() {
     expect(deepHashCode(growable), deepHashCode(wrapped));
     expect(deepEquals([1], [1.0]), isFalse);
   });
+
+  test('deep map keys preserve scalar types and the hash contract', () {
+    final equivalentPairs = <(Object?, Object?)>[
+      (<num, String>{1: 'one'}, <num, String>{1: 'one'}),
+      (
+        <Object?, Object?>{
+          'nested': <num, Object?>{
+            1: <Object?>['value'],
+          },
+        },
+        <Object?, Object?>{
+          'nested': <num, Object?>{
+            1: <Object?>['value'],
+          },
+        },
+      ),
+      (
+        <String, Object?>{
+          'nested': <Object?>[
+            <String, Object?>{
+              'values': <Object?>{1, 'one'},
+            },
+          ],
+        },
+        <String, Object?>{
+          'nested': <Object?>[
+            <String, Object?>{
+              'values': <Object?>{'one', 1},
+            },
+          ],
+        },
+      ),
+    ];
+
+    for (final (left, right) in equivalentPairs) {
+      expect(deepEquals(left, right), isTrue);
+      expect(
+        deepHashCode(left),
+        deepHashCode(right),
+        reason: 'deep-equal values must have the same hash code',
+      );
+    }
+
+    expect(
+      deepEquals(<num, String>{1: 'one'}, <num, String>{1.0: 'one'}),
+      isFalse,
+      reason: 'map keys follow the same type-sensitive scalar semantics',
+    );
+  });
 }

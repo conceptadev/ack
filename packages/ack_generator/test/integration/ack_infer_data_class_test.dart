@@ -199,8 +199,14 @@ final class Normalized with _\$NormalizedAck {
           'test_pkg|lib/model.ack.dart': decodedMatches(
             allOf([
               contains("'value': Ack.string().optional()"),
-              contains('Normalized copyWith({String? value})'),
-              contains('Normalized(value ?? self.value)'),
+              contains(
+                'Normalized copyWith({Object? value = _ackCopyWithOmitted})',
+              ),
+              contains(
+                'identical(value, _ackCopyWithOmitted) '
+                '? self.value '
+                ': value as String?',
+              ),
             ]),
           ),
         },

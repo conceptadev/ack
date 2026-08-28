@@ -48,9 +48,19 @@ bool deepEquals(Object? a, Object? b) {
   if (a is Map || b is Map) {
     if (a is! Map || b is! Map) return false;
     if (a.length != b.length) return false;
-    for (final key in a.keys) {
-      if (!b.containsKey(key)) return false;
-      if (!deepEquals(a[key], b[key])) return false;
+    final unmatched = b.entries.toList();
+    for (final entryA in a.entries) {
+      var matchIndex = -1;
+      for (var i = 0; i < unmatched.length; i++) {
+        final entryB = unmatched[i];
+        if (deepEquals(entryA.key, entryB.key) &&
+            deepEquals(entryA.value, entryB.value)) {
+          matchIndex = i;
+          break;
+        }
+      }
+      if (matchIndex == -1) return false;
+      unmatched.removeAt(matchIndex);
     }
 
     return true;

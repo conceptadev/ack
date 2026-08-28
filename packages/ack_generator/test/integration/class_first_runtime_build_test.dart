@@ -372,6 +372,8 @@ void main() {
 
     final explicitNull = NullableDefault(label: null);
     expect(explicitNull.toJson(), {'label': null});
+    expect(NullableDefault().copyWith().label, 'fallback');
+    expect(NullableDefault().copyWith(label: null).label, isNull);
 
     final nullDefault = NullDefault();
     expect(NullDefaultSchema.parse({}), nullDefault);
@@ -380,15 +382,17 @@ void main() {
     expect(NullDefaultSchema.parse(nullDefault.toJson()), nullDefault);
   });
 
-  test('copyWith treats null as retain and equality is deep', () {
+  test('copyWith distinguishes omitted values from explicit null', () {
     final profile = Profile.fromJson({
       'name': 'Ada',
-      'nickname': null,
+      'nickname': 'Countess',
       'tags': ['schema', 'dart'],
       'color': '#fff',
     });
     final renamed = profile.copyWith(name: 'Grace');
     expect(renamed.name, 'Grace');
+    expect(renamed.nickname, 'Countess');
+    expect(profile.copyWith(nickname: null).nickname, isNull);
     expect(renamed.role, 'member');
     expect(renamed.tags, {'schema', 'dart'});
     expect(profile.copyWith(), profile);
@@ -396,7 +400,7 @@ void main() {
     expect(
       Profile.fromJson({
         'name': 'Ada',
-        'nickname': null,
+        'nickname': 'Countess',
         'tags': ['schema', 'dart'],
         'color': '#fff',
       }),

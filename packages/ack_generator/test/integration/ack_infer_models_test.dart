@@ -90,6 +90,35 @@ final userSchema = Ack.object(
     );
   });
 
+  test('emits omitted-value copyWith sentinels for nullable fields', () async {
+    await _build(
+      {
+        'user.dart':
+            '''
+$_imports
+part 'user.ack.dart';
+part 'user.ack.g.dart';
+
+@AckInfer()
+final userSchema = Ack.object({
+  'name': Ack.string(),
+  'nickname': Ack.string().optional(),
+});
+''',
+      },
+      outputs: {
+        'test_pkg|lib/user.ack.dart': decodedMatches(
+          allOf([
+            contains('static const Object _ackCopyWithOmitted = Object();'),
+            contains('Object? nickname = _ackCopyWithOmitted'),
+            contains('nickname: identical(nickname, _ackCopyWithOmitted)'),
+            contains(': nickname as String?'),
+          ]),
+        ),
+      },
+    );
+  });
+
   test(
     'emits enums, num, literals, codecs, and nested immutable lists',
     () async {

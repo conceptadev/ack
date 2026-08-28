@@ -297,11 +297,19 @@ Map<String, Object?> _$AccountToRuntime(Account model) => <String, Object?>{
 };
 
 mixin _$AccountAck {
-  Account copyWith({String? displayName, Uri? website, String? role}) {
+  static const Object _ackCopyWithOmitted = Object();
+
+  Account copyWith({
+    String? displayName,
+    Object? website = _ackCopyWithOmitted,
+    String? role,
+  }) {
     final self = this as Account;
     return Account(
       displayName: displayName ?? self.displayName,
-      website: website ?? self.website,
+      website: identical(website, _ackCopyWithOmitted)
+          ? self.website
+          : website as Uri?,
       role: role ?? self.role,
     );
   }

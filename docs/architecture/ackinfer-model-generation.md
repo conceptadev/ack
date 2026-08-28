@@ -53,8 +53,8 @@ Object models have an unchecked public constructor, stored typed fields,
 deep collection-aware `==`/`hashCode`/`toString`, and a public static `$ack`
 adapter. They don't implement `Map` and don't provide `fromMap` or `toMap`
 aliases. Scalar and collection roots generate value models whose `fromJson` and
-`toJson` signatures use the schema's boundary type. `copyWith` treats a `null`
-argument as "keep the current value"; reconstruct the model to clear a
+`toJson` signatures use the schema's boundary type. In generated `copyWith`,
+an omitted argument keeps the current value and an explicit `null` clears a
 nullable field.
 
 ## Class-first facade contract
