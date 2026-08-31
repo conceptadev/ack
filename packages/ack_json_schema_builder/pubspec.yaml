@@ -4,6 +4,10 @@ version: 1.2.0
 repository: https://github.com/conceptadev/ack
 issue_tracker: https://github.com/conceptadev/ack/issues
 resolution: workspace
+topics:
+  - json-schema
+  - schema
+  - validation
 
 environment:
   sdk: '>=3.9.0 <4.0.0'

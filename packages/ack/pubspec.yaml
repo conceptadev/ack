@@ -6,6 +6,12 @@ issue_tracker: https://github.com/conceptadev/ack/issues
 homepage: https://concepta.dev/ack
 
 resolution: workspace
+topics:
+  - validation
+  - schema
+  - json-schema
+  - codec
+  - serialization
 
 environment:
   sdk: '>=3.9.0 <4.0.0'
