@@ -1,18 +1,18 @@
 # ack_annotations
 
 `ack_annotations` provides the `@AckInfer()` schema-first and `@AckModel()`
-class-first annotations used by `ack_generator`. Deprecated `@AckType()` is
-retained for Ack 1.1 extension-type compatibility.
+class-first annotations used by `ack_generator`. Ack 2.0 removed the legacy
+`@AckType()` annotation.
 
 ## Installation
 
 ```yaml
 dependencies:
-  ack: ^1.2.0
-  ack_annotations: ^1.2.0
+  ack: ^2.0.0
+  ack_annotations: ^2.0.0
 
 dev_dependencies:
-  ack_generator: ^1.2.0
+  ack_generator: ^2.0.0
   build_runner: ^2.4.0
 ```
 
@@ -25,7 +25,7 @@ import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'user.ack.dart';
-part 'user.ack.g.dart';
+part 'user.g.dart';
 
 @AckInfer()
 final userSchema = Ack.object({
@@ -38,7 +38,7 @@ final userSchema = Ack.object({
 constructor, parsing helpers, JSON methods, generated `copyWith`, deep
 collection-aware equality, and a public `$ack` adapter. The Ack part owns those
 declarations; `json_serializable` writes the structural field-mapping helpers
-into `user.ack.g.dart`. Ack-only apps do not add JSON packages for generated
+into `user.g.dart`. Ack-only apps do not add JSON packages for generated
 models. The annotation package requires Dart 3.9.
 
 Generate the model with:

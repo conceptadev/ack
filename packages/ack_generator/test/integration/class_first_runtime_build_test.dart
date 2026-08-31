@@ -67,17 +67,6 @@ dependency_overrides:
   ack_annotations:
     path: ${p.join(projectRoot.path, 'packages', 'ack_annotations')}
 ''');
-        File(p.join(temporary.path, 'build.yaml')).writeAsStringSync('''
-targets:
-  \$default:
-    builders:
-      ack_generator:ack_generator:
-        generate_for:
-          - lib/coexist.dart
-      source_gen:combining_builder:
-        generate_for:
-          - lib/models.dart
-''');
         File(p.join(temporary.path, 'lib', 'alpha.dart')).writeAsStringSync(
           'final class Item { const Item(this.value); final String value; }\n',
         );
@@ -89,13 +78,8 @@ targets:
 import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
-part 'coexist.g.dart';
 part 'coexist.ack.dart';
-part 'coexist.ack.g.dart';
-
-// ignore: deprecated_member_use
-@AckType()
-final frozenSchema = Ack.object({'id': Ack.string()});
+part 'coexist.g.dart';
 
 @AckInfer()
 final modernSchema = Ack.object({'name': Ack.string()});
@@ -118,7 +102,6 @@ import 'alpha.dart' as alpha;
 import 'beta.dart' as beta;
 
 part 'models.ack.dart';
-part 'models.ack.g.dart';
 part 'models.g.dart';
 
 final class Color {
@@ -502,8 +485,7 @@ void main() {
     expect(plain.toJson(), {'value': 'plain'});
   });
 
-  test('all three Ack model generators coexist in one build-runner library', () {
-    expect(FrozenType.parse({'id': 'frozen'}).id, 'frozen');
+  test('both Ack generators coexist in one build-runner library', () {
     expect(Modern.parse({'name': 'modern'}).name, 'modern');
     expect(HandwrittenSchema.parse({'enabled': true}).enabled, isTrue);
   });
@@ -519,16 +501,14 @@ void main() {
         expect(
           generated.keys,
           containsAll([
-            'lib/coexist.g.dart',
             'lib/coexist.ack.dart',
-            'lib/coexist.ack.g.dart',
+            'lib/coexist.g.dart',
             'lib/models.ack.dart',
-            'lib/models.ack.g.dart',
             'lib/models.g.dart',
           ]),
         );
         expect(
-          generated['lib/models.ack.g.dart'],
+          generated['lib/models.g.dart'],
           contains('_ackProfileFromRuntimeName'),
         );
         expect(
@@ -547,10 +527,6 @@ void main() {
         expect(
           generated['lib/models.ack.dart'],
           contains('final _profileSchema'),
-        );
-        expect(
-          generated['lib/coexist.g.dart'],
-          contains('extension type FrozenType'),
         );
         expect(generated['lib/coexist.ack.dart'], contains('class Modern'));
         expect(

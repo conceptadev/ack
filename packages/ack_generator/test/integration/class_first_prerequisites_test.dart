@@ -16,7 +16,7 @@ void main() {
           'test_pkg|lib/pet.dart': r'''
 import 'package:ack_annotations/ack_generator_support.dart';
 
-part 'pet.ack.g.dart';
+part 'pet.g.dart';
 
 sealed class Pet {
   const Pet({required this.id});
@@ -43,7 +43,7 @@ final class Cat extends Pet {
         generateFor: const {'test_pkg|lib/pet.dart'},
         readerWriter: readerWriter,
         outputs: {
-          'test_pkg|lib/pet.ack.g.dart': decodedMatches(
+          'test_pkg|lib/pet.ack_model_json.g.part': decodedMatches(
             allOf([
               contains('Cat('),
               contains("id: Cat._ackFromRuntimeId(json['id'])"),

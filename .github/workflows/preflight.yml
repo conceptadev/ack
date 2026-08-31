@@ -1,0 +1,223 @@
+name: Release preflight
+
+# Every check that must hold before Ack may publish. The release workflow runs
+# this same file from the tag, so the tag gets the exact checks that the pull
+# request got.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: preflight-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  # The published release that every public API is compared against. Raise it
+  # after each published version. `dart_apitool` compares the declared version
+  # against the change severity, so a breaking change requires a major bump.
+  API_BASELINE_VERSION: '1.1.0'
+  # The lowest SDK versions that packages/*/pubspec.yaml accept.
+  MINIMUM_DART_VERSION: '3.9.0'
+  MINIMUM_FLUTTER_VERSION: '3.35.0'
+
+jobs:
+  minimum-dart-sdk:
+    name: Minimum Dart SDK
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Set up the pinned Flutter SDK
+        uses: ./.github/actions/setup-flutter
+
+      - name: Resolve workspace dependencies
+        run: dart pub get
+
+      # The complete workspace cannot resolve on the minimum SDK, because
+      # flutter_test pins an older test_api than ack_generator's analyzer floor
+      # allows. The pure-Dart members still must resolve, so they get their own
+      # staged workspace.
+      - name: Stage the pure-Dart workspace
+        run: dart scripts/stage_min_sdk_workspace.dart "${{ runner.temp }}/min-dart"
+
+      - name: Set up the minimum Dart SDK
+        uses: dart-lang/setup-dart@6afc89df92d6eb3834022f73cd65adc8cdfcb92d # v1
+        with:
+          sdk: ${{ env.MINIMUM_DART_VERSION }}
+
+      - name: Confirm the minimum Dart SDK is active
+        run: |
+          set -euo pipefail
+          dart --version
+          dart --version 2>&1 \
+            | grep -q "Dart SDK version: $MINIMUM_DART_VERSION " || {
+            echo "PATH does not expose Dart $MINIMUM_DART_VERSION." >&2
+            exit 1
+          }
+
+      - name: Resolve the staged workspace
+        working-directory: ${{ runner.temp }}/min-dart
+        run: dart pub get
+
+      # The staged workspace is a plain directory, not a git checkout, so the
+      # release-tooling tests under /test cannot run here. They run in the CI
+      # workflow at the pinned SDK. This lane proves that the published
+      # packages analyze and pass on the SDK floor.
+      - name: Analyze and test the staged workspace
+        working-directory: ${{ runner.temp }}/min-dart
+        run: |
+          set -euo pipefail
+          dart analyze scripts test --fatal-infos
+          for pubspec in $(find . -mindepth 2 -name pubspec.yaml -not -path './.dart_tool/*' | sort); do
+            package="$(dirname "$pubspec")"
+            echo "::group::$package"
+            (cd "$package" && dart analyze . --fatal-infos)
+            if [ -d "$package/test" ]; then
+              (cd "$package" && dart test)
+            fi
+            echo "::endgroup::"
+          done
+
+  minimum-flutter-sdk:
+    name: Minimum Flutter SDK
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Set up the pinned Flutter SDK
+        uses: ./.github/actions/setup-flutter
+
+      - name: Resolve workspace dependencies
+        run: dart pub get
+
+      - name: Stage the Flutter adapter outside the workspace
+        run: |
+          dart scripts/stage_package.dart ack_firebase_ai \
+            "${{ runner.temp }}/min-flutter" --local-deps
+
+      - name: Set up the minimum Flutter SDK
+        uses: ./.github/actions/setup-flutter
+        with:
+          flutter-version: ${{ env.MINIMUM_FLUTTER_VERSION }}
+
+      - name: Analyze and test the staged adapter
+        working-directory: ${{ runner.temp }}/min-flutter/packages/ack_firebase_ai
+        run: |
+          set -euo pipefail
+          flutter pub get
+          flutter analyze --fatal-infos
+          flutter test
+
+  json-schema-draft7:
+    name: JSON Schema Draft-7 batch validation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: tools/npm-shrinkwrap.json
+
+      - name: Install the validator dependencies
+        working-directory: tools
+        run: npm ci
+
+      - name: Validate every reference fixture against Draft-7
+        working-directory: tools
+        run: |
+          node jsonschema-validator.js validate-batch \
+            --input test-fixtures/reference-config.json
+
+  api-compatibility:
+    name: API compatibility
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Set up the pinned Flutter SDK
+        uses: ./.github/actions/setup-flutter
+
+      - name: Resolve workspace dependencies
+        run: dart pub get
+
+      - name: Compare every package against the published baseline
+        run: dart scripts/api_check.dart "$API_BASELINE_VERSION"
+
+  deterministic-generation:
+    name: Deterministic generation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Set up the pinned Flutter SDK
+        uses: ./.github/actions/setup-flutter
+
+      - name: Resolve workspace dependencies
+        run: dart pub get
+
+      # `.ack.dart` holds the generated models and `.g.dart` holds the JSON
+      # mapping. Both are generated, so a clean rebuild must reproduce them.
+      - name: Delete the committed generator output
+        run: |
+          set -euo pipefail
+          git ls-files -z -- '*.ack.dart' '*.g.dart' \
+            | xargs -0 --no-run-if-empty rm --
+
+      - name: Regenerate from a clean tree
+        run: dart run melos run build --no-select
+
+      - name: Require the regenerated output to match the repository
+        run: |
+          set -euo pipefail
+          git add --intent-to-add .
+          git diff --exit-code
+
+  publish-dry-run:
+    name: Publish dry run
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Set up the pinned Flutter SDK
+        uses: ./.github/actions/setup-flutter
+
+      - name: Resolve workspace dependencies
+        run: dart pub get
+
+      - name: Require every package to publish without warnings
+        run: dart scripts/publish_dry_run.dart

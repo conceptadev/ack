@@ -1,9 +1,13 @@
 # Ack Generator
 
-`ack_generator` supports two modern directions: `@AckInfer()` turns a
-top-level Ack schema into an immutable model, while `@AckModel()` derives an
-Ack codec schema from a hand-written class. It also retains the deprecated Ack
-1.1 `@AckType()` generator unchanged.
+`ack_generator` supports two directions: `@AckInfer()` turns a top-level Ack
+schema into an immutable model, while `@AckModel()` derives an Ack codec schema
+from a hand-written class.
+
+Each annotated library declares two parts. `file.ack.dart` holds the generated
+model classes and schemas. `file.g.dart` holds the JSON mapping, and it is an
+ordinary shared part, so Ack output merges with any `json_serializable` output
+in the same library.
 
 ## Schema-first usage
 
@@ -12,7 +16,7 @@ import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'user_schema.ack.dart';
-part 'user_schema.ack.g.dart';
+part 'user_schema.g.dart';
 
 @AckInfer()
 final userSchema = Ack.object({
@@ -55,7 +59,7 @@ import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'account.ack.dart';
-part 'account.ack.g.dart';
+part 'account.g.dart';
 
 @AckModel()
 final class Account with _$AccountAck {
@@ -113,26 +117,18 @@ Every annotated library declares both parts:
 
 ```dart
 part 'account.ack.dart';
-part 'account.ack.g.dart';
+part 'account.g.dart';
 ```
 
 Ack owns schema validation, defaults, codecs, union dispatch, and the public
 `parse` / `fromJson` / `toJson` methods. `json_serializable` generates the
-structural `_$ClassFromJson` / `_$ClassToJson` helpers into the Ack JSON
-part. Ack-only apps do not add `json_annotation` or `json_serializable`;
+structural `_$ClassFromJson` / `_$ClassToJson` helpers into `file.g.dart`.
+Ack-only apps do not add `json_annotation` or `json_serializable`;
 `ack_generator` activates that second phase itself.
 
-When a modern-only target also uses an ordinary source-gen builder that owns
-`.g.dart`, disable the unused legacy builder in that target so it remains the
-sole `.g.dart` owner:
-
-```yaml
-targets:
-  $default:
-    builders:
-      ack_generator:ack_generator:
-        enabled: false
-```
+Ack's JSON phase is a shared part, so a library that also uses ordinary
+`json_serializable` needs no extra build configuration. Both generators
+contribute to the same `file.g.dart`.
 
 ## Supported declarations
 
@@ -164,17 +160,18 @@ generation so schema validation and JSON mapping remain identical.
 For design details and migration notes, see the
 [model and schema generation architecture](https://github.com/conceptadev/ack/blob/main/docs/architecture/ackinfer-model-generation.md).
 
-## Deprecated AckType compatibility
+## Migrating from Ack 1.x
 
-An unchanged Ack 1.1 declaration still uses `part 'file.g.dart';` and generates
-the same `*Type`, `.args`, Map, `parse`, and `safeParse` APIs. `AckType` is frozen
-until its removal in Ack 2.0. New connected model graphs must use `AckInfer` or
-`AckModel`; nested references between legacy and modern graphs are rejected
-with a migration diagnostic.
+Ack 2.0 removed the `@AckType()` generator. There is no compatibility layer.
 
-| Legacy | Modern opt-in |
+| Ack 1.x | Ack 2.0 |
 |---|---|
-| `@AckType()` | `@AckInfer()` |
-| `file.g.dart` | `file.ack.dart` + `file.ack.g.dart` |
+| `@AckType()` | `@AckInfer()`, or `@AckModel()` on a hand-written class |
+| `part 'file.g.dart';` only | `part 'file.ack.dart';` and `part 'file.g.dart';` |
+| `part 'file.ack.g.dart';` | `part 'file.g.dart';` |
 | `UserType.parse(...)` | `User.parse(...)` or `User.fromJson(...)` |
 | Map access and `.args` | Typed fields, `.additionalProperties`, and `toJson()` |
+
+Delete every generated `file.ack.g.dart` and every legacy `file.g.dart` that
+`@AckType()` produced, then run
+`dart run build_runner build --delete-conflicting-outputs`.

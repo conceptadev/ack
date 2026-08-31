@@ -22,7 +22,7 @@ For AI agents: start at [`/llms.txt`](https://concepta.dev/documentation/ack/ref
 This repository is a monorepo containing:
 
 - **[ack](./packages/ack)**: Core validation library with a fluent schema-building API, codecs, and JSON Schema export
-- **[ack_annotations](./packages/ack_annotations)**: The `@AckInfer()`, `@AckModel()`, and deprecated legacy `@AckType()` annotations
+- **[ack_annotations](./packages/ack_annotations)**: The `@AckInfer()` and `@AckModel()` annotations
 - **[ack_generator](./packages/ack_generator)**: Generates models from schemas and schemas from hand-written models
 - **[ack_firebase_ai](./packages/ack_firebase_ai)**: Firebase AI (Gemini) schema converter for structured-output generation
 - **[ack_json_schema_builder](./packages/ack_json_schema_builder)**: Converter to `json_schema_builder` schemas
@@ -130,7 +130,7 @@ import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'user.ack.dart';
-part 'user.ack.g.dart';
+part 'user.g.dart';
 
 @AckInfer()
 final userSchema = Ack.object({
@@ -159,35 +159,21 @@ named recursion, and discriminated unions. One-way transforms are rejected
 because a generated model must be encodable. See the
 [Model Code Generation guide](docs/core-concepts/typesafe-schemas.mdx).
 
-### Legacy Ack 1.1 generation
+### Migrating from Ack 1.x
 
-`@AckType()` remains available for source compatibility and keeps the Ack 1.1
-extension-type API and `.g.dart` output unchanged. It is deprecated and will be
-removed in Ack 2.0:
+Ack 2.0 removed `@AckType()` and its `*Type` extension types. There is no
+compatibility layer.
 
-```dart
-import 'package:ack/ack.dart';
-import 'package:ack_annotations/ack_annotations.dart';
-
-part 'legacy_user.g.dart';
-
-@AckType()
-final userSchema = Ack.object({'name': Ack.string()});
-```
-
-This still generates `UserType`, including its Map interface, typed getters,
-`parse` / `safeParse`, and `.args`. New code should use `@AckInfer()` or
-`@AckModel()`.
-
-| Ack 1.1 source | Optional immutable-model migration |
+| Ack 1.x | Ack 2.0 |
 |---|---|
-| Keep `@AckType()` | Rename it to `@AckInfer()` |
-| Keep `part 'file.g.dart';` | Add `file.ack.dart` and `file.ack.g.dart` parts |
-| Use `*Type`, Map access, and `.args` | Use the generated class, typed fields, `parse`, `fromJson`, and `toJson` |
+| `@AckType()` | `@AckInfer()`, or `@AckModel()` on a hand-written class |
+| `part 'file.g.dart';` only | `part 'file.ack.dart';` and `part 'file.g.dart';` |
+| `part 'file.ack.g.dart';` | `part 'file.g.dart';` |
+| `*Type`, Map access, and `.args` | The generated class, typed fields, `parse`, `fromJson`, and `toJson` |
 
-Legacy and modern declarations may coexist when they are unrelated. A nested
-reference graph cannot cross between them; migrate that connected graph
-together.
+Delete every generated `file.ack.g.dart` and every legacy `file.g.dart` that
+`@AckType()` produced, then run
+`dart run build_runner build --delete-conflicting-outputs`.
 
 Already own the model class? Use `@AckModel()` to derive a codec schema from
 constructor-backed fields while keeping the class hand-written. A class named
@@ -280,12 +266,12 @@ dart run melos run clean
 # Propose/apply version and changelog updates
 dart run melos version
 
-# Dry-run pub.dev validation for one package
-(cd packages/ack && dart pub publish --dry-run)
-
-# Publish all packages (no dry-run)
-dart run melos run publish
+# Dry-run pub.dev validation for every package, requiring zero warnings
+dart scripts/publish_dry_run.dart
 ```
+
+Publishing runs only from a `v*` tag through GitHub Actions. See
+[PUBLISHING.md](./PUBLISHING.md).
 
 ### Development tools
 

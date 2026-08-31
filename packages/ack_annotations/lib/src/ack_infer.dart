@@ -15,9 +15,9 @@ import 'ack_generated_json.dart';
 /// ```
 ///
 /// The declaring library must include both generated parts, for example
-/// `part 'user.ack.dart';` and `part 'user.ack.g.dart';`. `ack_generator` emits
+/// `part 'user.ack.dart';` and `part 'user.g.dart';`. `ack_generator` emits
 /// the model class, public parse/JSON API, and runtime bridges in the Ack
-/// part. Structural field mapping is generated into the Ack JSON part.
+/// part. Structural field mapping is generated into the ordinary JSON part.
 /// Ack remains responsible for validation and codec-aware serialization.
 ///
 /// Supported targets:

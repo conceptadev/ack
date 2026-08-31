@@ -3,10 +3,8 @@ import 'package:ack_annotations/ack_generator_support.dart';
 import 'package:test/test.dart';
 
 void main() {
-  test('public barrel exposes legacy AckType and modern AckInfer', () {
-    const legacy = AckType(name: 'User');
+  test('public barrel exposes AckInfer', () {
     const modern = AckInfer(name: 'User');
-    expect(legacy.name, 'User');
     expect(modern.name, 'User');
     expect(AckInfer.jsonSerializable, isA<AckGeneratedJson>());
   });

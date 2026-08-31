@@ -3,7 +3,7 @@
 This package demonstrates both code-generation directions: schemas converted
 to immutable models with `@AckInfer()`, and hand-written classes converted to
 codec schemas with `@AckModel()`. Annotated examples declare both `.ack.dart`
-and `.ack.g.dart` parts.
+and `.g.dart` parts.
 
 ## Included examples
 

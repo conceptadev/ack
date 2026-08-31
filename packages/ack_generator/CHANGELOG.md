@@ -1,4 +1,26 @@
-## 1.2.0
+## 2.0.0
+
+Ack 2.0 is a hard cutoff. The legacy generator is removed with no
+compatibility layer, and the JSON phase now writes the ordinary `.g.dart`.
+
+### Removed
+
+* **Breaking:** Remove the `@AckType()` generator, its analyzer, its emitter,
+  and the `ack_generator` builder that owned `.g.dart`. There is no frozen
+  legacy path and no migration mode.
+* **Breaking:** Remove the mixed-graph diagnostics. Legacy and modern models
+  can no longer coexist, so a boundary no longer exists to reject.
+
+### Changed
+
+* **Breaking:** Emit the JSON phase as a shared part, so `source_gen`'s
+  combining builder writes `file.g.dart`. An annotated library now declares
+  `part 'file.ack.dart';` and `part 'file.g.dart';`. Rename every
+  `file.ack.g.dart` part directive, and delete the old generated files.
+* Ack JSON output and ordinary `json_serializable` output now merge into one
+  `.g.dart`. A consumer no longer needs to disable an Ack builder to use
+  `json_serializable` in the same library.
+* Raise the Dart floor to 3.9 and constrain Analyzer to `>=10.0.0 <11.0.0`.
 
 ### Added
 
@@ -8,23 +30,6 @@
 * Add `@AckModel()` class-first generation with private backing codecs, public
   schema facades, constructor and field inference, unknown-property policies,
   sealed unions, generated mixins, and inferred static `fromJson` aliases.
-* Add dedicated `.ack.dart` and `.ack.g.dart` builders so modern Ack output
-  remains separate from legacy and ordinary `.g.dart` generators.
-
-### Deprecated
-
-* Deprecate the `@AckType()` generator path for removal in Ack 2.0.0. Use
-  `@AckInfer()` for schema-first models or `@AckModel()` for class-first
-  models. Existing Ack 1.1 output remains frozen and supported through 1.x.
-
-### Compatibility
-
-* Restore the Ack 1.1 `@AckType()` analyzer, emitter, tests, and
-  `ack_generator` LibraryBuilder. Legacy `*Type`, Map, `.args`,
-  `parse`, `safeParse`, naming, getter, union, transform, and additional
-  property behavior is frozen until Ack 2.
-* Allow unrelated legacy and modern declarations in one library. Reject nested
-  graphs that cross the generator boundary with a located migration diagnostic.
 
 ### Fixed
 
@@ -40,24 +45,19 @@
   consumer's `const Object()` cannot be mistaken for omission.
 * Require concrete class-first models and branches plus all stored fields to be
   final, and recursively freeze parsed collections and captured extras.
-* Generate `AckUnknownPropertyPolicy` / `unknownProperties` / `captureField`
-  contracts and delegate captured-map snapshots to
-  `deepUnmodifiableJsonMap` instead of emitting duplicate recursive helpers.
 * Reject unsupported `JsonKey` options and parameter placement, cross-library
-  class-first cycles, direct one-way transforms beneath codecs, and legacy
-  object fields whose schema expressions cannot be analyzed.
+  class-first cycles, and direct one-way transforms beneath codecs.
 
-### Changed
+### Migration from 1.x
 
-* Raise the Dart floor to 3.9 and constrain Analyzer to
-  `>=10.0.0 <11.0.0`.
-
-### Migration
-
-* To opt in a connected legacy graph, rename `@AckType()` to `@AckInfer()`,
-  add `.ack.dart` and `.ack.g.dart`, replace `*Type`/Map access with the
-  immutable class API, then use `fromJson`/`toJson` at the JSON boundary.
-* Keep `@AckType()` and `.g.dart` unchanged when migration is not desired.
+1. Replace `@AckType()` with `@AckInfer()` for schema-first models, or with
+   `@AckModel()` on a hand-written class for class-first models.
+2. Replace `part 'file.ack.g.dart';` with `part 'file.g.dart';`.
+3. Delete every generated `file.ack.g.dart`, and delete the legacy `file.g.dart`
+   that `@AckType()` produced.
+4. Replace `*Type` wrapper and `Map` access with the generated model class, and
+   use `fromJson` and `toJson` at the JSON boundary.
+5. Run `dart run build_runner build --delete-conflicting-outputs`.
 
 ## 1.1.0
 

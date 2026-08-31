@@ -16,18 +16,22 @@ void main() {
       );
     }
     final yaml = File(p.join(directory.path, 'build.yaml')).readAsStringSync();
-    expect(yaml, contains('ack_generator:'));
-    expect(yaml, contains('builder_factories: ["ackGenerator"]'));
-    expect(yaml, contains('build_extensions: {".dart": [".g.dart"]}'));
     expect(yaml, contains('ack_models:'));
     expect(yaml, contains('builder_factories: ["ackModelBuilder"]'));
     expect(yaml, contains('build_extensions: {".dart": [".ack.dart"]}'));
     expect(yaml, contains('ack_model_json:'));
     expect(yaml, contains('builder_factories: ["ackModelJsonBuilder"]'));
-    expect(yaml, contains('build_extensions: {".dart": [".ack.g.dart"]}'));
+    expect(
+      yaml,
+      contains('build_extensions: {".dart": [".ack_model_json.g.part"]}'),
+    );
     expect(yaml, contains('required_inputs: [".ack.dart"]'));
     expect(yaml, contains('ack_generator|ack_model_json'));
-    expect(yaml, isNot(contains('source_gen|combining_builder')));
+    // The JSON phase is a shared part, so the ordinary combining builder owns
+    // `.g.dart` and merges Ack output with any json_serializable output.
+    expect(yaml, contains('source_gen|combining_builder'));
+    // Ack 2 removed the legacy `@AckType` builder.
+    expect(yaml, isNot(contains('ackGenerator')));
   });
 
   test('derived helper names stay deterministic', () {
@@ -48,5 +52,13 @@ void main() {
       readerWriter: readerWriter,
       outputs: const {},
     );
+  });
+
+  test('the JSON builder writes a shared part for the combining builder', () {
+    final builder = ackModelJsonBuilder(BuilderOptions.empty);
+
+    expect(builder.buildExtensions, {
+      '.dart': ['.ack_model_json.g.part'],
+    });
   });
 }

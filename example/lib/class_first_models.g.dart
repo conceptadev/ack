@@ -1,5 +1,4 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
-// dart format width=80
 
 part of 'class_first_models.dart';
 

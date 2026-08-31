@@ -16,6 +16,7 @@ jobs:
   prepare:
     name: Prepare package list
     runs-on: ubuntu-24.04
+    timeout-minutes: 5
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
@@ -41,10 +42,6 @@ jobs:
       fail-fast: false
       matrix:
         package: ${{ fromJson(needs.prepare.outputs.matrix) }}
-    env:
-      FLUTTER_VERSION: 3.41.2
-      FLUTTER_ARCHIVE_URL: https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.41.2-stable.tar.xz
-      FLUTTER_ARCHIVE_SHA256: 4a04f8a6152986d14fc137ffaf98106ca743c0f9ab66f1bc2f20ee84eb573e5c
 
     steps:
       - name: Checkout repository
@@ -52,51 +49,83 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Set up Dart and provision pub.dev OIDC
-        uses: dart-lang/setup-dart@6afc89df92d6eb3834022f73cd65adc8cdfcb92d # v1
+      # `pub` performs the pub.dev OIDC exchange itself when the job grants
+      # `id-token: write`, so no extra action provisions credentials. Each
+      # package must also enable automated publishing on pub.dev for the
+      # `conceptadev/ack` repository. See PUBLISHING.md.
+      - name: Set up the pinned Flutter SDK
+        uses: ./.github/actions/setup-flutter
 
-      - name: Install checksum-verified Flutter SDK
+      - name: Choose the SDK executable for this package
+        id: sdk
         env:
-          FLUTTER_ARCHIVE: ${{ runner.temp }}/flutter.tar.xz
+          PUBSPEC: ${{ inputs.packages_folder_path }}/${{ matrix.package }}/pubspec.yaml
         run: |
           set -euo pipefail
-          curl --fail --location --silent --show-error \
-            --proto '=https' --tlsv1.2 \
-            --output "$FLUTTER_ARCHIVE" "$FLUTTER_ARCHIVE_URL"
-          printf '%s  %s\n' "$FLUTTER_ARCHIVE_SHA256" "$FLUTTER_ARCHIVE" \
-            | sha256sum --check
-          tar --extract --xz --file "$FLUTTER_ARCHIVE" \
-            --directory "$RUNNER_TEMP"
-          printf '%s\n' "$RUNNER_TEMP/flutter/bin" >> "$GITHUB_PATH"
-
-      - name: Verify pinned SDK versions
-        run: |
-          set -euo pipefail
-          test "$(jq -r '.flutter' .fvmrc)" = "$FLUTTER_VERSION"
-          flutter --version
-          dart --version
-
-      - name: Install package dependencies
-        working-directory: ${{ inputs.packages_folder_path }}/${{ matrix.package }}
-        run: |
-          set -euo pipefail
-          if grep -q "sdk: flutter" pubspec.yaml; then
-            flutter pub get
+          if grep -q "sdk: flutter" "$PUBSPEC"; then
+            printf 'executable=flutter\n' >> "$GITHUB_OUTPUT"
           else
-            dart pub get
+            printf 'executable=dart\n' >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Run package tests
+      - name: Resolve workspace dependencies
+        run: dart pub get
+
+      # Workspace resolution replaces every `ack: ^2.0.0` constraint with the
+      # sibling directory, so a workspace test never proves that a pub.dev
+      # consumer can resolve this release. The staged copy leaves the workspace
+      # and therefore resolves the versions that the previous stage published.
+      - name: Stage the package outside the workspace
+        id: stage
+        env:
+          PACKAGE: ${{ matrix.package }}
+        run: |
+          set -euo pipefail
+          staged="$(dart scripts/stage_package.dart "$PACKAGE" \
+            "$RUNNER_TEMP/staged")"
+          printf 'directory=%s\n' "$staged" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve the staged package against pub.dev
+        working-directory: ${{ steps.stage.outputs.directory }}
+        env:
+          SDK: ${{ steps.sdk.outputs.executable }}
+        run: |
+          set -euo pipefail
+          # pub.dev needs a moment to serve a version that the preceding stage
+          # published, so a first failure is not yet a release failure.
+          for attempt in 1 2 3 4 5; do
+            if "$SDK" pub get; then
+              exit 0
+            fi
+            echo "Resolution attempt $attempt failed; retrying in 30 seconds."
+            sleep 30
+          done
+          echo "The staged package cannot resolve its hosted dependencies." >&2
+          exit 1
+
+      # Analysis is the strongest check the staged copy can run. The
+      # `ack_generator` end-to-end tests build fixtures that path-depend on
+      # sibling packages, and staging deliberately leaves those siblings behind.
+      # The tests therefore run in the workspace copy below.
+      - name: Analyze the staged package against pub.dev
+        working-directory: ${{ steps.stage.outputs.directory }}
+        env:
+          SDK: ${{ steps.sdk.outputs.executable }}
+        run: |
+          set -euo pipefail
+          "$SDK" analyze . --fatal-infos
+
+      - name: Run the package tests
         working-directory: ${{ inputs.packages_folder_path }}/${{ matrix.package }}
+        env:
+          SDK: ${{ steps.sdk.outputs.executable }}
         run: |
           set -euo pipefail
           if [ ! -d test ]; then
             echo "No test folder found; skipping tests."
-          elif grep -q "sdk: flutter" pubspec.yaml; then
-            flutter test
-          else
-            dart test
+            exit 0
           fi
+          "$SDK" test
 
       - name: Restore the reviewed package tree
         working-directory: ${{ inputs.packages_folder_path }}/${{ matrix.package }}
@@ -110,9 +139,14 @@ jobs:
           fi
 
       - name: Validate package publication
-        working-directory: ${{ inputs.packages_folder_path }}/${{ matrix.package }}
-        run: dart pub publish --dry-run
+        env:
+          PACKAGE: ${{ matrix.package }}
+        run: dart scripts/publish_dry_run.dart "$PACKAGE"
 
       - name: Publish package with pub.dev OIDC
         working-directory: ${{ inputs.packages_folder_path }}/${{ matrix.package }}
-        run: dart pub publish --force
+        env:
+          SDK: ${{ steps.sdk.outputs.executable }}
+        run: |
+          set -euo pipefail
+          "$SDK" pub publish --force

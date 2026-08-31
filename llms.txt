@@ -57,7 +57,7 @@ import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'user_schema.ack.dart';
-part 'user_schema.ack.g.dart';
+part 'user_schema.g.dart';
 
 @AckInfer()
 final addressSchema = Ack.object({
@@ -186,10 +186,16 @@ This generates a sealed `Pet` base and final `Cat` and `Dog` branches.
 Boundary payloads include the discriminator. Generated subtype parsing
 validates through the union's effective branch.
 
-## Migration from the previous generator
+## Migration from Ack 1.x
 
-- Rename `@AckType()` to `@AckInfer()` for each connected graph you opt in.
-- Add both `.ack.dart` and `.ack.g.dart` part directives.
+Ack 2.0 removed `@AckType()`. There is no compatibility layer.
+
+- Rename `@AckType()` to `@AckInfer()`, or apply `@AckModel()` to a
+  hand-written class.
+- Declare `part '<file>.ack.dart';` and `part '<file>.g.dart';`. Ack 1.2 used
+  `<file>.ack.g.dart` for the JSON part.
+- Delete every generated `<file>.ack.g.dart`, and delete the legacy
+  `<file>.g.dart` that `@AckType()` produced.
 - Rename generated `UserType` usages to `User` unless a custom name is set.
 - Replace map/list/scalar interface access with stored fields or `.value`.
 - Replace passthrough `.args` access with `.additionalProperties`.

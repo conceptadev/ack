@@ -31,17 +31,19 @@ Each annotated library declares both generated parts:
 
 ```dart
 part 'user.ack.dart';
-part 'user.ack.g.dart';
+part 'user.g.dart';
 ```
 
-Ack writes the dedicated `.ack.dart` model part first. A second Ack-owned
-builder then delegates marked classes to `json_serializable` and writes the
-result directly to `.ack.g.dart`.
+Ack writes the dedicated `.ack.dart` model part first, so the JSON phase can
+resolve the generated model classes. A second Ack-owned builder then delegates
+marked classes to `json_serializable` and emits a shared part. `source_gen`'s
+combining builder merges that shared part into the ordinary `file.g.dart`.
 
 Ack-only consumers do not add `json_annotation` or `json_serializable`. The
 generator package activates both phases. Applications that already use ordinary
-`json_serializable` keep its `.g.dart` output separate from Ack's `.ack.g.dart`
-output and disable the unused legacy Ack builder for that modern-only target.
+`json_serializable` need no extra configuration: both generators contribute
+shared parts, so one `file.g.dart` holds the Ack helpers and the ordinary
+helpers together.
 
 ## Public model contract
 
@@ -224,28 +226,26 @@ The generator suite uses real workspace Ack package sources. Process fixtures
 build temporary packages from no generated output, run strict analysis and
 runtime tests, prove an Ack-only consumer produces both outputs, then rebuild
 and compare generated output for determinism. The checked example package keeps
-its generated `.ack.dart` and `.ack.g.dart` files as reviewable fixtures.
+its generated `.ack.dart` and `.g.dart` files as reviewable fixtures.
 
-## Optional migration from legacy AckType
+## Migration from Ack 1.x
 
-Ack 1.2 keeps the deprecated map-backed `@AckType()` generator unchanged.
-Consumers can stay on that path or opt a connected schema graph into immutable
-models:
+Ack 2.0 removed the map-backed `@AckType()` generator. There is no
+compatibility layer, so every 1.x schema graph must move:
 
-| Legacy AckType API | Modern AckInfer API |
+| Ack 1.x API | Ack 2.0 API |
 | --- | --- |
 | `@AckType()` | `@AckInfer()` |
-| only `part '<file>.g.dart';` | both `.ack.dart` and `.ack.g.dart` parts |
+| only `part '<file>.g.dart';` | both `.ack.dart` and `.g.dart` parts |
+| `part '<file>.ack.g.dart';` | `part '<file>.g.dart';` |
 | generated `UserType` | generated `User` |
 | model implements `Map`, `List`, or a scalar interface | stored object fields or a `.value` field |
 | passthrough `.args` | `.additionalProperties` |
 | Map access and passthrough `.args` | typed fields, `.additionalProperties`, and `toJson` |
 | one-way `.transform()` | bidirectional `.codec()` |
 
-After updating source imports and calls, delete stale generated outputs and run
-`dart run build_runner build`. Unrelated legacy and modern declarations may
-share a library, but nested references cannot cross the generator boundary;
-migrate that connected graph together.
+After updating source imports and calls, delete every stale generated output
+and run `dart run build_runner build --delete-conflicting-outputs`.
 
 For unreleased class-first facade users, replace the temporary branch API:
 

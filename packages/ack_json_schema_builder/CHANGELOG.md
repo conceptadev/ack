@@ -1,8 +1,9 @@
-## 1.2.0
+## 2.0.0
 
 ### Changed
 
-* Align the converter with Ack 1.2 and raise the minimum Dart SDK to 3.9.
+* **Breaking:** Align the converter with Ack 2.0 and raise the minimum Dart SDK
+  to 3.9.
 
 ## 1.1.0
 

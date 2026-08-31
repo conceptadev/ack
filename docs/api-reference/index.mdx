@@ -274,8 +274,8 @@ Schema reference for recursive object graphs.
 Use the [`ack_generator`](https://pub.dev/packages/ack_generator) builders in
 either direction: `@AckInfer()` generates a model from a schema, and
 `@AckModel()` generates a schema from a class. `AckSchema` is the runtime
-schema type; there is no `@AckSchema()` annotation. After adding matching
-`.ack.dart` and `.ack.g.dart` part directives, run:
+schema type; there is no `@AckSchema()` annotation. After adding the
+`.ack.dart` and `.g.dart` part directives, run:
 
 ```bash
 dart run build_runner build
@@ -307,7 +307,7 @@ import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'user.ack.dart';
-part 'user.ack.g.dart';
+part 'user.g.dart';
 
 @AckInfer()
 final userSchema = Ack.object({

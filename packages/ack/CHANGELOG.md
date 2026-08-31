@@ -1,4 +1,4 @@
-## 1.2.0
+## 2.0.0
 
 ### Added
 
@@ -21,9 +21,9 @@
 
 ### Changed
 
+* **Breaking:** Raise the minimum Dart SDK to 3.9.
 * Export `deepEquals`, `deepHashCode`, and `deepUnmodifiableJsonMap` for
   generated Ack data classes and class-first constructors.
-* Raise the minimum Dart SDK to 3.9.
 
 ## 1.1.0
 

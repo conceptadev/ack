@@ -144,11 +144,6 @@ final class ClassModelGraphBuilder {
     annotations.AckInfer,
     inPackage: 'ack_annotations',
   );
-  static const _ackTypeChecker = TypeChecker.typeNamed(
-    // ignore: deprecated_member_use
-    annotations.AckType,
-    inPackage: 'ack_annotations',
-  );
   static const _ackFieldChecker = TypeChecker.typeNamed(
     annotations.AckField,
     inPackage: 'ack_annotations',
@@ -532,7 +527,6 @@ final class ClassModelGraphBuilder {
     for (final field in fields.values) {
       final name = field.name;
       if (name == null) continue;
-      _rejectResolvedLegacyGeneratedType(field.type, field);
       if (!_containsInvalidType(field.type)) continue;
       final futureType = await _futureGeneratedType(field);
       if (futureType != null) {
@@ -814,30 +808,6 @@ final class ClassModelGraphBuilder {
       type is InvalidType ||
       (type is InterfaceType && type.typeArguments.any(_containsInvalidType));
 
-  void _rejectResolvedLegacyGeneratedType(DartType type, FieldElement field) {
-    if (type is! InterfaceType) return;
-    final element = type.element;
-    if (element is ExtensionTypeElement) {
-      final name = element.name;
-      if (name != null && _isGeneratedAckType(element, name)) {
-        _rejectLegacyGeneratedType(field, name);
-      }
-    }
-    for (final argument in type.typeArguments) {
-      _rejectResolvedLegacyGeneratedType(argument, field);
-    }
-  }
-
-  bool _isGeneratedAckType(ExtensionTypeElement element, String name) {
-    for (final candidate in LibraryReader(element.library).allElements) {
-      final declaration = _ackTypeDeclaration(candidate);
-      if (declaration != null && _generatedAckTypeName(declaration) == name) {
-        return true;
-      }
-    }
-    return false;
-  }
-
   Future<_FutureGeneratedType?> _futureGeneratedType(FieldElement field) async {
     final resolved = await _resolvedLibraryFor(field.library);
     AstNode? node = resolved.getFragmentDeclaration(field.firstFragment)?.node;
@@ -877,14 +847,6 @@ final class ClassModelGraphBuilder {
         setListSchema: listSchema,
       );
     } else {
-      final legacyTarget = _futureAckTypeTarget(
-        generatedTypeName: name,
-        prefix: prefix,
-        field: field,
-      );
-      if (legacyTarget != null) {
-        _rejectLegacyGeneratedType(field, name);
-      }
       final target = _futureAckInferTarget(
         className: name,
         prefix: prefix,
@@ -972,103 +934,6 @@ final class ClassModelGraphBuilder {
       );
     }
     return matches.single;
-  }
-
-  Element? _futureAckTypeTarget({
-    required String generatedTypeName,
-    required String? prefix,
-    required FieldElement field,
-  }) {
-    final matches = <Element>{};
-    String? hiddenDeclaration;
-
-    void consider(Element element, LibraryImport? import) {
-      final declaration = _ackTypeDeclaration(element);
-      if (declaration == null ||
-          _generatedAckTypeName(declaration) != generatedTypeName) {
-        return;
-      }
-      if (import != null && !_importAllowsName(import, generatedTypeName)) {
-        hiddenDeclaration = declaration.name;
-        return;
-      }
-      matches.add(declaration.baseElement);
-    }
-
-    if (prefix == null) {
-      for (final element in library.allElements) {
-        consider(element, null);
-      }
-    }
-    for (final import in library.element.firstFragment.libraryImports) {
-      if (import.isSynthetic || (import.prefix?.isDeferred ?? false)) continue;
-      final importPrefix = import.prefix?.element.name;
-      if (importPrefix != prefix) continue;
-      final importedLibrary = import.importedLibrary;
-      final elements = <Element>{
-        if (importedLibrary != null)
-          ...LibraryReader(importedLibrary).allElements,
-        ...import.namespace.definedNames2.values,
-      };
-      for (final element in elements) {
-        consider(element, import);
-      }
-    }
-    if (matches.isEmpty) {
-      if (hiddenDeclaration != null) {
-        throw InvalidGenerationSource(
-          'Generated legacy type "$generatedTypeName" is hidden by an '
-          'import combinator. Expose $generatedTypeName from the import.',
-          element: field,
-        );
-      }
-      return null;
-    }
-    if (matches.length > 1) {
-      throw InvalidGenerationSource(
-        '${field.enclosingElement.name}.${field.name} resolves future legacy '
-        'generated type "$generatedTypeName" ambiguously.',
-        element: field,
-      );
-    }
-    return matches.single;
-  }
-
-  Never _rejectLegacyGeneratedType(FieldElement field, String name) {
-    throw InvalidGenerationSource(
-      '${field.enclosingElement.name}.${field.name} crosses from modern '
-      '@AckModel into legacy @AckType generated type "$name". AckType '
-      'and modern models intentionally use isolated generators; migrate '
-      'this connected graph together.',
-      element: field,
-    );
-  }
-
-  Element? _ackTypeDeclaration(Element element) {
-    final declaration = switch (element) {
-      GetterElement(isOriginVariable: true) => element.variable.baseElement,
-      GetterElement() => element.baseElement,
-      TopLevelVariableElement() => element.baseElement,
-      _ => null,
-    };
-    return declaration != null &&
-            _ackTypeChecker.hasAnnotationOfExact(declaration)
-        ? declaration
-        : null;
-  }
-
-  String _generatedAckTypeName(Element declaration) {
-    final annotation = _ackTypeChecker.firstAnnotationOfExact(declaration)!;
-    final configuredName = ConstantReader(annotation).read('name');
-    var baseName = configuredName.isNull
-        ? declaration.name!
-        : configuredName.stringValue.trim();
-    if (configuredName.isNull && baseName.endsWith('Schema')) {
-      baseName = baseName.substring(0, baseName.length - 'Schema'.length);
-    }
-    if (baseName.isEmpty) baseName = 'Type';
-    baseName = '${baseName[0].toUpperCase()}${baseName.substring(1)}';
-    return '${baseName}Type';
   }
 
   Element? _ackInferDeclaration(Element element) {

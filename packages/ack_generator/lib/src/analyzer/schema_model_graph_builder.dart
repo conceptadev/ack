@@ -150,11 +150,6 @@ final class SchemaModelGraphBuilder {
     AckInfer,
     inPackage: 'ack_annotations',
   );
-  static const _legacyAckTypeChecker = TypeChecker.typeNamed(
-    // ignore: deprecated_member_use
-    AckType,
-    inPackage: 'ack_annotations',
-  );
   static const _ackModelChecker = TypeChecker.typeNamed(
     AckModel,
     inPackage: 'ack_annotations',
@@ -761,14 +756,6 @@ final class SchemaModelGraphBuilder {
     if (element is! TopLevelVariableElement && element is! GetterElement) {
       return null;
     }
-    if (_hasLegacyAckType(element)) {
-      throw InvalidGenerationSource(
-        '$path crosses from a modern Ack model into legacy @AckType. '
-        'AckType and modern models intentionally use isolated generators; '
-        'migrate this connected graph together.',
-        element: context,
-      );
-    }
     if (_hasAckInfer(element)) return null;
     if (depth >= _maxReferenceDepth) {
       throw InvalidGenerationSource(
@@ -1212,12 +1199,6 @@ final class SchemaModelGraphBuilder {
 
   bool _hasAckInfer(Element element) {
     return _ackInferChecker.hasAnnotationOfExact(_propertyDeclaration(element));
-  }
-
-  bool _hasLegacyAckType(Element element) {
-    return _legacyAckTypeChecker.hasAnnotationOfExact(
-      _propertyDeclaration(element),
-    );
   }
 
   String? _annotationName(Element element) {

@@ -31,7 +31,7 @@ import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'schema.ack.dart';
-part 'schema.ack.g.dart';
+part 'schema.g.dart';
 
 @AckInfer()
 final userSchema = Ack.object({'name': Ack.string()});
@@ -67,7 +67,7 @@ final userSchema = Ack.string();
       onLog: (log) {
         if (log.level.name == 'SEVERE' &&
             log.message.contains("part 'schema.ack.dart';") &&
-            log.message.contains("part 'schema.ack.g.dart';")) {
+            log.message.contains("part 'schema.g.dart';")) {
           sawError = true;
         }
       },
@@ -92,7 +92,7 @@ final class User with _\$UserAck {
       onLog: (log) {
         if (log.level.name == 'SEVERE' &&
             log.message.contains("part 'schema.ack.dart';") &&
-            log.message.contains("part 'schema.ack.g.dart';")) {
+            log.message.contains("part 'schema.g.dart';")) {
           sawError = true;
         }
       },
@@ -117,7 +117,7 @@ final userSchema = Ack.string();
         outputs: const {},
         onLog: (log) {
           if (log.level.name == 'SEVERE' &&
-              log.message.contains("part 'schema.ack.g.dart';")) {
+              log.message.contains("part 'schema.g.dart';")) {
             sawError = true;
           }
         },
@@ -134,7 +134,7 @@ import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
 part './schema.ack.dart';
-part './schema.ack.g.dart';
+part './schema.g.dart';
 
 @AckInfer()
 final userSchema = Ack.object({'name': Ack.string()});
@@ -160,7 +160,7 @@ import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'sub/schema.ack.dart';
-part 'sub/schema.ack.g.dart';
+part 'sub/schema.g.dart';
 
 @AckInfer()
 final userSchema = Ack.string();
@@ -169,7 +169,7 @@ final userSchema = Ack.string();
         onLog: (log) {
           if (log.level.name == 'SEVERE' &&
               log.message.contains("part 'schema.ack.dart';") &&
-              log.message.contains("part 'schema.ack.g.dart';")) {
+              log.message.contains("part 'schema.g.dart';")) {
             sawError = true;
           }
         },
@@ -186,7 +186,7 @@ import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'schema.ack.dart';
-part 'other.ack.g.dart';
+part 'other.g.dart';
 
 @AckInfer()
 final userSchema = Ack.string();
@@ -194,7 +194,7 @@ final userSchema = Ack.string();
       outputs: const {},
       onLog: (log) {
         if (log.level.name == 'SEVERE' &&
-            log.message.contains("part 'schema.ack.g.dart';")) {
+            log.message.contains("part 'schema.g.dart';")) {
           sawError = true;
         }
       },

@@ -162,7 +162,7 @@ final class AckModelGenerator extends Generator {
     final inputName = buildStep.inputId.pathSegments.last;
     final baseName = inputName.substring(0, inputName.length - '.dart'.length);
     final expectedAckPart = '$baseName.ack.dart';
-    final expectedJsonPart = '$baseName.ack.g.dart';
+    final expectedJsonPart = '$baseName.g.dart';
     final unit = await buildStep.resolver.compilationUnitFor(buildStep.inputId);
     final parts = {
       for (final directive in unit.directives.whereType<PartDirective>())

@@ -22,7 +22,7 @@ enum AckUnknownPropertyPolicy { reject, discard, capture }
 /// Marks a hand-written class for Ack schema generation.
 ///
 /// The declaring library must include both generated parts, for example
-/// `part 'user.ack.dart';` and `part 'user.ack.g.dart';`. Instantiable models and
+/// `part 'user.ack.dart';` and `part 'user.g.dart';`. Instantiable models and
 /// implicit sealed-union branches must be `final class` declarations, use only
 /// final stored fields, and apply the generated `_$ClassAck` mixin. Annotated
 /// sealed union bases remain supported.

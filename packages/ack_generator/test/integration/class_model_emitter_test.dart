@@ -34,7 +34,7 @@ void main() {
             '''
 $_imports
 part 'defaults.ack.dart';
-part 'defaults.ack.g.dart';
+part 'defaults.g.dart';
 
 @AckModel()
 final class Defaults with _\$DefaultsAck {
@@ -68,7 +68,7 @@ final class Defaults with _\$DefaultsAck {
             '''
 $_imports
 part 'profile.ack.dart';
-part 'profile.ack.g.dart';
+part 'profile.g.dart';
 
 @AckModel()
 final class Profile with _\$ProfileAck {
@@ -166,7 +166,7 @@ final class Profile with _\$ProfileAck {
               '''
 $_imports
 part 'types.ack.dart';
-part 'types.ack.g.dart';
+part 'types.g.dart';
 
 final class Color {
   const Color(this.value);
@@ -239,7 +239,7 @@ final class Record with _\$RecordAck {
             '''
 $_imports
 part 'account.ack.dart';
-part 'account.ack.g.dart';
+part 'account.g.dart';
 
 @AckModel(caseStyle: AckCaseStyle.snake)
 final class Account with _\$AccountAck {
@@ -273,7 +273,7 @@ final class Account with _\$AccountAck {
               '''
 $_imports
 part 'a.ack.dart';
-part 'a.ack.g.dart';
+part 'a.g.dart';
 
 @AckModel()
 final class Address with _\$AddressAck {
@@ -292,7 +292,7 @@ $_imports
 import 'a.dart' as a;
 import 'b.dart' as b;
 part 'order.ack.dart';
-part 'order.ack.g.dart';
+part 'order.g.dart';
 
 @AckModel()
 final class Order with _\$OrderAck {
@@ -332,7 +332,7 @@ const Type otherAddressType = b.Address;
               '''
 $_imports
 part 'pet.ack.dart';
-part 'pet.ack.g.dart';
+part 'pet.g.dart';
 
 @AckModel(discriminatorKey: 'type')
 sealed class Pet with _\$PetAck {
@@ -401,7 +401,7 @@ final class Dog extends Pet with _\$DogAck {
               '''
 $_imports
 part 'account.ack.dart';
-part 'account.ack.g.dart';
+part 'account.g.dart';
 
 @AckModel(schemaName: 'WireAccountSchema')
 final class Account with _\$AccountAck {
@@ -436,7 +436,7 @@ import 'package:ack_annotations/ack_annotations.dart' as annotations
     show AckModel;
 
 part 'account.ack.dart';
-part 'account.ack.g.dart';
+part 'account.g.dart';
 
 @annotations.AckModel()
 final class Account with _\$AccountAck {

@@ -68,7 +68,7 @@ import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'user.ack.dart';
-part 'user.ack.g.dart';
+part 'user.g.dart';
 
 @AckInfer()
 final userSchema = Ack.object({
@@ -87,7 +87,7 @@ final userSchema = Ack.object({
           p.join(temporary.path, 'lib', 'user.ack.dart'),
         ).readAsStringSync();
         final jsonPart = File(
-          p.join(temporary.path, 'lib', 'user.ack.g.dart'),
+          p.join(temporary.path, 'lib', 'user.g.dart'),
         ).readAsStringSync();
 
         expect(ackPart, contains('@AckInfer.jsonSerializable'));
@@ -147,11 +147,6 @@ dependency_overrides:
 targets:
   \$default:
     builders:
-      # Both legacy AckType and source_gen own `.g.dart` by contract. This
-      # modern-only library disables the unused legacy builder so the ordinary
-      # combining builder remains the sole `.g.dart` owner.
-      ack_generator:ack_generator:
-        enabled: false
       json_serializable:
         options:
           include_if_null: true
@@ -162,7 +157,6 @@ import 'package:ack_annotations/ack_annotations.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 part 'same.ack.dart';
-part 'same.ack.g.dart';
 part 'same.g.dart';
 
 @AckInfer()
@@ -208,26 +202,27 @@ void main() {
           'dart analyze --fatal-infos',
         );
 
-        final ackJson = File(
-          p.join(temporary.path, 'lib', 'same.ack.g.dart'),
-        ).readAsStringSync();
-        final ordinaryJson = File(
+        // Ack and json_serializable are both shared parts, so one combining
+        // builder writes a single `.g.dart` that holds each helper once.
+        final combinedJson = File(
           p.join(temporary.path, 'lib', 'same.g.dart'),
         ).readAsStringSync();
-        expect(_helperDefinitionCount(ackJson, 'User', 'FromJson'), 1);
-        expect(_helperDefinitionCount(ackJson, 'User', 'ToJson'), 1);
-        expect(_helperDefinitionCount(ordinaryJson, 'User', 'FromJson'), 0);
-        expect(_helperDefinitionCount(ordinaryJson, 'User', 'ToJson'), 0);
+        expect(_helperDefinitionCount(combinedJson, 'User', 'FromJson'), 1);
+        expect(_helperDefinitionCount(combinedJson, 'User', 'ToJson'), 1);
         expect(
-          _helperDefinitionCount(ordinaryJson, 'SameEnvelope', 'FromJson'),
+          _helperDefinitionCount(combinedJson, 'SameEnvelope', 'FromJson'),
           1,
         );
         expect(
-          _helperDefinitionCount(ordinaryJson, 'SameEnvelope', 'ToJson'),
+          _helperDefinitionCount(combinedJson, 'SameEnvelope', 'ToJson'),
           1,
         );
-        expect(ackJson, contains('User._ackFromRuntimeName(json[\'name\'])'));
-        expect(ackJson, contains('JsonSerializableGenerator'));
+        expect(
+          combinedJson,
+          contains('User._ackFromRuntimeName(json[\'name\'])'),
+        );
+        expect(combinedJson, contains('AckJsonSerializableGenerator'));
+        expect(combinedJson, contains('JsonSerializableGenerator'));
         _expectSuccess(await _run(temporary, ['test']), 'dart test');
       } finally {
         temporary.deleteSync(recursive: true);
@@ -279,7 +274,7 @@ dependency_overrides:
 import 'support.dart' as support;
 
 part 'user.ack.dart';
-part 'user.ack.g.dart';
+part 'user.g.dart';
 
 @support.AckInfer()
 final userSchema = support.Ack.object({

@@ -1,16 +1,6 @@
 builders:
-  ack_generator:
-    import: "package:ack_generator/builder.dart"
-    builder_factories: ["ackGenerator"]
-    build_extensions: {".dart": [".g.dart"]}
-    auto_apply: dependents
-    build_to: source
-    defaults:
-      generate_for:
-        exclude:
-          - "**/*.ack.dart"
-          - "**/*.ack.g.dart"
-
+  # Phase 1. Writes the generated model classes and schemas to source, so the
+  # JSON phase can resolve them as ordinary library members.
   ack_models:
     import: "package:ack_generator/builder.dart"
     builder_factories: ["ackModelBuilder"]
@@ -25,12 +15,17 @@ builders:
       generate_for:
         exclude:
           - "**/*.ack.dart"
-          - "**/*.ack.g.dart"
+          - "**/*.g.dart"
 
+  # Phase 2. Emits a shared part, so source_gen's combining builder merges the
+  # Ack JSON code into the ordinary `.g.dart` beside any json_serializable
+  # output that the same library produces.
   ack_model_json:
     import: "package:ack_generator/builder.dart"
     builder_factories: ["ackModelJsonBuilder"]
-    build_extensions: {".dart": [".ack.g.dart"]}
+    build_extensions: {".dart": [".ack_model_json.g.part"]}
     auto_apply: none
-    build_to: source
+    build_to: cache
     required_inputs: [".ack.dart"]
+    applies_builders:
+      - source_gen|combining_builder

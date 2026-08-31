@@ -1,7 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
-// dart format width=80
 
-part of 'schema_types_discriminated.dart';
+part of 'pet.dart';
 
 // **************************************************************************
 // AckJsonSerializableGenerator
@@ -14,16 +13,9 @@ Map<String, dynamic> _$CatToJson(Cat instance) => <String, dynamic>{
   'lives': Cat._ackToRuntimeLives(instance.lives),
 };
 
-Dog _$DogFromJson(Map<String, dynamic> json) => Dog(
-  bark: Dog._ackFromRuntimeBark(json['bark']),
-  additionalProperties:
-      Dog._ackFromRuntimeAdditionalProperties(json['additionalProperties']) ??
-      const {},
-);
+Dog _$DogFromJson(Map<String, dynamic> json) =>
+    Dog(breed: Dog._ackFromRuntimeBreed(json['breed']));
 
 Map<String, dynamic> _$DogToJson(Dog instance) => <String, dynamic>{
-  'bark': Dog._ackToRuntimeBark(instance.bark),
-  'additionalProperties': Dog._ackToRuntimeAdditionalProperties(
-    instance.additionalProperties,
-  ),
+  'breed': Dog._ackToRuntimeBreed(instance.breed),
 };

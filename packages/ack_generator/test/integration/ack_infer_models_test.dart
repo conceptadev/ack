@@ -40,7 +40,7 @@ void main() {
               '''
 $_imports
 part 'empty.ack.dart';
-part 'empty.ack.g.dart';
+part 'empty.g.dart';
 
 @AckInfer()
 final emptySchema = Ack.object({});
@@ -68,7 +68,7 @@ final emptySchema = Ack.object({});
             '''
 $_imports
 part 'user.ack.dart';
-part 'user.ack.g.dart';
+part 'user.g.dart';
 
 const allowExtras = true;
 
@@ -103,7 +103,7 @@ final userSchema = Ack.object(
             '''
 $_imports
 part 'user.ack.dart';
-part 'user.ack.g.dart';
+part 'user.g.dart';
 
 @AckInfer()
 final userSchema = Ack.object({
@@ -137,7 +137,7 @@ final userSchema = Ack.object({
               '''
 $_imports
 part 'values.ack.dart';
-part 'values.ack.g.dart';
+part 'values.g.dart';
 
 enum Role { admin, member }
 
@@ -172,7 +172,7 @@ final metricsSchema = Ack.object({
             '''
 $_imports
 part 'address.ack.dart';
-part 'address.ack.g.dart';
+part 'address.g.dart';
 
 @AckInfer()
 final addressSchema = Ack.object({'city': Ack.string()});
@@ -184,7 +184,7 @@ $_imports
 import 'address.dart' as direct;
 import 'exports.dart' as exported;
 part 'person.ack.dart';
-part 'person.ack.g.dart';
+part 'person.g.dart';
 
 @AckInfer()
 final personSchema = Ack.object({
@@ -221,7 +221,7 @@ final personSchema = Ack.object({
 $_imports
 import 'types.dart' as types;
 part 'user.ack.dart';
-part 'user.ack.g.dart';
+part 'user.g.dart';
 
 @AckInfer()
 final userSchema = Ack.object({
@@ -244,7 +244,7 @@ final userSchema = Ack.object({
             '''
 $_imports
 part 'pet.ack.dart';
-part 'pet.ack.g.dart';
+part 'pet.g.dart';
 
 @AckInfer()
 final catSchema = Ack.object({'kind': Ack.literal('cat'), 'lives': Ack.integer()});
@@ -286,7 +286,7 @@ final petSchema = Ack.discriminated(
             '''
 $_imports
 part 'bad.ack.dart';
-part 'bad.ack.g.dart';
+part 'bad.g.dart';
 
 @AckInfer()
 final badSchema = Ack.object({'toJson': Ack.string()});
@@ -308,7 +308,7 @@ final badSchema = Ack.object({'toJson': Ack.string()});
             '''
 $_imports
 part 'bad.ack.dart';
-part 'bad.ack.g.dart';
+part 'bad.g.dart';
 
 @AckInfer()
 final badSchema = Ack.object({'class': Ack.string()});
@@ -332,7 +332,7 @@ final badSchema = Ack.object({'class': Ack.string()});
               '''
 $_imports
 part 'bad.ack.dart';
-part 'bad.ack.g.dart';
+part 'bad.g.dart';
 
 @AckInfer()
 final catSchema = Ack.object({'lives': Ack.integer()});
@@ -361,7 +361,7 @@ final petSchema = Ack.discriminated(
             '''
 $_imports
 part 'bad.ack.dart';
-part 'bad.ack.g.dart';
+part 'bad.g.dart';
 
 @AckInfer()
 final catSchema = Ack.object({
@@ -391,7 +391,7 @@ final petSchema = Ack.discriminated(
             '''
 $_imports
 part 'bad.ack.dart';
-part 'bad.ack.g.dart';
+part 'bad.g.dart';
 
 Object? _ackImmutableCopyValue(Object? value) => value;
 
@@ -418,7 +418,7 @@ import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart' as annotations;
 
 part 'schema.ack.dart';
-part 'schema.ack.g.dart';
+part 'schema.g.dart';
 
 @annotations.AckInfer()
 final userSchema = Ack.object({'name': Ack.string()});
@@ -439,7 +439,7 @@ final userSchema = Ack.object({'name': Ack.string()});
             '''
 $_imports
 part 'schema.ack.dart';
-part 'schema.ack.g.dart';
+part 'schema.g.dart';
 
 @AckInfer()
 final userSchema = Ack.object({'name': Ack.string()});
@@ -465,7 +465,7 @@ import 'package:ack/ack.dart';
 import 'annotations.dart';
 
 part 'schema.ack.dart';
-part 'schema.ack.g.dart';
+part 'schema.g.dart';
 
 @AckInfer()
 final userSchema = Ack.object({'name': Ack.string()});
@@ -491,7 +491,7 @@ import 'package:ack_annotations/ack_annotations.dart';
 import 'package:ack_annotations/ack_annotations.dart' as annotations;
 
 part 'schema.ack.dart';
-part 'schema.ack.g.dart';
+part 'schema.g.dart';
 
 @AckInfer()
 final userSchema = Ack.object({'name': Ack.string()});
@@ -518,7 +518,7 @@ import 'package:ack/ack.dart';
 import 'annotations.dart' as annotations show AckInfer;
 
 part 'schema.ack.dart';
-part 'schema.ack.g.dart';
+part 'schema.g.dart';
 
 @annotations.AckInfer()
 final userSchema = Ack.object({'name': Ack.string()});
@@ -544,7 +544,7 @@ export 'package:ack_annotations/ack_annotations.dart';
 import 'support.dart' as support;
 
 part 'schema.ack.dart';
-part 'schema.ack.g.dart';
+part 'schema.g.dart';
 
 @support.AckInfer()
 final userSchema = support.Ack.object({'name': support.Ack.string()});
@@ -569,7 +569,7 @@ final userSchema = support.Ack.object({'name': support.Ack.string()});
             '''
 $_imports
 part 'bad.ack.dart';
-part 'bad.ack.g.dart';
+part 'bad.g.dart';
 
 @AckInfer()
 final valuesSchema = Ack.string().codec<Map<int, String>>(
@@ -594,7 +594,7 @@ final valuesSchema = Ack.string().codec<Map<int, String>>(
             '''
 $_imports
 part 'bad.ack.dart';
-part 'bad.ack.g.dart';
+part 'bad.g.dart';
 
 @AckInfer()
 final badSchema = Ack.object({
@@ -620,7 +620,7 @@ final badSchema = Ack.object({
             '''
 $_imports
 part 'bad.ack.dart';
-part 'bad.ack.g.dart';
+part 'bad.g.dart';
 
 void _\$UserFromJson() {}
 
@@ -650,7 +650,7 @@ final payloadAny = Ack.any();
 $_imports
 import 'other.dart';
 part 'user.ack.dart';
-part 'user.ack.g.dart';
+part 'user.g.dart';
 
 @AckInfer()
 final userSchema = Ack.object({
@@ -675,7 +675,7 @@ final userSchema = Ack.object({
             '''
 $_imports
 part 'user.ack.dart';
-part 'user.ack.g.dart';
+part 'user.g.dart';
 
 @AckInfer()
 final userSchema = Ack.object({'name': Ack.string()});
@@ -685,7 +685,7 @@ final userSchema = Ack.object({'name': Ack.string()});
 $_imports
 import 'user.dart' as other;
 part 'admin.ack.dart';
-part 'admin.ack.g.dart';
+part 'admin.g.dart';
 
 @AckInfer()
 final adminSchema = other.userSchema;
@@ -713,7 +713,7 @@ final adminSchema = other.userSchema;
             '''
 $_imports
 part 'cat.ack.dart';
-part 'cat.ack.g.dart';
+part 'cat.g.dart';
 
 @AckInfer()
 final catSchema = Ack.object({
@@ -726,7 +726,7 @@ final catSchema = Ack.object({
 $_imports
 import 'cat.dart';
 part 'pet.ack.dart';
-part 'pet.ack.g.dart';
+part 'pet.g.dart';
 
 @AckInfer()
 final petSchema = Ack.discriminated(

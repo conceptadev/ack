@@ -2,7 +2,6 @@
 ///
 /// Import this library to use `@AckInfer()` on top-level schema declarations or
 /// `@AckModel()` on hand-written model classes processed by `ack_generator`.
-/// Deprecated `@AckType()` remains available for Ack 1.1 compatibility.
 ///
 /// Class-first models apply the generated `_$ClassAck` mixin and may use
 /// [AckUnknownPropertyPolicy] and [AckFieldPresence] to describe wire
@@ -13,5 +12,4 @@ export 'package:json_annotation/json_annotation.dart' show JsonKey;
 export 'src/ack_field.dart';
 export 'src/ack_infer.dart';
 export 'src/ack_model.dart';
-export 'src/ack_type.dart';
 export 'src/constraints.dart';

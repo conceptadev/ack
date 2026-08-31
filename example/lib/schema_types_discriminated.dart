@@ -2,7 +2,7 @@ import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'schema_types_discriminated.ack.dart';
-part 'schema_types_discriminated.ack.g.dart';
+part 'schema_types_discriminated.g.dart';
 
 /// Discriminated schema example for immutable model generation with @AckInfer.
 @AckInfer()

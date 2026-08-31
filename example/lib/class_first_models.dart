@@ -2,7 +2,7 @@ import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'class_first_models.ack.dart';
-part 'class_first_models.ack.g.dart';
+part 'class_first_models.g.dart';
 
 @AckModel(caseStyle: AckCaseStyle.snake)
 final class Account with _$AccountAck {

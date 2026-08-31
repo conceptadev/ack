@@ -25,7 +25,7 @@ Every annotated library needs both generated parts:
 
 ```dart
 part 'models.ack.dart';
-part 'models.ack.g.dart';
+part 'models.g.dart';
 ```
 
 Run the generator after adding or changing a model:
@@ -44,7 +44,7 @@ import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'models.ack.dart';
-part 'models.ack.g.dart';
+part 'models.g.dart';
 
 // Schema-first: write the schema; Ack generates Order.
 @AckInfer()
@@ -94,8 +94,9 @@ print(account.toJson()); // validated snake_case JSON
 ```
 
 The schema-first and class-first declarations may live in the same library.
-Ordinary `@JsonSerializable()` classes keep their separate `.g.dart` file,
-but do not put `@AckModel()` and `@JsonSerializable()` on the same class.
+Ordinary `@JsonSerializable()` classes share the same `.g.dart` file, because
+both generators write shared parts. Do not put `@AckModel()` and
+`@JsonSerializable()` on the same class.
 
 ## Schema-first with `@AckInfer()`
 

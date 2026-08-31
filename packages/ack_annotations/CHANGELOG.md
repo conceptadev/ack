@@ -1,26 +1,29 @@
-## 1.2.0
+## 2.0.0
+
+Ack 2.0 is a hard cutoff. The legacy annotation is removed with no
+compatibility layer.
+
+### Removed
+
+* **Breaking:** Remove `@AckType()`. Use `@AckInfer()` for schema-first models
+  or `@AckModel()` for class-first models. The generated `*Type` extension
+  types, `.args`, `fromMap`, and `toMap` no longer exist.
+
+### Changed
+
+* **Breaking:** An annotated library now declares `part 'file.ack.dart';` and
+  the ordinary `part 'file.g.dart';`. Ack 1.x used `file.ack.g.dart` for the
+  JSON part.
+* Make `AckInfer` and the internal JSON marker annotation classes final.
+* Raise the minimum Dart SDK to 3.9.
 
 ### Added
 
 * Add `@AckInfer()` for immutable schema-first model generation. Custom names
-  are exact and annotated libraries declare `.ack.dart` plus `.ack.g.dart`.
+  are exact.
 * Add class-first `@AckModel()`, `@AckField`, constraint annotations,
-  unknown-property modes, exact schema facade names, and the generated JSON
-  marker used by Ack-owned output.
-
-### Deprecated
-
-* Deprecate only `@AckType()`. It will be removed in Ack 2.0.0; use
-  `@AckInfer()` for schema-first models or `@AckModel()` for class-first
-  models. Its Ack 1.1 name suffixing and generated extension-type APIs remain
-  unchanged until removal.
-
-### Changed
-
-* Raise the minimum Dart SDK to 3.9.
-* Make the new `AckInfer` and internal JSON marker annotation classes final.
-* Finalize the pre-release class-first API as `AckUnknownPropertyPolicy`,
-  `unknownProperties`, and `captureField`, with no deprecated aliases.
+  `AckUnknownPropertyPolicy`, `unknownProperties`, `captureField`, exact schema
+  facade names, and the generated JSON marker used by Ack-owned output.
 
 ## 1.1.0
 

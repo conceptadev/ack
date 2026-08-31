@@ -59,7 +59,7 @@ import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'models.ack.dart';
-part 'models.ack.g.dart';
+part 'models.g.dart';
 
 final class Box {
   const Box(this.values);
@@ -170,7 +170,7 @@ import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'address.ack.dart';
-part 'address.ack.g.dart';
+part 'address.g.dart';
 
 @AckInfer()
 final addressSchema = Ack.object({'city': Ack.string()});
@@ -188,7 +188,7 @@ import 'address.dart' as direct;
 import 'exports.dart' as exported;
 
 part 'person.ack.dart';
-part 'person.ack.g.dart';
+part 'person.g.dart';
 
 @AckInfer()
 final personSchema = Ack.object({
@@ -370,21 +370,18 @@ void main() {
                   .where(
                     (file) =>
                         file.path.endsWith('.ack.dart') ||
-                        file.path.endsWith('.ack.g.dart'),
+                        file.path.endsWith('.g.dart'),
                   ))
             p.relative(file.path, from: temporary.path): file
                 .readAsStringSync(),
         };
         expect(
           generated.keys,
-          containsAll(['lib/models.ack.dart', 'lib/models.ack.g.dart']),
+          containsAll(['lib/models.ack.dart', 'lib/models.g.dart']),
         );
+        expect(generated['lib/models.g.dart'], contains(r'_$ExtrasFromJson'));
         expect(
-          generated['lib/models.ack.g.dart'],
-          contains(r'_$ExtrasFromJson'),
-        );
-        expect(
-          generated['lib/models.ack.g.dart'],
+          generated['lib/models.g.dart'],
           contains('Extras._ackFromRuntimeName'),
         );
         expect(generated['lib/models.ack.dart'], contains(r'_$ExtrasFromJson'));
@@ -406,7 +403,7 @@ void main() {
                   .where(
                     (file) =>
                         file.path.endsWith('.ack.dart') ||
-                        file.path.endsWith('.ack.g.dart'),
+                        file.path.endsWith('.g.dart'),
                   ))
             p.relative(file.path, from: temporary.path): file
                 .readAsStringSync(),

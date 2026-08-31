@@ -49,7 +49,7 @@ import 'package:ack_annotations/ack_annotations.dart';
 import 'child.dart';
 
 part 'parent.ack.dart';
-part 'parent.ack.g.dart';
+part 'parent.g.dart';
 
 @AckModel()
 final class Parent with _$ParentAck {
@@ -65,7 +65,7 @@ import 'package:ack_annotations/ack_annotations.dart';
 import 'parent.dart';
 
 part 'child.ack.dart';
-part 'child.ack.g.dart';
+part 'child.g.dart';
 
 @AckModel()
 final class Child with _$ChildAck {

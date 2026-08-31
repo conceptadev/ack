@@ -40,7 +40,7 @@ import 'package:ack_annotations/ack_annotations.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 part 'model.ack.dart';
-part 'model.ack.g.dart';
+part 'model.g.dart';
 ''';
 
 void main() {
@@ -524,7 +524,7 @@ import 'package:ack/ack.dart'
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'model.ack.dart';
-part 'model.ack.g.dart';
+part 'model.g.dart';
 ''',
     );
   });
@@ -748,7 +748,7 @@ import 'package:ack_annotations/ack_annotations.dart';
 import 'child.dart';
 
 part 'model.ack.dart';
-part 'model.ack.g.dart';
+part 'model.g.dart';
 ''',
       extraSources: {
         'child.dart': '''
@@ -756,7 +756,7 @@ import 'package:ack_annotations/ack_annotations.dart';
 import 'model.dart';
 
 part 'child.ack.dart';
-part 'child.ack.g.dart';
+part 'child.g.dart';
 
 @AckModel()
 final class Child with _\$ChildAck {
@@ -788,7 +788,7 @@ import 'package:ack_annotations/ack_annotations.dart';
 import 'address.dart' show Address;
 
 part 'model.ack.dart';
-part 'model.ack.g.dart';
+part 'model.g.dart';
 ''',
         extraSources: {
           'address.dart': '''
@@ -796,7 +796,7 @@ import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
 part 'address.ack.dart';
-part 'address.ack.g.dart';
+part 'address.g.dart';
 
 @AckModel()
 final class Address with _\$AddressAck {

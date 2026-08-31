@@ -89,7 +89,7 @@
   ],
   "variables": {
     "versions": {
-      "default": "1.2.0",
+      "default": "2.0.0",
       "isPrerelease": false
     }
   },

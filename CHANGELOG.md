@@ -3,36 +3,50 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
-## 1.2.0
+## 2.0.0
 
-* **Deprecated:** `@AckType()` remains available with its Ack 1.1
-  extension-type behavior frozen through 1.x, but it will be removed in
-  Ack 2.0.0. Use `@AckInfer()` for schema-first models or `@AckModel()` for
-  class-first models. Existing `*Type`, Map, `.args`, `parse`, `safeParse`,
-  naming, and `.g.dart` contracts remain unchanged until removal.
-* Add `@AckInfer()` for immutable schema-first models and retain
-  `@AckModel()` for class-first schemas with private codecs and public
-  UpperCamelCase schema facades.
-* Isolate modern output in `.ack.dart` and `.ack.g.dart`, including
-  cross-library model reuse and explicit rejection of mixed nested
-  legacy/modern graphs.
+Ack 2.0 is a hard cutoff. Every legacy path is removed, and there is no
+compatibility layer.
+
+* **Breaking:** Remove `@AckType()`, its generator, its analyzer, its emitter,
+  and the builder that owned `.g.dart`. Use `@AckInfer()` for schema-first
+  models or `@AckModel()` for class-first models. The generated `*Type`
+  extension types, `.args`, `fromMap`, and `toMap` no longer exist.
+* **Breaking:** Move the generated JSON part from `file.ack.g.dart` to the
+  ordinary `file.g.dart`. An annotated library now declares
+  `part 'file.ack.dart';` and `part 'file.g.dart';`. The JSON phase is a shared
+  part, so Ack output and ordinary `json_serializable` output merge into one
+  `.g.dart`.
+* **Breaking:** Raise the Dart floor to 3.9, pin `ack_generator` to Analyzer
+  `>=10.0.0 <11.0.0`, and require Flutter 3.35 for the Flutter packages.
+* Add `@AckInfer()` for immutable schema-first models and retain `@AckModel()`
+  for class-first schemas with private codecs and public UpperCamelCase schema
+  facades, including cross-library model reuse.
 * Generate copy/value APIs with collection-wrapper-independent equality,
-  explicit-null clearing for nullable `copyWith` fields, and propagated
-  `Error` objects that are not converted into validation failures.
-* Align `uniqueItems` with Draft 7 numeric equality and fail generation on
-  unsupported `JsonKey` behavior, mixed legacy fields, one-way transforms,
-  and recursive class-first graphs across libraries.
+  explicit-null clearing for nullable `copyWith` fields, and propagated `Error`
+  objects that are not converted into validation failures.
+* Align `uniqueItems` with Draft 7 numeric equality, and fail generation on
+  unsupported `JsonKey` behavior, one-way transforms, and recursive class-first
+  graphs across libraries.
 * Preserve original boundary values from generated class-first `wireSchema`
   facades while still validating nested codecs and models.
-* Rename the pre-release class-first unknown-key API to
-  `AckUnknownPropertyPolicy`, `unknownProperties`, and `captureField`; add
-  `deepUnmodifiableJsonMap` and use it for generated captured-property maps.
+* Name the class-first unknown-key API `AckUnknownPropertyPolicy`,
+  `unknownProperties`, and `captureField`; add `deepUnmodifiableJsonMap` and
+  use it for generated captured-property maps.
 * Enforce final class-first value types and fields, recursively freeze parsed
   class-first collections and captured extras, and use collision-safe private
   `copyWith` sentinels.
-* Raise the Dart floor to 3.9 and pin `ack_generator` to Analyzer
-  `>=10.0.0 <11.0.0`. Flutter packages now require Flutter 3.35.
-* Align all published Ack packages on the coordinated 1.2.0 release line.
+* Align all published Ack packages on the coordinated 2.0.0 release line.
+
+### Migration from 1.x
+
+1. Replace `@AckType()` with `@AckInfer()` or `@AckModel()`.
+2. Replace `part 'file.ack.g.dart';` with `part 'file.g.dart';`.
+3. Delete every generated `file.ack.g.dart`, and delete the legacy `file.g.dart`
+   that `@AckType()` produced.
+4. Replace `*Type` wrapper and `Map` access with the generated model class, and
+   use `fromJson` and `toJson` at the JSON boundary.
+5. Run `dart run build_runner build --delete-conflicting-outputs`.
 
 ## 1.1.0 - 2026-07-12
 

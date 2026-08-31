@@ -11,14 +11,18 @@ Future<void> _expectJsonOutput(String source, Matcher matcher) async {
     {'test_pkg|lib/model.dart': source},
     generateFor: const {'test_pkg|lib/model.dart'},
     readerWriter: readerWriter,
-    outputs: {'test_pkg|lib/model.ack.g.dart': decodedMatches(matcher)},
+    // The JSON phase is a shared part. The combining builder merges it
+    // into `model.g.dart` in a real build.
+    outputs: {
+      'test_pkg|lib/model.ack_model_json.g.part': decodedMatches(matcher),
+    },
   );
 }
 
 const _head = '''
 import 'package:ack_annotations/ack_annotations.dart';
 
-part 'model.ack.g.dart';
+part 'model.g.dart';
 ''';
 
 void main() {
