@@ -5,6 +5,3 @@ melos_ack.iml
 # Build artifacts
 build/
 coverage/
-
-# Local example (if any development examples exist)
-example/
