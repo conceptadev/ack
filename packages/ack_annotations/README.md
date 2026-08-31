@@ -91,6 +91,8 @@ final. Instantiable models apply the generated `_$ClassAck` mixin. The public
 `<ClassName>Schema` facade exposes typed `schema` and raw `wireSchema`;
 `schemaName:` overrides the exact facade class name and must be UpperCamelCase.
 
-Unknown properties use `AckAdditionalPropertiesMode` (`reject`, `discard`,
-`capture`). `@AckField` can override `schema` and/or `AckFieldPresence`. See the
+Unknown properties use `unknownProperties: AckUnknownPropertyPolicy.<policy>`.
+Use `discard` only for tolerant, read-only consumers; models that round-trip
+unknown keys use `capture` and may select their map field with `captureField`.
+`@AckField` can override `schema` and/or `AckFieldPresence`. See the
 [Model Code Generation guide](https://concepta.dev/documentation/ack/advanced/typesafe-schemas).

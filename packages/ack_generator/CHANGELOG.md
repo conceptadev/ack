@@ -40,6 +40,9 @@
   consumer's `const Object()` cannot be mistaken for omission.
 * Require concrete class-first models and branches plus all stored fields to be
   final, and recursively freeze parsed collections and captured extras.
+* Generate `AckUnknownPropertyPolicy` / `unknownProperties` / `captureField`
+  contracts and delegate captured-map snapshots to
+  `deepUnmodifiableJsonMap` instead of emitting duplicate recursive helpers.
 * Reject unsupported `JsonKey` options and parameter placement, cross-library
   class-first cycles, direct one-way transforms beneath codecs, and legacy
   object fields whose schema expressions cannot be analyzed.

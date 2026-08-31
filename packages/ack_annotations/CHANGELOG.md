@@ -19,6 +19,8 @@
 
 * Raise the minimum Dart SDK to 3.9.
 * Make the new `AckInfer` and internal JSON marker annotation classes final.
+* Finalize the pre-release class-first API as `AckUnknownPropertyPolicy`,
+  `unknownProperties`, and `captureField`, with no deprecated aliases.
 
 ## 1.1.0
 

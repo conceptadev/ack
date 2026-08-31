@@ -104,7 +104,7 @@ final class Dog extends Pet {
   Dog({
     required this.bark,
     Map<String, Object?> additionalProperties = const {},
-  }) : additionalProperties = _ackImmutableCopyMap(additionalProperties);
+  }) : additionalProperties = deepUnmodifiableJsonMap(additionalProperties);
 
   factory Dog.parse(Object? input) {
     return $ack.parse(input);
@@ -189,16 +189,3 @@ final class Dog extends Pet {
     Map<String, Object?> value,
   ) => value;
 }
-
-Object? _ackImmutableCopyValue(Object? value) => switch (value) {
-  List() => List.unmodifiable(value.map(_ackImmutableCopyValue)),
-  Set() => Set.unmodifiable(value.map(_ackImmutableCopyValue)),
-  Map() => Map.unmodifiable(
-    value.map((key, item) => MapEntry(key, _ackImmutableCopyValue(item))),
-  ),
-  _ => value,
-};
-Map<String, Object?> _ackImmutableCopyMap(Map<String, Object?> value) =>
-    Map.unmodifiable(
-      value.map((key, item) => MapEntry(key, _ackImmutableCopyValue(item))),
-    );

@@ -88,7 +88,11 @@ and same-library discriminated unions. Lists, sets, and maps stored by a model
 generated with `@AckInfer()` are copied recursively into unmodifiable
 collections. `@AckModel()` parsing provides the same guarantee, including for
 captured extras. Hand-written constructors and collection replacements passed
-to `copyWith` remain responsible for their own defensive copies.
+to `copyWith` remain responsible for their own defensive copies; use
+`deepUnmodifiableJsonMap` for dynamic JSON maps. Raw
+`Ack.object(..., additionalProperties: true)` schemas preserve extras, while a
+class-first model applies its later `unknownProperties` projection. Use
+`discard` only for tolerant, read-only consumers and `capture` for round trips.
 
 Generation rejects shapes without a useful static, encodable model contract:
 

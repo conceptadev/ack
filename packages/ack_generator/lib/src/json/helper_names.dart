@@ -60,12 +60,6 @@ String ackClassRawObjectName(String className) =>
 String ackCopyWithUnsetTypeName(String className) =>
     '_${className}CopyWithUnset';
 
-/// Recursively freezes values captured by class-first additional properties.
-const ackClassImmutableCopyValueName = '_ackClassImmutableCopyValue';
-
-/// Freezes the top-level class-first additional-properties map.
-const ackClassImmutableCopyMapName = '_ackClassImmutableCopyMap';
-
 /// json_serializable `fromJson` helper for a generated model class.
 String jsonFromHelperName(String className) => '_\$${className}FromJson';
 

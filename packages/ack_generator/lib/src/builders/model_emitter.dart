@@ -42,13 +42,6 @@ final class AckModelEmitter {
           }
       }
     }
-    final needsDynamicMapCopy = graph.nodes.whereType<AckObjectModelNode>().any(
-      (node) => node.additionalProperties,
-    );
-    if (needsDynamicMapCopy) {
-      output.addAll([_immutableValueHelper(), _immutableMapHelper()]);
-    }
-
     return output;
   }
 
@@ -347,8 +340,9 @@ ${_ack('AckModelAdapter')}(
         ),
       );
       c.initializers.add(
-        const Code(
-          'additionalProperties = _ackImmutableCopyMap(additionalProperties)',
+        Code(
+          'additionalProperties = '
+          '${_ack('deepUnmodifiableJsonMap')}(additionalProperties)',
         ),
       );
     }
@@ -1009,49 +1003,6 @@ return $helper(<String, dynamic>{
       AckMapTypeRef(:final valueType) => 'Map<String, ${_type(valueType)}>',
     };
   }
-
-  Method _immutableValueHelper() => Method(
-    (m) => m
-      ..name = '_ackImmutableCopyValue'
-      ..returns = refer('Object?')
-      ..requiredParameters.add(
-        Parameter(
-          (p) => p
-            ..name = 'value'
-            ..type = refer('Object?'),
-        ),
-      )
-      ..lambda = true
-      ..body = const Code('''
-switch (value) {
-  List() => List.unmodifiable(value.map(_ackImmutableCopyValue)),
-  Set() => Set.unmodifiable(value.map(_ackImmutableCopyValue)),
-  Map() => Map.unmodifiable(
-      value.map((key, item) => MapEntry(key, _ackImmutableCopyValue(item))),
-    ),
-  _ => value,
-}'''),
-  );
-
-  Method _immutableMapHelper() => Method(
-    (m) => m
-      ..name = '_ackImmutableCopyMap'
-      ..returns = refer(_runtimeMapType)
-      ..requiredParameters.add(
-        Parameter(
-          (p) => p
-            ..name = 'value'
-            ..type = refer(_runtimeMapType),
-        ),
-      )
-      ..lambda = true
-      ..body = const Code('''
-Map.unmodifiable(
-  value.map(
-    (key, item) => MapEntry(key, _ackImmutableCopyValue(item)),
-  ),
-)'''),
-  );
 
   List<String> _docs(AckModelNode node, String kind) => [
     '/// $kind generated from `${node.id.declarationName}`.',

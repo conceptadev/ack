@@ -14,7 +14,7 @@ final class UserConfig {
     required this.username,
     required this.email,
     Map<String, Object?> additionalProperties = const {},
-  }) : additionalProperties = _ackImmutableCopyMap(additionalProperties);
+  }) : additionalProperties = deepUnmodifiableJsonMap(additionalProperties);
 
   factory UserConfig.parse(Object? input) {
     return $ack.parse(input);
@@ -120,7 +120,7 @@ final class ApiRequest {
     required this.method,
     required this.url,
     Map<String, Object?> additionalProperties = const {},
-  }) : additionalProperties = _ackImmutableCopyMap(additionalProperties);
+  }) : additionalProperties = deepUnmodifiableJsonMap(additionalProperties);
 
   factory ApiRequest.parse(Object? input) {
     return $ack.parse(input);
@@ -226,7 +226,7 @@ final class FeatureFlags {
     required this.appVersion,
     required this.environment,
     Map<String, Object?> additionalProperties = const {},
-  }) : additionalProperties = _ackImmutableCopyMap(additionalProperties);
+  }) : additionalProperties = deepUnmodifiableJsonMap(additionalProperties);
 
   factory FeatureFlags.parse(Object? input) {
     return $ack.parse(input);
@@ -329,7 +329,7 @@ final class FeatureFlags {
 @AckInfer.jsonSerializable
 final class DynamicData {
   DynamicData({Map<String, Object?> additionalProperties = const {}})
-    : additionalProperties = _ackImmutableCopyMap(additionalProperties);
+    : additionalProperties = deepUnmodifiableJsonMap(additionalProperties);
 
   factory DynamicData.parse(Object? input) {
     return $ack.parse(input);
@@ -404,16 +404,3 @@ final class DynamicData {
     Map<String, Object?> value,
   ) => value;
 }
-
-Object? _ackImmutableCopyValue(Object? value) => switch (value) {
-  List() => List.unmodifiable(value.map(_ackImmutableCopyValue)),
-  Set() => Set.unmodifiable(value.map(_ackImmutableCopyValue)),
-  Map() => Map.unmodifiable(
-    value.map((key, item) => MapEntry(key, _ackImmutableCopyValue(item))),
-  ),
-  _ => value,
-};
-Map<String, Object?> _ackImmutableCopyMap(Map<String, Object?> value) =>
-    Map.unmodifiable(
-      value.map((key, item) => MapEntry(key, _ackImmutableCopyValue(item))),
-    );

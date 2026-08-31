@@ -24,6 +24,9 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
   and recursive class-first graphs across libraries.
 * Preserve original boundary values from generated class-first `wireSchema`
   facades while still validating nested codecs and models.
+* Rename the pre-release class-first unknown-key API to
+  `AckUnknownPropertyPolicy`, `unknownProperties`, and `captureField`; add
+  `deepUnmodifiableJsonMap` and use it for generated captured-property maps.
 * Enforce final class-first value types and fields, recursively freeze parsed
   class-first collections and captured extras, and use collision-safe private
   `copyWith` sentinels.

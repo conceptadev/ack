@@ -84,6 +84,12 @@ final userSchema = Ack.object(
           allOf([
             contains('final Map<String, Object?> additionalProperties'),
             contains('additionalProperties.entries'),
+            contains(
+              'additionalProperties = '
+              'deepUnmodifiableJsonMap(additionalProperties)',
+            ),
+            isNot(contains('_ackImmutableCopyValue')),
+            isNot(contains('_ackImmutableCopyMap')),
           ]),
         ),
       },
@@ -378,8 +384,7 @@ final petSchema = Ack.discriminated(
     expect(messages.single, contains('catSchema.kind'));
   });
 
-  test('rejects passthrough helper namespace collisions', () async {
-    final messages = <String>{};
+  test('does not reserve obsolete passthrough helper names', () async {
     await _build(
       {
         'bad.dart':
@@ -394,12 +399,15 @@ Object? _ackImmutableCopyValue(Object? value) => value;
 final bagSchema = Ack.object({}).passthrough();
 ''',
       },
-      outputs: const {},
-      onLog: (log) {
-        if (log.level.name == 'SEVERE') messages.add(log.message);
+      outputs: {
+        'test_pkg|lib/bad.ack.dart': decodedMatches(
+          allOf([
+            contains('deepUnmodifiableJsonMap(additionalProperties)'),
+            isNot(contains('Object? _ackImmutableCopyValue')),
+          ]),
+        ),
       },
     );
-    expect(messages.single, contains('_ackImmutableCopyValue'));
   });
 
   test('preserves a prefixed AckInfer qualifier on the JSON marker', () async {

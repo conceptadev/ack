@@ -185,7 +185,7 @@ final class Account with _$AccountAck {
   static final fromJson = AccountSchema.fromJson;
 }
 
-@AckModel(additionalProperties: AckAdditionalPropertiesMode.capture)
+@AckModel(unknownProperties: AckUnknownPropertyPolicy.capture)
 final class Config with _$ConfigAck {
   const Config({
     required this.name,
@@ -197,8 +197,8 @@ final class Config with _$ConfigAck {
 
 @AckModel(
   caseStyle: AckCaseStyle.snake,
-  additionalProperties: AckAdditionalPropertiesMode.capture,
-  additionalPropertiesField: 'extraValues',
+  unknownProperties: AckUnknownPropertyPolicy.capture,
+  captureField: 'extraValues',
 )
 final class CaseStyledExtras with _$CaseStyledExtrasAck {
   const CaseStyledExtras({
@@ -209,7 +209,7 @@ final class CaseStyledExtras with _$CaseStyledExtrasAck {
   final Map<String, Object?> extraValues;
 }
 
-@AckModel(additionalProperties: AckAdditionalPropertiesMode.discard)
+@AckModel(unknownProperties: AckUnknownPropertyPolicy.discard)
 final class Loose with _$LooseAck {
   const Loose({required this.name});
   final String name;

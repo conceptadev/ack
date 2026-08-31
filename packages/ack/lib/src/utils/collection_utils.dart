@@ -1,3 +1,40 @@
+import '../common_types.dart';
+
+/// Returns a detached, recursively unmodifiable snapshot of [value].
+///
+/// Nested maps, lists, and sets are copied without validating their contents.
+JsonMap deepUnmodifiableJsonMap(JsonMap value) =>
+    Map<String, Object?>.unmodifiable(
+      value.map((key, item) => MapEntry(key, _deepUnmodifiableCopy(item))),
+    );
+
+/// Deeply snapshots a schema default without exposing it from ACK's public API.
+Object? cloneDefault(Object? value) => _deepUnmodifiableCopy(value);
+
+Object? _deepUnmodifiableCopy(Object? value) {
+  if (value is Map) {
+    if (value.keys.every((key) => key is String)) {
+      return Map<String, Object?>.unmodifiable(
+        value.map(
+          (key, item) => MapEntry(key as String, _deepUnmodifiableCopy(item)),
+        ),
+      );
+    }
+
+    return Map<Object?, Object?>.unmodifiable(
+      value.map((key, item) => MapEntry(key, _deepUnmodifiableCopy(item))),
+    );
+  }
+  if (value is List) {
+    return List<Object?>.unmodifiable(value.map(_deepUnmodifiableCopy));
+  }
+  if (value is Set) {
+    return Set<Object?>.unmodifiable(value.map(_deepUnmodifiableCopy));
+  }
+
+  return value;
+}
+
 /// Performs deep equality comparison between two values.
 ///
 /// This function recursively compares:

@@ -12,11 +12,12 @@ enum AckCaseStyle { none, snake, kebab, pascal, screamingSnake }
 ///
 /// [reject] is the default: unknown properties fail validation.
 /// [discard] accepts unknown properties during validation but does not store
-/// them on the model.
-/// [capture] stores unknown properties in [AckModel.additionalPropertiesField]
+/// them on the model. It is intended for tolerant, read-only consumers.
+/// [capture] stores unknown properties in [AckModel.captureField]
 /// and flattens them back onto the wire during encoding. Declared fields and
-/// union discriminators always win over captured extras.
-enum AckAdditionalPropertiesMode { reject, discard, capture }
+/// union discriminators always win over captured extras. Models that must
+/// round-trip unknown properties use [capture].
+enum AckUnknownPropertyPolicy { reject, discard, capture }
 
 /// Marks a hand-written class for Ack schema generation.
 ///
@@ -33,8 +34,8 @@ final class AckModel {
     this.caseStyle = AckCaseStyle.none,
     this.discriminatorKey,
     this.discriminatorValue,
-    this.additionalProperties = AckAdditionalPropertiesMode.reject,
-    this.additionalPropertiesField = 'additionalProperties',
+    this.unknownProperties = AckUnknownPropertyPolicy.reject,
+    this.captureField = 'additionalProperties',
   }) : // A switch expression is not const-evaluable in a const constructor.
        jsonSerializable = caseStyle == AckCaseStyle.snake
            ? const JsonSerializable(
@@ -79,14 +80,14 @@ final class AckModel {
   final String? discriminatorValue;
 
   /// Policy for undeclared object properties.
-  final AckAdditionalPropertiesMode additionalProperties;
+  final AckUnknownPropertyPolicy unknownProperties;
 
   /// Dart field that stores captured unknown properties.
   ///
-  /// Used only when [additionalProperties] is
-  /// [AckAdditionalPropertiesMode.capture]. Defaults to
+  /// Used only when [unknownProperties] is
+  /// [AckUnknownPropertyPolicy.capture]. Defaults to
   /// `additionalProperties` and may be `args`.
-  final String additionalPropertiesField;
+  final String captureField;
 
   /// Fixed phase-2 configuration consumed by `ack_generator`.
   ///

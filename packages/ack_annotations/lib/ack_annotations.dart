@@ -5,7 +5,7 @@
 /// Deprecated `@AckType()` remains available for Ack 1.1 compatibility.
 ///
 /// Class-first models apply the generated `_$ClassAck` mixin and may use
-/// [AckAdditionalPropertiesMode] and [AckFieldPresence] to describe wire
+/// [AckUnknownPropertyPolicy] and [AckFieldPresence] to describe wire
 /// extras and field presence.
 library;
 

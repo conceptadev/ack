@@ -73,10 +73,13 @@ codec used for composition; `wireSchema` is the raw structural `Map` schema.
 Generated mixin JSON methods use the facade, so every public path shares
 validation behavior.
 
-`@AckModel.additionalProperties` is `AckAdditionalPropertiesMode.reject` by
-default. `discard` accepts unknown properties without storing them. `capture`
-stores them in `additionalPropertiesField` (defaults to `additionalProperties`,
-may be `args`). Declared fields and discriminators win on encode.
+`@AckModel.unknownProperties` is `AckUnknownPropertyPolicy.reject` by
+default. Raw `Ack.object(..., additionalProperties: true)` validation preserves
+unknown keys; class projection happens afterward. `discard` accepts unknown
+properties without storing them and is intended only for tolerant, read-only
+consumers. `capture` stores them in `captureField` (defaults to
+`additionalProperties`, may be `args`) and is required for model round trips.
+Declared fields and discriminators win on encode.
 
 `@AckField` may override `schema` and/or `AckFieldPresence`. A no-op
 `@AckField()` is rejected. `optional` is allowed only when the constructor can
@@ -169,10 +172,11 @@ constructor calls and collection replacements passed to `copyWith` must make
 their own defensive copies when immutability is required. Generated map runtime
 types must use `String` keys because the generator's structural map contract is
 string-keyed. Class-first unknown properties follow
-`AckAdditionalPropertiesMode`: reject fails validation, discard accepts extras
-without storing them, and capture freezes them during parsing. Encoding writes
-captured extras first and declared fields second, so unknown data can't replace
-a declared property. Schema-first passthrough objects still use
+`AckUnknownPropertyPolicy`: reject fails validation, discard accepts extras
+without storing them, and capture freezes them during parsing. Discard is only
+appropriate for tolerant, read-only projections; round-tripping models use
+capture. Encoding writes captured extras first and declared fields second, so
+unknown data can't replace a declared property. Schema-first passthrough objects still use
 `Ack.object(..., additionalProperties: true)` and store extras in
 `additionalProperties`.
 `toJson()` returns a fresh top-level collection; nested values are the
@@ -254,5 +258,5 @@ For unreleased class-first facade users, replace the temporary branch API:
 | nested `accountSchema` | `AccountSchema.schema` |
 | `schemaName: 'wireAccountSchema'` | `schemaName: 'WireAccountSchema'` |
 | `extension AccountAck on Account` | `mixin _$AccountAck` on the source class |
-| `additionalProperties: true` | `AckAdditionalPropertiesMode.capture` |
+| `additionalProperties: true` | `unknownProperties: AckUnknownPropertyPolicy.capture` |
 | generated `*Type` class names | the exact `@AckInfer` name, no suffix |

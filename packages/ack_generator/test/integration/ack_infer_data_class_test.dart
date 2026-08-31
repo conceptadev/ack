@@ -89,15 +89,15 @@ final class Strict with _\$StrictAck {
   final String name;
 }
 
-@AckModel(additionalProperties: AckAdditionalPropertiesMode.discard)
+@AckModel(unknownProperties: AckUnknownPropertyPolicy.discard)
 final class Loose with _\$LooseAck {
   const Loose({required this.name});
   final String name;
 }
 
 @AckModel(
-  additionalProperties: AckAdditionalPropertiesMode.capture,
-  additionalPropertiesField: 'args',
+  unknownProperties: AckUnknownPropertyPolicy.capture,
+  captureField: 'args',
 )
 final class Bag with _\$BagAck {
   const Bag({required this.name, this.args = const {}});
@@ -119,6 +119,9 @@ final class Bag with _\$BagAck {
             contains('result.remove(\'args\')'),
             contains('model.args.entries'),
             contains('self.args'),
+            contains('deepUnmodifiableJsonMap(value as Map<String, Object?>)'),
+            isNot(contains('_ackClassImmutableCopyValue')),
+            isNot(contains('_ackClassImmutableCopyMap')),
           ]),
         ),
       },

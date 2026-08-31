@@ -7,6 +7,8 @@
   mapping so public JSON methods remain schema-backed.
 * Add `Ack.preserveBoundary`, which validates through a schema while returning
   the original wire value instead of values decoded by nested codecs.
+* Add `deepUnmodifiableJsonMap`, which creates detached, recursively
+  unmodifiable snapshots of nested maps, lists, and sets without validation.
 
 ### Fixed
 
@@ -19,7 +21,8 @@
 
 ### Changed
 
-* Export `deepEquals` and `deepHashCode` for generated Ack data classes.
+* Export `deepEquals`, `deepHashCode`, and `deepUnmodifiableJsonMap` for
+  generated Ack data classes and class-first constructors.
 * Raise the minimum Dart SDK to 3.9.
 
 ## 1.1.0

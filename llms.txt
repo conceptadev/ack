@@ -110,8 +110,12 @@ lower-camel alias is emitted. Constructor parameters determine presence and
 defaults. Field types and constraint annotations determine the schema. Sealed
 classes use `@AckModel(discriminatorKey: ...)`; same-library concrete branches
 are included automatically. Use `@AckField` to override `schema` and/or
-`AckFieldPresence`. Unknown properties use `AckAdditionalPropertiesMode`
-(`reject` by default; `discard` or `capture`).
+`AckFieldPresence`. Unknown properties use
+`unknownProperties: AckUnknownPropertyPolicy.<policy>` (`reject` by default).
+Raw `Ack.object(..., additionalProperties: true)` validation preserves extras;
+the class-first policy is a later projection. `discard` is for tolerant,
+read-only consumers, while round-tripping models use `capture` and optionally
+set `captureField`.
 
 For a single wire-name override, put `@JsonKey(name: 'wire_name')` on the
 field. Other `JsonKey` options and constructor-parameter placement are rejected
@@ -147,7 +151,7 @@ cross-library discriminated branches.
 
 Class-first generation supports object models, inferred scalar and enum
 fields, nested lists, sets through list codecs, custom `@AckField` schemas,
-constructor defaults, case styles, `AckAdditionalPropertiesMode`, and
+constructor defaults, case styles, `AckUnknownPropertyPolicy`, and
 same-library sealed discriminated unions. It rejects `dynamic`, `Object?`,
 non-String map keys, recursive class-first graphs, class-first value roots,
 undiscriminated `anyOf` models, missing `_$ClassAck` mixins, and no-op
@@ -196,7 +200,8 @@ validates through the union's effective branch.
   `AccountSchema.schema` when composing another schema and
   `AccountSchema.wireSchema` for the raw Map schema.
 - Apply the generated `_$ClassAck` mixin; do not keep extension-based helpers.
-- Replace `additionalProperties: bool` with `AckAdditionalPropertiesMode`.
+- Replace the temporary class-first `additionalProperties` option with
+  `unknownProperties: AckUnknownPropertyPolicy.<policy>`.
 - Regenerate all checked-in outputs with `dart run build_runner build`.
 
 ## Runtime API reminders
@@ -212,3 +217,5 @@ validates through the union's effective branch.
 - `Ack.lazy(...)` defaults `maxDepth` to 100.
 - Ack snapshots schema factory collections, and collection bounds must be valid.
 - Generated data classes use `deepEquals` and `deepHashCode` from `package:ack/ack.dart`.
+- `deepUnmodifiableJsonMap` snapshots nested maps, lists, and sets without
+  validation; use it for hand-written constructors that store dynamic JSON.

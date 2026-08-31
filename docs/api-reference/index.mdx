@@ -176,8 +176,15 @@ Schema for validating objects (maps). See [Object Validation](../core-concepts/s
 - Use `.extend(Map<String, AckSchema> newProperties)` to add more properties.
 - Use `.partial()` to make all properties optional.
 - Use `.strict()` to disallow additional properties.
-- Use `.passthrough()` to allow additional properties not defined in the schema.
+- Use `.passthrough()` to allow and preserve additional properties not defined
+  in the schema.
 - Use `.merge(ObjectSchema other)` to combine with another object schema.
+
+## `deepUnmodifiableJsonMap(JsonMap value)`
+
+Creates a detached, recursively unmodifiable snapshot of nested maps, lists,
+and sets. It does not validate JSON shape or values. Use it in hand-written
+constructors that store dynamic JSON maps and need stable equality and hashes.
 
 ## `SchemaResult<T>`
 
@@ -354,7 +361,11 @@ Use `@AckField` to override `schema` and/or `AckFieldPresence`. A no-op
 `@AckField()` is rejected. A sealed base annotated with
 `@AckModel(discriminatorKey: ...)` generates a discriminated union from its
 same-library concrete branches. Unknown properties use
-`AckAdditionalPropertiesMode` (`reject` by default; `discard` or `capture`).
+`unknownProperties: AckUnknownPropertyPolicy.<policy>` (`reject` by default).
+Raw `Ack.object(..., additionalProperties: true)` schemas preserve extras.
+Class projection is a later step: `discard` is only for tolerant, read-only
+consumers, while models that round-trip unknown keys must use `capture` and may
+select the target map with `captureField`.
 
 ```dart
 @AckModel(caseStyle: AckCaseStyle.snake)

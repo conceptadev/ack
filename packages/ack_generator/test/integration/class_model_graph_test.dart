@@ -276,10 +276,10 @@ final class User with _\$UserAck {
     );
   });
 
-  test('requires the additionalProperties field when enabled', () async {
+  test('requires the default capture field when capture is enabled', () async {
     await _expectFailure(
       '''
-@AckModel(additionalProperties: AckAdditionalPropertiesMode.capture)
+@AckModel(unknownProperties: AckUnknownPropertyPolicy.capture)
 final class Config with _\$ConfigAck {
   const Config({required this.name});
 
@@ -290,10 +290,10 @@ final class Config with _\$ConfigAck {
     );
   });
 
-  test('requires the exact additionalProperties field type', () async {
+  test('requires the exact capture field type', () async {
     await _expectFailure(
       '''
-@AckModel(additionalProperties: AckAdditionalPropertiesMode.capture)
+@AckModel(unknownProperties: AckUnknownPropertyPolicy.capture)
 final class Config with _\$ConfigAck {
   const Config({required this.additionalProperties});
 
@@ -304,14 +304,12 @@ final class Config with _\$ConfigAck {
     );
   });
 
-  test(
-    'names invalid additional-properties capture fields correctly',
-    () async {
-      await _expectFailure(
-        '''
+  test('names invalid unknown-property capture fields correctly', () async {
+    await _expectFailure(
+      '''
 @AckModel(
-  additionalProperties: AckAdditionalPropertiesMode.capture,
-  additionalPropertiesField: '_extras',
+  unknownProperties: AckUnknownPropertyPolicy.capture,
+  captureField: '_extras',
 )
 final class Config with _\$ConfigAck {
   const Config({required this.name});
@@ -319,10 +317,23 @@ final class Config with _\$ConfigAck {
   final String name;
 }
 ''',
-        ['Config._extras', 'additional-properties capture field'],
-      );
-    },
-  );
+      ['Config._extras', 'unknown-property capture field'],
+    );
+  });
+
+  test('rejects captureField without the capture policy', () async {
+    await _expectFailure(
+      '''
+@AckModel(captureField: 'args')
+final class Config with _\$ConfigAck {
+  const Config({required this.name});
+
+  final String name;
+}
+''',
+      ['Config.captureField', 'AckUnknownPropertyPolicy.capture'],
+    );
+  });
 
   test('requires discriminatorKey on annotated sealed classes', () async {
     await _expectFailure(

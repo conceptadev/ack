@@ -18,8 +18,8 @@ typedef _ModelOptions = ({
   String caseStyle,
   String? discriminatorKey,
   String? discriminatorValue,
-  annotations.AckAdditionalPropertiesMode additionalProperties,
-  String additionalPropertiesField,
+  annotations.AckUnknownPropertyPolicy unknownProperties,
+  String captureField,
 });
 
 typedef _FutureGeneratedType = ({
@@ -333,17 +333,6 @@ final class ClassModelGraphBuilder {
         claim(ackClassToRuntimeBridgeName(node.className, fieldName), node);
       }
     }
-    AckObjectModelNode? captureOwner;
-    for (final node in _graph.nodes.whereType<AckObjectModelNode>()) {
-      if (node.captureFieldName == null) continue;
-      captureOwner = node;
-      break;
-    }
-
-    if (captureOwner != null) {
-      claim(ackClassImmutableCopyValueName, captureOwner);
-      claim(ackClassImmutableCopyMapName, captureOwner);
-    }
   }
 
   void _validateAnnotatedClass(ClassElement element) {
@@ -443,9 +432,8 @@ final class ClassModelGraphBuilder {
             caseStyle: baseOptions.caseStyle,
             discriminatorKey: null,
             discriminatorValue: null,
-            additionalProperties:
-                annotations.AckAdditionalPropertiesMode.reject,
-            additionalPropertiesField: 'additionalProperties',
+            unknownProperties: annotations.AckUnknownPropertyPolicy.reject,
+            captureField: 'additionalProperties',
           );
       if (branchOptions.discriminatorKey != null) {
         throw InvalidGenerationSource(
@@ -519,16 +507,16 @@ final class ClassModelGraphBuilder {
     }
 
     final captureFieldName =
-        options.additionalProperties ==
-            annotations.AckAdditionalPropertiesMode.capture
-        ? options.additionalPropertiesField
+        options.unknownProperties ==
+            annotations.AckUnknownPropertyPolicy.capture
+        ? options.captureField
         : null;
-    if (options.additionalProperties !=
-            annotations.AckAdditionalPropertiesMode.capture &&
-        options.additionalPropertiesField != 'additionalProperties') {
+    if (options.unknownProperties !=
+            annotations.AckUnknownPropertyPolicy.capture &&
+        options.captureField != 'additionalProperties') {
       throw InvalidGenerationSource(
-        '${element.name}.additionalPropertiesField is only valid with '
-        'AckAdditionalPropertiesMode.capture.',
+        '${element.name}.captureField is only valid with '
+        'AckUnknownPropertyPolicy.capture.',
         element: element,
       );
     }
@@ -536,7 +524,7 @@ final class ClassModelGraphBuilder {
       _rejectInvalidMemberName(
         captureFieldName,
         element,
-        memberKind: 'additional-properties capture field',
+        memberKind: 'unknown-property capture field',
       );
     }
 
@@ -688,12 +676,12 @@ final class ClassModelGraphBuilder {
       runtimeRef: AckExternalTypeRef(name: element.name!),
       fields: nodes,
       constructorParameters: constructorParameters,
-      unknownPropertyPolicy: switch (options.additionalProperties) {
-        annotations.AckAdditionalPropertiesMode.reject =>
+      unknownPropertyPolicy: switch (options.unknownProperties) {
+        annotations.AckUnknownPropertyPolicy.reject =>
           AckUnknownPropertyPolicy.reject,
-        annotations.AckAdditionalPropertiesMode.discard =>
+        annotations.AckUnknownPropertyPolicy.discard =>
           AckUnknownPropertyPolicy.discard,
-        annotations.AckAdditionalPropertiesMode.capture =>
+        annotations.AckUnknownPropertyPolicy.capture =>
           AckUnknownPropertyPolicy.capture,
       },
       captureFieldName: captureFieldName,
@@ -1746,15 +1734,13 @@ final class ClassModelGraphBuilder {
       caseStyle: styles[caseIndex],
       discriminatorKey: _nullableString(reader, 'discriminatorKey'),
       discriminatorValue: _nullableString(reader, 'discriminatorValue'),
-      additionalProperties:
-          annotations.AckAdditionalPropertiesMode.values[reader
-              .read('additionalProperties')
+      unknownProperties:
+          annotations.AckUnknownPropertyPolicy.values[reader
+              .read('unknownProperties')
               .objectValue
               .getField('index')!
               .toIntValue()!],
-      additionalPropertiesField: reader
-          .read('additionalPropertiesField')
-          .stringValue,
+      captureField: reader.read('captureField').stringValue,
     );
   }
 

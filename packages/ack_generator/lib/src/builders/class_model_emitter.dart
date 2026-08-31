@@ -35,15 +35,6 @@ final class AckClassModelEmitter {
           _emitUnion(output, graph, node, nodes);
       }
     }
-    if (graph.nodes.whereType<AckObjectModelNode>().any(
-      (node) => node.captureFieldName != null,
-    )) {
-      output
-        ..writeln(_immutableValueHelper())
-        ..writeln()
-        ..writeln(_immutableMapHelper());
-    }
-
     return output.toString();
   }
 
@@ -342,7 +333,7 @@ Map<String, Object?> $function(${node.className} model) {
         ..writeln(
           'Map<String, Object?>? $fromName(Object? value) => '
           'value == null ? null : '
-          '$ackClassImmutableCopyMapName('
+          '${_ack('deepUnmodifiableJsonMap')}('
           'value as Map<String, Object?>);',
         )
         ..writeln('Object? $toName(Map<String, Object?> value) => value;');
@@ -407,35 +398,6 @@ Map<String, Object?> $function(${node.className} model) {
     AckSetTypeRef(:final elementType) => 'Set<${_type(elementType)}>',
     AckMapTypeRef(:final valueType) => 'Map<String, ${_type(valueType)}>',
   };
-
-  String _immutableValueHelper() =>
-      '''
-Object? $ackClassImmutableCopyValueName(Object? value) => switch (value) {
-  List() => List.unmodifiable(value.map($ackClassImmutableCopyValueName)),
-  Set() => Set.unmodifiable(value.map($ackClassImmutableCopyValueName)),
-  Map() => Map.unmodifiable(
-      value.map(
-        (key, item) => MapEntry(
-          key,
-          $ackClassImmutableCopyValueName(item),
-        ),
-      ),
-    ),
-  _ => value,
-};''';
-
-  String _immutableMapHelper() =>
-      '''
-Map<String, Object?> $ackClassImmutableCopyMapName(
-  Map<String, Object?> value,
-) => Map<String, Object?>.unmodifiable(
-  value.map(
-    (key, item) => MapEntry(
-      key,
-      $ackClassImmutableCopyValueName(item),
-    ),
-  ),
-);''';
 
   Set<String> _declaredKeys(AckObjectModelNode node) => {
     for (final field in node.fields) field.jsonKey,

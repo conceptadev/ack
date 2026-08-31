@@ -2,6 +2,50 @@ import 'package:ack/ack.dart';
 import 'package:test/test.dart';
 
 void main() {
+  test('deepUnmodifiableJsonMap snapshots nested maps, lists, and sets', () {
+    final nestedMap = <String, Object?>{'enabled': true};
+    final nestedList = <Object?>[nestedMap];
+    final nestedSet = <Object?>{'first', nestedList};
+    final source = <String, Object?>{
+      'map': nestedMap,
+      'list': nestedList,
+      'set': nestedSet,
+    };
+
+    final snapshot = deepUnmodifiableJsonMap(source);
+
+    source['later'] = true;
+    nestedMap['enabled'] = false;
+    nestedList.add('later');
+    nestedSet.add('later');
+
+    expect(snapshot, {
+      'map': {'enabled': true},
+      'list': [
+        {'enabled': true},
+      ],
+      'set': {
+        'first',
+        [
+          {'enabled': true},
+        ],
+      },
+    });
+    expect(() => snapshot['later'] = true, throwsUnsupportedError);
+    expect(
+      () => (snapshot['map']! as Map<String, Object?>)['later'] = true,
+      throwsUnsupportedError,
+    );
+    expect(
+      () => (snapshot['list']! as List<Object?>).add('later'),
+      throwsUnsupportedError,
+    );
+    expect(
+      () => (snapshot['set']! as Set<Object?>).add('later'),
+      throwsUnsupportedError,
+    );
+  });
+
   test(
     'deepEquals and deepHashCode stay consistent for nested collections',
     () {

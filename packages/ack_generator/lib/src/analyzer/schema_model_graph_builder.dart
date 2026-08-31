@@ -1,6 +1,7 @@
 import 'package:ack/ack.dart'
     show AckSchema, AnyOfSchema, AnySchema, InstanceSchema;
-import 'package:ack_annotations/ack_annotations.dart';
+import 'package:ack_annotations/ack_annotations.dart'
+    hide AckUnknownPropertyPolicy;
 import 'package:analyzer/dart/analysis/results.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/element/element.dart';
@@ -136,11 +137,6 @@ final class SchemaModelGraphBuilder {
     'yield',
   };
 
-  static const _generatedHelperNames = {
-    '_ackImmutableCopyValue',
-    '_ackImmutableCopyMap',
-  };
-
   static const _oneWayTransformMethods = {
     'transform',
     'trim',
@@ -236,7 +232,6 @@ final class SchemaModelGraphBuilder {
         path: declaration.id.declarationName,
       );
     }
-    _validateGeneratedHelperNames();
     _validateDelegatedHelperNames();
     return _graph;
   }
@@ -1322,26 +1317,6 @@ final class SchemaModelGraphBuilder {
           element: declaration.element,
         );
       }
-    }
-  }
-
-  void _validateGeneratedHelperNames() {
-    AckObjectModelNode? passthroughNode;
-    for (final node in _graph.nodes.whereType<AckObjectModelNode>()) {
-      if (node.additionalProperties) {
-        passthroughNode = node;
-        break;
-      }
-    }
-    if (passthroughNode == null) return;
-
-    final localNames = _localDeclarationNames();
-    for (final helperName in _generatedHelperNames) {
-      if (!localNames.contains(helperName)) continue;
-      throw InvalidGenerationSource(
-        'Generated helper "$helperName" conflicts with a local declaration.',
-        element: _declarationsById[passthroughNode.id]?.element,
-      );
     }
   }
 

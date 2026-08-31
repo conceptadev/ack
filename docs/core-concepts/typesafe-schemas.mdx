@@ -315,16 +315,25 @@ use schema-first generation for those shapes.
 
 ### Additional properties
 
-`@AckModel` uses `AckAdditionalPropertiesMode`:
+Raw object validation and class projection are separate decisions.
+`Ack.object(..., additionalProperties: true)` accepts unknown keys and preserves
+them in the returned `JsonMap`. A later `@AckModel` projection then decides
+whether the Dart class rejects, discards, or captures those keys.
+
+`@AckModel` uses `AckUnknownPropertyPolicy` through `unknownProperties`:
 
 - `reject` (default) fails validation on unknown properties;
-- `discard` accepts unknown properties but does not store them;
-- `capture` stores them in `additionalPropertiesField`, which defaults to
+- `discard` accepts unknown properties but does not store them. Use it only for
+  tolerant, read-only consumers;
+- `capture` stores them in `captureField`, which defaults to
   `additionalProperties` and may be `args`.
 
 Capture requires a declared `Map<String, Object?>` field initialized by the
 constructor. Encoding writes extras first, so a declared field or
-discriminator cannot be replaced by an extra value.
+discriminator cannot be replaced by an extra value. Models that must round-trip
+unknown keys must use `capture`, not `discard`. Hand-written constructors can
+call `deepUnmodifiableJsonMap` to detach and recursively freeze direct map
+inputs without validating them.
 
 `@AckField` can override inferred presence with `AckFieldPresence.required` or
 `optional`. A no-op `@AckField()` is rejected. `optional` is allowed only when
