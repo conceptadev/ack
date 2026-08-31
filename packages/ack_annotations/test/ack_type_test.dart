@@ -4,6 +4,7 @@ import 'package:test/test.dart';
 
 void main() {
   test('public barrel exposes legacy AckType and modern AckInfer', () {
+    // ignore: deprecated_member_use_from_same_package
     const legacy = AckType(name: 'User');
     const modern = AckInfer(name: 'User');
     expect(legacy.name, 'User');
