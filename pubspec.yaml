@@ -32,13 +32,6 @@ melos:
   ide:
     intellij: false
 
-  bootstrap:
-    dependencies:
-      meta: ^1.15.0
-    dev_dependencies:
-      lints: ^5.0.0
-      test: ^1.25.15
-
   command:
     version:
       # Generate changelogs for the workspace
@@ -113,17 +106,10 @@ melos:
       packageFilters:
         dependsOn: build_runner
 
-    # Version and publish scripts
-    # Publishing helpers
-    publish:
-      run: dart run melos publish --no-dry-run --yes
-      description: Publish packages to pub.dev
-
-    release:
-      run: |
-        dart run melos version --yes
-        dart run melos publish --no-dry-run --yes
-      description: One-step version and publish
+    # There is deliberately no `publish` or `release` script. Publishing runs
+    # only from a `v*` tag through .github/workflows/release.yml, which
+    # verifies the tag, reruns the preflight, and uploads through pub.dev OIDC.
+    # See PUBLISHING.md.
 
     # ACK Generator specific test commands
     test:gen:

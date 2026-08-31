@@ -280,12 +280,12 @@ dart run melos run clean
 # Propose/apply version and changelog updates
 dart run melos version
 
-# Dry-run pub.dev validation for one package
-(cd packages/ack && dart pub publish --dry-run)
-
-# Publish all packages (no dry-run)
-dart run melos run publish
+# Dry-run pub.dev validation for every package, requiring zero warnings
+dart scripts/publish_dry_run.dart
 ```
+
+Publishing runs only from a `v*` tag through GitHub Actions. See
+[PUBLISHING.md](./PUBLISHING.md).
 
 ### Development tools
 
