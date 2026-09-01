@@ -94,6 +94,17 @@ final class Ack {
   /// to accept `null`.
   static AnySchema any() => const AnySchema();
 
+  /// Validates with [schema] while returning the original boundary value.
+  ///
+  /// Nested codecs still run for validation, but their decoded runtime values
+  /// are discarded. This keeps wire data composable with a later typed parse.
+  static BoundarySchema<Boundary> preserveBoundary<
+    Boundary extends Object,
+    Runtime extends Object
+  >(AckSchema<Boundary, Runtime> schema) {
+    return BoundarySchema<Boundary>(schema);
+  }
+
   /// Creates a schema reference that is resolved lazily on first use.
   ///
   /// The [builder] is called once and memoized. [maxDepth] bounds how many

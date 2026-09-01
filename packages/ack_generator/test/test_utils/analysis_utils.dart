@@ -1,10 +1,10 @@
-import 'package:analyzer/dart/element/element2.dart';
+import 'package:analyzer/dart/element/element.dart';
 import 'package:source_gen/source_gen.dart';
 
 /// Utilities for analyzing Dart code in tests
 class AnalysisUtils {
   /// Parse source code into an analyzer model for unit-test scope.
-  static Future<LibraryElement2> resolveSource(String source) async {
+  static Future<LibraryElement> resolveSource(String source) async {
     throw UnimplementedError(
       'Use testBuilder with resolveSources for integration testing. '
       'Use this utility only for analyzer unit tests.',
@@ -12,9 +12,9 @@ class AnalysisUtils {
   }
 
   /// Get a class element by name from a library
-  static ClassElement2? getClass(LibraryElement2 library, String name) {
+  static ClassElement? getClass(LibraryElement library, String name) {
     for (final type in library.classes) {
-      if (type.name3 == name) {
+      if (type.name == name) {
         return type;
       }
     }
@@ -30,7 +30,7 @@ class AnalysisUtils {
 
 /// Helper to create mock ClassElement for testing
 class MockClassElement {
-  static ClassElement2 create({
+  static ClassElement create({
     required String name,
     List<MockFieldElement> fields = const [],
     bool isAbstract = false,

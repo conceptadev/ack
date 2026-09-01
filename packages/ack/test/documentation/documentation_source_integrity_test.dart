@@ -35,6 +35,18 @@ void main() {
       expect(customValidation, contains('safeParse(-10.0)'));
     });
 
+    test('numeric docs describe cross-platform normalization', () {
+      final api = _readFromRepo('docs/api-reference/index.mdx');
+      final schemas = _readFromRepo('docs/core-concepts/schemas.mdx');
+      final validation = _readFromRepo('docs/core-concepts/validation.mdx');
+
+      expect(api, contains('follow JSON Schema value semantics'));
+      expect(schemas, contains('native and web builds'));
+      expect(validation, contains('first successful branch'));
+      expect(api, isNot(contains('`42.0` fails `Ack.integer()`')));
+      expect(validation, isNot(contains('double is not int')));
+    });
+
     test('GitHub response recipe permits undocumented response fields', () {
       final commonRecipes = _readFromRepo('docs/guides/common-recipes.mdx');
       final githubRecipe = RegExp(

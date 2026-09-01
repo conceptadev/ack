@@ -1,5 +1,5 @@
 import 'package:ack_annotations/ack_annotations.dart';
-import 'package:analyzer/dart/element/element2.dart';
+import 'package:analyzer/dart/element/element.dart';
 import 'package:build/build.dart';
 import 'package:code_builder/code_builder.dart';
 import 'package:dart_style/dart_style.dart';
@@ -16,17 +16,23 @@ final _log = Logger('AckSchemaGenerator');
 
 /// Generates extension types for top-level schemas annotated with `@AckType`.
 class AckSchemaGenerator extends Generator {
+  static const _ackTypeChecker = TypeChecker.typeNamed(
+    // ignore: deprecated_member_use
+    AckType,
+    inPackage: 'ack_annotations',
+  );
+
   final _formatter = DartFormatter(
     languageVersion: DartFormatter.latestLanguageVersion,
   );
 
   @override
   String generate(LibraryReader library, BuildStep buildStep) {
-    final annotatedVariables = <TopLevelVariableElement2>[];
+    final annotatedVariables = <TopLevelVariableElement>[];
     final annotatedGetters = <GetterElement>[];
 
     for (final element in library.allElements) {
-      if (element is ClassElement2 && _hasAckTypeAnnotation(element)) {
+      if (element is ClassElement && _hasAckTypeAnnotation(element)) {
         throw InvalidGenerationSource(
           '@AckType can only be applied to top-level schema variables or getters, not classes.',
           element: element,
@@ -35,11 +41,11 @@ class AckSchemaGenerator extends Generator {
         );
       }
 
-      if (element is TopLevelVariableElement2 &&
+      if (element is TopLevelVariableElement &&
           _hasAckTypeAnnotation(element)) {
         annotatedVariables.add(element);
       } else if (element is GetterElement && _hasAckTypeAnnotation(element)) {
-        final isTopLevel = element.enclosingElement2 is LibraryElement2;
+        final isTopLevel = element.enclosingElement is LibraryElement;
         if (!isTopLevel) {
           throw InvalidGenerationSource(
             '@AckType can only be applied to top-level schema variables or getters.',
@@ -49,7 +55,7 @@ class AckSchemaGenerator extends Generator {
           );
         }
 
-        if (!element.isSynthetic) {
+        if (element.isOriginDeclaration) {
           annotatedGetters.add(element);
         }
       }
@@ -91,7 +97,7 @@ class AckSchemaGenerator extends Generator {
         }
       } catch (e) {
         throw InvalidGenerationSource(
-          'Failed to analyze schema variable "${variable.name3}": $e',
+          'Failed to analyze schema variable "${variable.name}": $e',
           element: variable,
           todo:
               'Ensure the variable uses Ack schema syntax such as Ack.object(), Ack.string(), or another @AckType schema reference.',
@@ -110,7 +116,7 @@ class AckSchemaGenerator extends Generator {
         }
       } catch (e) {
         throw InvalidGenerationSource(
-          'Failed to analyze schema getter "${getter.name3}": $e',
+          'Failed to analyze schema getter "${getter.name}": $e',
           element: getter,
           todo:
               'Ensure the getter returns Ack schema syntax such as Ack.object(), Ack.string(), or another @AckType schema reference.',
@@ -169,14 +175,14 @@ class AckSchemaGenerator extends Generator {
   }
 
   void _generateExtensionTypes(
-    List<TopLevelVariableElement2> annotatedVariables,
+    List<TopLevelVariableElement> annotatedVariables,
     List<GetterElement> annotatedGetters,
     List<ModelInfo> models,
     TypeBuilder typeBuilder,
     List<Method> helperMethods,
     List<Spec> extensionTypes,
   ) {
-    final typedElements = <Element2>[
+    final typedElements = <Element>[
       for (final model in models)
         _findAnnotatedSchemaElement(
               model.schemaClassName,
@@ -280,7 +286,7 @@ class AckSchemaGenerator extends Generator {
         }
       } catch (e) {
         throw InvalidGenerationSource(
-          'Extension type generation failed for ${element.name3}: $e',
+          'Extension type generation failed for ${element.name}: $e',
           element: element,
           todo:
               'Ensure nested schemas resolve to @AckType declarations and unsupported schema shapes are not annotated.',
@@ -379,14 +385,12 @@ class AckSchemaGenerator extends Generator {
     );
   }
 
-  bool _hasAckTypeAnnotation(Element2 element) {
-    return TypeChecker.typeNamed(AckType).hasAnnotationOfExact(element);
+  bool _hasAckTypeAnnotation(Element element) {
+    return _ackTypeChecker.hasAnnotationOfExact(element);
   }
 
-  String? _extractAckTypeName(Element2 element) {
-    final annotation = TypeChecker.typeNamed(
-      AckType,
-    ).firstAnnotationOfExact(element);
+  String? _extractAckTypeName(Element element) {
+    final annotation = _ackTypeChecker.firstAnnotationOfExact(element);
     if (annotation == null) {
       return null;
     }
@@ -397,19 +401,19 @@ class AckSchemaGenerator extends Generator {
         : null;
   }
 
-  Element2? _findAnnotatedSchemaElement(
+  Element? _findAnnotatedSchemaElement(
     String schemaName,
-    List<TopLevelVariableElement2> annotatedVariables,
+    List<TopLevelVariableElement> annotatedVariables,
     List<GetterElement> annotatedGetters,
   ) {
     for (final variable in annotatedVariables) {
-      if (variable.name3 == schemaName) {
+      if (variable.name == schemaName) {
         return variable;
       }
     }
 
     for (final getter in annotatedGetters) {
-      if (getter.name3 == schemaName) {
+      if (getter.name == schemaName) {
         return getter;
       }
     }
@@ -418,13 +422,13 @@ class AckSchemaGenerator extends Generator {
   }
 
   String? _resolveAckImportPrefix(LibraryReader library) {
-    for (final import in library.element.firstFragment.libraryImports2) {
+    for (final import in library.element.firstFragment.libraryImports) {
       if (!_isAckImport(import)) {
         continue;
       }
 
-      final prefixElement = import.prefix2?.element;
-      final prefix = prefixElement?.name3;
+      final prefixElement = import.prefix?.element;
+      final prefix = prefixElement?.name;
       if (prefix != null && prefix.isNotEmpty) {
         return prefix;
       }
@@ -435,7 +439,7 @@ class AckSchemaGenerator extends Generator {
   }
 
   bool _isAckImport(LibraryImport import) {
-    final importedLibrary = import.importedLibrary2;
+    final importedLibrary = import.importedLibrary;
     if (importedLibrary != null &&
         importedLibrary.uri.toString() == 'package:ack/ack.dart') {
       return true;

@@ -1,6 +1,8 @@
 import 'package:meta/meta_meta.dart';
 
-/// Marks a top-level Ack schema for extension-type generation.
+/// Marks a top-level Ack schema for frozen legacy extension-type generation.
+///
+/// Legacy `AckType` behavior is frozen until removal in Ack 2.
 ///
 /// Apply `@AckType()` to a top-level schema variable or getter:
 ///
@@ -26,6 +28,10 @@ import 'package:meta/meta_meta.dart';
 /// - Classes
 /// - Instance members
 /// - Local variables
+@Deprecated(
+  'Use @AckInfer() for schema-first models or @AckModel() for '
+  'class-first models. AckType will be removed in 2.0.0.',
+)
 @Target({TargetKind.topLevelVariable, TargetKind.getter})
 class AckType {
   /// Optional custom name for the generated extension type.

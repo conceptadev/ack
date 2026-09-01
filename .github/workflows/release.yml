@@ -8,16 +8,86 @@ on:
       # Pre-release tags, e.g. v1.2.3-beta.1 / v1.2.3-rc.1
       - 'v[0-9]*.[0-9]*.[0-9]*-*'
 
+permissions:
+  contents: read
+
 jobs:
-  publish:
-    uses: btwld/dart-actions/.github/workflows/publish.yml@main
+  verify-tag:
+    name: Verify the release tag
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
     permissions:
+      contents: read
+    steps:
+      # The full history lets the check prove that the tag sits on main.
+      - name: Checkout the tagged commit
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      # A full checkout already carries origin/main. The refresh keeps the
+      # check current when the tag lands moments after a merge, and the
+      # verification step reports a missing ref on its own.
+      - name: Refresh the release branch
+        run: |
+          git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main \
+            || echo "Could not refresh origin/main; using the checked-out refs."
+
+      - name: Set up the pinned Flutter SDK
+        uses: ./.github/actions/setup-flutter
+
+      - name: Resolve workspace dependencies
+        run: dart pub get
+
+      # A tag is the only trigger of this workflow, so the tag must prove that
+      # it points at reviewed code and that every package agrees on the version.
+      - name: Require a releasable tag
+        run: |
+          dart scripts/verify_release_tag.dart "$GITHUB_REF_NAME" \
+            --commit="$GITHUB_SHA" --main-ref=origin/main
+
+  preflight:
+    name: Preflight
+    needs: verify-tag
+    permissions:
+      contents: read
+    uses: ./.github/workflows/preflight.yml
+
+  publish-foundations:
+    name: Publish foundation packages
+    needs: preflight
+    uses: ./.github/workflows/publish-packages.yml
+    permissions:
+      contents: read
       id-token: write
     with:
       packages_folder_path: "packages"
       packages: |
         ack
         ack_annotations
+
+  publish-generator:
+    name: Publish generator package
+    needs: publish-foundations
+    uses: ./.github/workflows/publish-packages.yml
+    permissions:
+      contents: read
+      id-token: write
+    with:
+      packages_folder_path: "packages"
+      packages: |
         ack_generator
+
+  publish-adapters:
+    name: Publish adapter packages
+    needs: publish-generator
+    uses: ./.github/workflows/publish-packages.yml
+    permissions:
+      contents: read
+      id-token: write
+    with:
+      packages_folder_path: "packages"
+      packages: |
         ack_json_schema_builder
         ack_firebase_ai

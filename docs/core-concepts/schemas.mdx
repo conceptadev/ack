@@ -67,23 +67,26 @@ final roleSchema = Ack.enumValues(Role.values);
 
 ### Number
 
-Numeric schemas are strict about their Dart runtime type. `Ack.integer()`
-rejects `double` values (even whole ones like `42.0`); `Ack.double()` rejects
-`int` values. Use `Ack.number()` when either is acceptable. `Ack.double()` and
-`Ack.number()` reject non-finite values (`NaN` and infinities) by default.
+Numeric schemas follow JSON Schema value semantics so native and web builds
+agree. `Ack.integer()` accepts finite numbers with no fractional part and
+losslessly normalizes them to `int`. `Ack.double()` accepts finite numbers that
+can be represented exactly as `double` and normalizes them to `double`.
+`Ack.number()` accepts either representation and preserves it. Add `.safe()` to
+an integer schema when values must remain exact in JavaScript's portable integer
+range. All numeric schemas reject `NaN` and infinities.
 
 ```dart
-// Integer validation (int only — 42.0 would fail)
+// Integer validation (42 and 42.0 both parse to int)
 final ageSchema = Ack.integer()
   .min(0)
   .max(120);
 
-// Double validation (double only — 42 would fail)
+// Double validation (42 and 42.0 both parse to double when lossless)
 final priceSchema = Ack.double()
   .positive()
   .multipleOf(0.5); // Use factors that avoid floating point rounding issues
 
-// Either int or double
+// Preserve an input that is already int or double
 final amountSchema = Ack.number().positive();
 
 final temperatureSchema = Ack.integer(); // Any integer

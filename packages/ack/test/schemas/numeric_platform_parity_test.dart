@@ -100,6 +100,17 @@ void main() {
       expect(SchemaType.tryOf(double.infinity), SchemaType.number);
     });
 
+    test(
+      'numeric anyOf branches normalize through the first matching schema',
+      () {
+        final integerFirst = Ack.anyOf([Ack.integer(), Ack.double()]);
+        final doubleFirst = Ack.anyOf([Ack.double(), Ack.integer()]);
+
+        expect(integerFirst.parse(1.0), isA<int>());
+        expect(doubleFirst.parse(1), isA<double>());
+      },
+    );
+
     test('preserves exactly representable integers beyond the safe range', () {
       const maxSafeInteger = 9007199254740991;
       final exactBeyondSafeInteger = maxSafeInteger + 3;

@@ -3,8 +3,9 @@ import 'constraint.dart';
 
 /// Validates that all items in a list are unique.
 ///
-/// Uses deep equality comparison to properly detect duplicates in
-/// collections (Lists, Maps, Sets) and nested structures.
+/// Uses JSON instance equality to properly detect duplicates in collections
+/// and nested structures. In particular, numerically equal JSON numbers such
+/// as `1` and `1.0` are duplicates.
 class ListUniqueItemsConstraint<T> extends Constraint<List<T>>
     with Validator<List<T>>, JsonSchemaSpec<List<T>> {
   const ListUniqueItemsConstraint()
@@ -38,7 +39,7 @@ class ListUniqueItemsConstraint<T> extends Constraint<List<T>>
   // has no type-specific fields beyond constraintKey and description.
 }
 
-/// Finds duplicate items in [value] using deep equality.
+/// Finds duplicate items in [value] using JSON instance equality.
 ///
 /// Returns a list of unique values that appear more than once (in order of
 /// first occurrence), or `null` if no duplicates exist.
@@ -48,16 +49,15 @@ class ListUniqueItemsConstraint<T> extends Constraint<List<T>>
 List<T>? _findDuplicates<T>(List<T> value) {
   if (value.isEmpty) return null;
 
-  // Always use hash-based deep equality for consistency with deepEquals.
   final groupsByHash = <int, List<_DuplicateGroup<T>>>{};
   final groupsInOrder = <_DuplicateGroup<T>>[];
 
   for (final item in value) {
-    final hash = _deepHashCode(item);
+    final hash = _jsonInstanceHashCode(item);
     final bucket = groupsByHash.putIfAbsent(hash, () => <_DuplicateGroup<T>>[]);
     var matched = false;
     for (final group in bucket) {
-      if (deepEquals(group.value, item)) {
+      if (_jsonInstanceEquals(group.value, item)) {
         group.count++;
         matched = true;
         break;
@@ -80,65 +80,84 @@ List<T>? _findDuplicates<T>(List<T> value) {
   return duplicates.isEmpty ? null : duplicates;
 }
 
-/// Computes a hash code for [value] that is consistent with [deepEquals].
-///
-/// **Note**: This function assumes acyclic inputs (e.g., JSON-derived data).
-/// Cyclic structures will cause stack overflow.
-int _deepHashCode(Object? value) {
-  if (value == null) return Object.hash(null, null);
+bool _jsonInstanceEquals(Object? left, Object? right) {
+  if (identical(left, right)) return true;
 
-  // Equal JSON numbers must share a bucket even when one is represented as an
-  // int and the other as a double. Equal Dart numbers have equal hash codes.
-  if (value is num) return Object.hash(num, value);
-
-  if (value is! Iterable && value is! Map) {
-    return Object.hash(value.runtimeType, value);
+  if (left is num || right is num) {
+    return left is num && right is num && left == right;
   }
+
+  if (left is List || right is List) {
+    if (left is! List || right is! List || left.length != right.length) {
+      return false;
+    }
+    for (var index = 0; index < left.length; index++) {
+      if (!_jsonInstanceEquals(left[index], right[index])) return false;
+    }
+    return true;
+  }
+
+  if (left is Map || right is Map) {
+    if (left is! Map || right is! Map || left.length != right.length) {
+      return false;
+    }
+    final unmatched = right.entries.toList();
+    for (final leftEntry in left.entries) {
+      var matchIndex = -1;
+      for (var index = 0; index < unmatched.length; index++) {
+        final rightEntry = unmatched[index];
+        if (_jsonObjectKeyEquals(leftEntry.key, rightEntry.key) &&
+            _jsonInstanceEquals(leftEntry.value, rightEntry.value)) {
+          matchIndex = index;
+          break;
+        }
+      }
+      if (matchIndex == -1) return false;
+      unmatched.removeAt(matchIndex);
+    }
+    return true;
+  }
+
+  return deepEquals(left, right);
+}
+
+bool _jsonObjectKeyEquals(Object? left, Object? right) {
+  if (left is String || right is String) {
+    return left is String && right is String && left == right;
+  }
+  return deepEquals(left, right);
+}
+
+int _jsonInstanceHashCode(Object? value) {
+  if (value == null) return Object.hash('ack:json:null', null);
+  if (value is num) return Object.hash('ack:json:number', value);
+  if (value is String) return Object.hash('ack:json:string', value);
+  if (value is bool) return Object.hash('ack:json:boolean', value);
 
   if (value is List) {
-    var hash = Object.hash(List, value.length);
+    var hash = Object.hash('ack:json:list', value.length);
     for (final item in value) {
-      hash = Object.hash(hash, _deepHashCode(item));
+      hash = Object.hash(hash, _jsonInstanceHashCode(item));
     }
-
     return hash;
-  }
-
-  if (value is Set) {
-    // Use XOR with bit mixing for order-independent hashing with better
-    // collision resistance than simple sum.
-    var combined = 0;
-    for (final item in value) {
-      final h = _deepHashCode(item);
-      combined ^= h ^ (h >>> 16);
-    }
-
-    return Object.hash(Set, value.length, combined);
   }
 
   if (value is Map) {
-    // Use XOR with bit mixing for order-independent hashing.
     var combined = 0;
     for (final entry in value.entries) {
-      final keyHash = _deepHashCode(entry.key);
-      final valueHash = _deepHashCode(entry.value);
-      final entryHash = Object.hash(keyHash, valueHash);
+      final keyHash = entry.key is String
+          ? Object.hash('ack:json:string', entry.key)
+          : deepHashCode(entry.key);
+      final entryHash = Object.hash(
+        keyHash,
+        _jsonInstanceHashCode(entry.value),
+      );
       combined ^= entryHash ^ (entryHash >>> 16);
     }
-
-    return Object.hash(Map, value.length, combined);
+    return Object.hash('ack:json:object', value.length, combined);
   }
 
-  if (value is Iterable) {
-    var hash = Object.hash(Iterable, 0);
-    for (final item in value) {
-      hash = Object.hash(hash, _deepHashCode(item));
-    }
-
-    return hash;
-  }
-
-  return Object.hash(value.runtimeType, value.hashCode);
+  return deepHashCode(value);
 }
 
 class _DuplicateGroup<T> {

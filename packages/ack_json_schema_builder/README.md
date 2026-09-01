@@ -12,14 +12,14 @@ Converts ACK schemas to json_schema_builder format via `.toJsonSchemaBuilder()`.
 
 ```yaml
 dependencies:
-  ack: ^1.0.0
-  ack_json_schema_builder: ^1.0.0
+  ack: ^1.2.0
+  ack_json_schema_builder: ^1.2.0
   json_schema_builder: ^0.1.3
 ```
 
 ### Compatibility
 
-Requires `json_schema_builder: >=0.1.3 <1.0.0` as a peer dependency. Report [compatibility issues](https://github.com/btwld/ack/issues).
+Requires `json_schema_builder: >=0.1.3 <1.0.0` as a peer dependency. Report [compatibility issues](https://github.com/conceptadev/ack/issues).
 
 ## Conversion Model
 
@@ -133,11 +133,12 @@ dart test
 
 ## Contributing
 
-For contribution guidelines, see [CONTRIBUTING.md](../../CONTRIBUTING.md) in the root repository.
+For contribution guidelines, see the repository's
+[CONTRIBUTING.md](https://github.com/conceptadev/ack/blob/main/CONTRIBUTING.md).
 
 ## License
 
-This package is part of the [ACK](https://github.com/btwld/ack) monorepo.
+This package is part of the [ACK](https://github.com/conceptadev/ack) monorepo.
 
 ## Related Packages
 

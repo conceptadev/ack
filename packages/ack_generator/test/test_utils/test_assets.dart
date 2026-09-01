@@ -258,22 +258,22 @@ import 'package:meta/meta.dart';
 
 abstract class SchemaModel<T> {
   final Map<String, Object?>? _data;
-  
+
   const SchemaModel() : _data = null;
-  
+
   @protected
   const SchemaModel.validated(Map<String, Object?> data) : _data = data;
-  
+
   @protected
   ObjectSchema get schema;
-  
+
   bool get hasData => _data != null;
-  
+
   SchemaModel parse(Object? input) {
     // Parse test input into the schema model contract used by test fixtures.
     return createValidated(input as Map<String, Object?>);
   }
-  
+
   SchemaModel? tryParse(Object? input) {
     try {
       return parse(input);
@@ -281,12 +281,12 @@ abstract class SchemaModel<T> {
       return null;
     }
   }
-  
+
   @protected
   SchemaModel createValidated(Map<String, Object?> data);
-  
+
   T createFromMap(Map<String, dynamic> map);
-  
+
   @protected
   TValue getValue<TValue extends Object>(String key) {
     if (_data == null) {
@@ -294,18 +294,18 @@ abstract class SchemaModel<T> {
     }
     return _data![key] as TValue;
   }
-  
+
   @protected
   TValue? getValueOrNull<TValue extends Object>(String key) {
     if (_data == null) return null;
     return _data![key] as TValue?;
   }
-  
+
   Map<String, Object?> toMap() {
     if (_data == null) return const {};
     return Map.unmodifiable(_data!);
   }
-  
+
   Map<String, Object?> toJsonSchema() {
     return schema.toJsonSchema();
   }

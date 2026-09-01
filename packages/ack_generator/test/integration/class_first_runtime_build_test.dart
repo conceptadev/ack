@@ -1,0 +1,581 @@
+import 'dart:io';
+
+import 'package:path/path.dart' as p;
+import 'package:test/test.dart';
+
+Future<ProcessResult> _run(Directory directory, List<String> arguments) =>
+    Process.run('dart', arguments, workingDirectory: directory.path);
+
+void _expectSuccess(ProcessResult result, String command) {
+  expect(
+    result.exitCode,
+    0,
+    reason:
+        '$command failed\nSTDOUT:\n${result.stdout}\nSTDERR:\n${result.stderr}',
+  );
+}
+
+Map<String, String> _generatedFiles(Directory directory) => {
+  for (final file
+      in directory
+          .listSync(recursive: true)
+          .whereType<File>()
+          .where(
+            (file) =>
+                file.path.endsWith('.ack.dart') ||
+                file.path.endsWith('.g.dart'),
+          ))
+    p.relative(file.path, from: directory.path): file.readAsStringSync(),
+};
+
+void main() {
+  test(
+    'class-first models compile and preserve the runtime contract',
+    () async {
+      var projectRoot = Directory.current;
+      while (!Directory(
+        p.join(projectRoot.path, 'packages', 'ack_generator'),
+      ).existsSync()) {
+        projectRoot = projectRoot.parent;
+      }
+      final temporary = await Directory.systemTemp.createTemp(
+        'ack_class_first_runtime_',
+      );
+      try {
+        Directory(p.join(temporary.path, 'lib')).createSync();
+        Directory(p.join(temporary.path, 'test')).createSync();
+        File(p.join(temporary.path, 'pubspec.yaml')).writeAsStringSync('''
+name: ack_class_first_runtime
+publish_to: none
+environment:
+  sdk: '>=3.9.0 <4.0.0'
+dependencies:
+  ack:
+    path: ${p.join(projectRoot.path, 'packages', 'ack')}
+  ack_annotations:
+    path: ${p.join(projectRoot.path, 'packages', 'ack_annotations')}
+  json_annotation: ^4.11.0
+dev_dependencies:
+  ack_generator:
+    path: ${p.join(projectRoot.path, 'packages', 'ack_generator')}
+  build_runner: ^2.15.0
+  json_serializable: ^6.14.1
+  test: ^1.29.0
+dependency_overrides:
+  ack:
+    path: ${p.join(projectRoot.path, 'packages', 'ack')}
+  ack_annotations:
+    path: ${p.join(projectRoot.path, 'packages', 'ack_annotations')}
+''');
+        File(p.join(temporary.path, 'build.yaml')).writeAsStringSync('''
+targets:
+  \$default:
+    builders:
+      ack_generator:ack_generator:
+        generate_for:
+          - lib/coexist.dart
+      source_gen:combining_builder:
+        generate_for:
+          - lib/models.dart
+''');
+        File(p.join(temporary.path, 'lib', 'alpha.dart')).writeAsStringSync(
+          'final class Item { const Item(this.value); final String value; }\n',
+        );
+        File(p.join(temporary.path, 'lib', 'beta.dart')).writeAsStringSync(
+          'final class Item { const Item(this.value); final int value; }\n',
+        );
+        File(p.join(temporary.path, 'lib', 'coexist.dart')).writeAsStringSync(
+          r'''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+part 'coexist.g.dart';
+part 'coexist.ack.dart';
+part 'coexist.ack.g.dart';
+
+// ignore: deprecated_member_use
+@AckType()
+final frozenSchema = Ack.object({'id': Ack.string()});
+
+@AckInfer()
+final modernSchema = Ack.object({'name': Ack.string()});
+
+@AckModel()
+final class Handwritten with _$HandwrittenAck {
+  const Handwritten({required this.enabled});
+
+  final bool enabled;
+}
+''',
+        );
+        File(p.join(temporary.path, 'lib', 'models.dart')).writeAsStringSync(
+          r'''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+import 'package:json_annotation/json_annotation.dart' show JsonSerializable;
+
+import 'alpha.dart' as alpha;
+import 'beta.dart' as beta;
+
+part 'models.ack.dart';
+part 'models.ack.g.dart';
+part 'models.g.dart';
+
+final class Color {
+  const Color(this.hex);
+  final String hex;
+
+  @override
+  bool operator ==(Object other) => other is Color && other.hex == hex;
+
+  @override
+  int get hashCode => hex.hashCode;
+}
+
+AckSchema<String, Color> colorSchema() => Ack.string().codec<Color>(
+  decode: Color.new,
+  encode: (color) => color.hex,
+);
+
+AckSchema<String, alpha.Item> alphaItemSchema() => Ack.string()
+    .codec<alpha.Item>(decode: alpha.Item.new, encode: (item) => item.value);
+
+AckSchema<int, beta.Item> betaItemSchema() => Ack.integer()
+    .codec<beta.Item>(decode: beta.Item.new, encode: (item) => item.value);
+
+AckSchema<Map<String, Object?>, Map<String, List<String>>> groupsSchema() =>
+    Ack.object({}, additionalProperties: true)
+        .codec<Map<String, List<String>>>(
+          decode: (value) => value.map(
+            (key, item) => MapEntry(key, (item! as List).cast<String>()),
+          ),
+          encode: (value) => value,
+        );
+
+@AckModel()
+final class Profile with _$ProfileAck {
+  const Profile({
+    required this.name,
+    this.website,
+    required this.nickname,
+    this.role = 'member',
+    required this.tags,
+    required this.color,
+  });
+
+  final String name;
+  final Uri? website;
+  final String? nickname;
+  final String role;
+  @UniqueItems()
+  final Set<String> tags;
+  @AckField(schema: colorSchema)
+  final Color color;
+
+  static final fromJson = ProfileSchema.fromJson;
+}
+
+@AckModel(caseStyle: AckCaseStyle.snake)
+final class Account with _$AccountAck {
+  const Account({required this.firstName, required this.imageUrl});
+  final String firstName;
+  @JsonKey(name: 'avatar')
+  final Uri imageUrl;
+
+  static final fromJson = AccountSchema.fromJson;
+}
+
+@AckModel(unknownProperties: AckUnknownPropertyPolicy.capture)
+final class Config with _$ConfigAck {
+  const Config({
+    required this.name,
+    this.additionalProperties = const {},
+  });
+  final String name;
+  final Map<String, Object?> additionalProperties;
+}
+
+@AckModel(
+  caseStyle: AckCaseStyle.snake,
+  unknownProperties: AckUnknownPropertyPolicy.capture,
+  captureField: 'extraValues',
+)
+final class CaseStyledExtras with _$CaseStyledExtrasAck {
+  const CaseStyledExtras({
+    required this.displayName,
+    this.extraValues = const {},
+  });
+  final String displayName;
+  final Map<String, Object?> extraValues;
+}
+
+@AckModel(unknownProperties: AckUnknownPropertyPolicy.discard)
+final class Loose with _$LooseAck {
+  const Loose({required this.name});
+  final String name;
+}
+
+@AckModel()
+final class Normalized with _$NormalizedAck {
+  const Normalized(String? value) : value = value ?? '';
+
+  @AckField(presence: AckFieldPresence.optional)
+  final String value;
+}
+
+@AckModel()
+final class NullableDefault with _$NullableDefaultAck {
+  const NullableDefault({this.label = 'fallback'});
+
+  final String? label;
+}
+
+@AckModel()
+final class NullDefault with _$NullDefaultAck {
+  const NullDefault({this.label = null});
+
+  final String? label;
+}
+
+@AckModel()
+final class ImportedPair with _$ImportedPairAck {
+  const ImportedPair({required this.left, required this.right});
+  @AckField(schema: alphaItemSchema)
+  final alpha.Item left;
+  @AckField(schema: betaItemSchema)
+  final beta.Item right;
+}
+
+@AckModel()
+final class ImmutableCollections with _$ImmutableCollectionsAck {
+  const ImmutableCollections({
+    required this.matrix,
+    required this.labels,
+    required this.groups,
+  });
+
+  final List<List<String>> matrix;
+  @UniqueItems()
+  final Set<String> labels;
+  @AckField(schema: groupsSchema)
+  final Map<String, List<String>> groups;
+}
+
+@AckModel(discriminatorKey: 'type')
+sealed class Pet with _$PetAck {
+  const Pet({required this.id});
+  final String id;
+}
+
+@AckModel(discriminatorValue: 'cat')
+final class Cat extends Pet with _$CatAck {
+  const Cat({required super.id, required this.lives});
+  final int lives;
+}
+
+final class Dog extends Pet with _$DogAck {
+  const Dog({required super.id, required this.breed});
+  final String breed;
+  String get type => 'Dog';
+}
+
+@AckInfer()
+final legacySchema = Ack.object({'enabled': Ack.boolean()});
+
+@JsonSerializable()
+final class PlainJson {
+  const PlainJson({required this.value});
+  factory PlainJson.fromJson(Map<String, dynamic> json) =>
+      _$PlainJsonFromJson(json);
+  final String value;
+  Map<String, dynamic> toJson() => _$PlainJsonToJson(this);
+}
+''',
+        );
+        File(
+          p.join(temporary.path, 'test', 'runtime_test.dart'),
+        ).writeAsStringSync(r'''
+import 'package:ack_class_first_runtime/alpha.dart' as alpha;
+import 'package:ack_class_first_runtime/beta.dart' as beta;
+import 'package:ack_class_first_runtime/coexist.dart';
+import 'package:ack_class_first_runtime/models.dart';
+import 'package:ack/ack.dart';
+import 'package:test/test.dart';
+
+void main() {
+  test('presence, defaults, collections, and escape hatches round-trip', () {
+    final profile = Profile.fromJson({
+      'name': 'Ada',
+      'website': null,
+      'nickname': null,
+      'tags': ['schema', 'dart'],
+      'color': '#fff',
+    });
+    expect(profile.website, isNull);
+    expect(profile.nickname, isNull);
+    expect(profile.role, 'member');
+    expect(profile.tags, {'schema', 'dart'});
+    expect(profile.color.hex, '#fff');
+    expect(profile.toJson(), {
+      'name': 'Ada',
+      'nickname': null,
+      'role': 'member',
+      'tags': ['schema', 'dart'],
+      'color': '#fff',
+    });
+    expect(
+      () => ProfileSchema.parse({'name': 'Ada'}),
+      throwsA(isA<AckException>()),
+    );
+    expect(ProfileSchema.safeParse({'name': 'Ada'}).isFail, isTrue);
+    expect(ProfileSchema.toJsonSchema()['x-transformed'], isTrue);
+    expect(
+      ProfileSchema.toSchemaModel().toJsonSchema(),
+      ProfileSchema.toJsonSchema(),
+    );
+    expect(ProfileSchema.encode(profile), profile.toJson());
+    expect(ProfileSchema.safeEncode(profile).isOk, isTrue);
+  });
+
+  test('case style and JsonKey use one wire-key mapping', () {
+    final account = Account.fromJson({
+      'first_name': 'Ada',
+      'avatar': 'https://example.com/avatar.png',
+    });
+    expect(account.firstName, 'Ada');
+    expect(account.imageUrl.host, 'example.com');
+    expect(account.toJson(), {
+      'first_name': 'Ada',
+      'avatar': 'https://example.com/avatar.png',
+    });
+  });
+
+  test('additional properties decode and encode extras first', () {
+    final config = ConfigSchema.parse({
+      'name': 'declared',
+      'theme': 'dark',
+      'nested': {
+        'items': [1, 2],
+      },
+    });
+    expect(config.additionalProperties, {
+      'theme': 'dark',
+      'nested': {
+        'items': [1, 2],
+      },
+    });
+    expect(
+      () => config.additionalProperties['new'] = true,
+      throwsUnsupportedError,
+    );
+    final nested = config.additionalProperties['nested']! as Map;
+    expect(() => nested['new'] = true, throwsUnsupportedError);
+    final items = nested['items']! as List;
+    expect(() => items.add(3), throwsUnsupportedError);
+    final spoofed = Config(
+      name: 'declared',
+      additionalProperties: const {'name': 'spoofed', 'theme': 'dark'},
+    );
+    expect(spoofed.toJson(), {'theme': 'dark', 'name': 'declared'});
+  });
+
+  test('parsed class-first collections are recursively unmodifiable', () {
+    final model = ImmutableCollectionsSchema.parse({
+      'matrix': [
+        ['a'],
+      ],
+      'labels': ['a'],
+      'groups': {
+        'primary': ['a'],
+      },
+    });
+
+    expect(() => model.matrix.add(const []), throwsUnsupportedError);
+    expect(() => model.matrix.single.add('b'), throwsUnsupportedError);
+    expect(() => model.labels.add('b'), throwsUnsupportedError);
+    expect(
+      () => model.groups['secondary'] = const ['b'],
+      throwsUnsupportedError,
+    );
+    expect(() => model.groups['primary']!.add('b'), throwsUnsupportedError);
+  });
+
+  test('custom capture fields honor the configured case style', () {
+    final model = CaseStyledExtrasSchema.parse({
+      'display_name': 'Ada',
+      'theme': 'dark',
+    });
+    expect(model.extraValues, {'theme': 'dark'});
+    expect(model.toJson(), {'theme': 'dark', 'display_name': 'Ada'});
+  });
+
+  test('discard accepts extras without storing them', () {
+    final loose = LooseSchema.parse({'name': 'n', 'extra': true});
+    expect(loose.toJson(), {'name': 'n'});
+    expect(
+      () => ProfileSchema.parse({
+        'name': 'Ada',
+        'nickname': null,
+        'tags': ['schema'],
+        'color': '#fff',
+        'extra': true,
+      }),
+      throwsA(isA<AckException>()),
+    );
+  });
+
+  test('optional wire fields feed nullable normalization parameters', () {
+    expect(NormalizedSchema.parse({}).value, '');
+    expect(NormalizedSchema.parse({'value': 'set'}).value, 'set');
+  });
+
+  test('nullable constructor defaults apply to missing and null values', () {
+    expect(NullableDefaultSchema.parse({}).label, 'fallback');
+    expect(NullableDefaultSchema.parse({'label': null}).label, 'fallback');
+    expect(NullableDefaultSchema.parse({'label': 'set'}).label, 'set');
+
+    final explicitNull = NullableDefault(label: null);
+    expect(explicitNull.toJson(), {'label': null});
+    expect(NullableDefault().copyWith().label, 'fallback');
+    expect(NullableDefault().copyWith(label: null).label, isNull);
+
+    final nullDefault = NullDefault();
+    expect(NullDefaultSchema.parse({}), nullDefault);
+    expect(NullDefaultSchema.parse({'label': null}), nullDefault);
+    expect(nullDefault.toJson(), {'label': null});
+    expect(NullDefaultSchema.parse(nullDefault.toJson()), nullDefault);
+  });
+
+  test('copyWith distinguishes omitted values from explicit null', () {
+    final profile = Profile.fromJson({
+      'name': 'Ada',
+      'nickname': 'Countess',
+      'tags': ['schema', 'dart'],
+      'color': '#fff',
+    });
+    final renamed = profile.copyWith(name: 'Grace');
+    expect(renamed.name, 'Grace');
+    expect(renamed.nickname, 'Countess');
+    expect(profile.copyWith(nickname: null).nickname, isNull);
+    expect(
+      () => profile.copyWith(nickname: const Object()),
+      throwsA(isA<TypeError>()),
+    );
+    expect(renamed.role, 'member');
+    expect(renamed.tags, {'schema', 'dart'});
+    expect(profile.copyWith(), profile);
+    expect(profile.hashCode, profile.copyWith().hashCode);
+    expect(
+      Profile.fromJson({
+        'name': 'Ada',
+        'nickname': 'Countess',
+        'tags': ['schema', 'dart'],
+        'color': '#fff',
+      }),
+      profile,
+    );
+  });
+
+  test('sealed unions use super parameters and discriminator rules', () {
+    final cat = PetSchema.parse({'type': 'cat', 'id': 'c1', 'lives': 9});
+    expect(cat, isA<Cat>());
+    expect(cat.toJson(), {'type': 'cat', 'id': 'c1', 'lives': 9});
+    final dog = PetSchema.parse({'type': 'Dog', 'id': 'd1', 'breed': 'lab'});
+    expect(dog, isA<Dog>());
+    expect(dog.toJson(), {'type': 'Dog', 'id': 'd1', 'breed': 'lab'});
+    expect((cat as Cat).copyWith(lives: 8).id, 'c1');
+    final direct = CatSchema.parse({'id': 'c2', 'lives': 7});
+    expect(direct.toJson(), {'type': 'cat', 'id': 'c2', 'lives': 7});
+    expect(PetSchema.safeParse({'id': 'c2', 'lives': 7}).isFail, isTrue);
+  });
+
+  test('prefixed same-named imported types preserve identity', () {
+    final pair = ImportedPairSchema.parse({'left': 'a', 'right': 2});
+    expect(pair.left, isA<alpha.Item>());
+    expect(pair.right, isA<beta.Item>());
+    expect(pair.toJson(), {'left': 'a', 'right': 2});
+  });
+
+  test('class-first, schema-first, and plain JSON coexist', () {
+    expect(Legacy.parse({'enabled': true}).enabled, isTrue);
+    final plain = PlainJson.fromJson({'value': 'plain'});
+    expect(plain.toJson(), {'value': 'plain'});
+  });
+
+  test('all three Ack model generators coexist in one build-runner library', () {
+    expect(FrozenType.parse({'id': 'frozen'}).id, 'frozen');
+    expect(Modern.parse({'name': 'modern'}).name, 'modern');
+    expect(HandwrittenSchema.parse({'enabled': true}).enabled, isTrue);
+  });
+}
+''');
+
+        _expectSuccess(await _run(temporary, ['pub', 'get']), 'dart pub get');
+        _expectSuccess(
+          await _run(temporary, ['run', 'build_runner', 'build']),
+          'build_runner build',
+        );
+        final generated = _generatedFiles(temporary);
+        expect(
+          generated.keys,
+          containsAll([
+            'lib/coexist.g.dart',
+            'lib/coexist.ack.dart',
+            'lib/coexist.ack.g.dart',
+            'lib/models.ack.dart',
+            'lib/models.ack.g.dart',
+            'lib/models.g.dart',
+          ]),
+        );
+        expect(
+          generated['lib/models.ack.g.dart'],
+          contains('_ackProfileFromRuntimeName'),
+        );
+        expect(
+          generated['lib/models.g.dart'],
+          contains(r'_$PlainJsonFromJson'),
+        );
+        expect(generated['lib/models.ack.dart'], contains('class Legacy'));
+        expect(
+          generated['lib/models.ack.dart'],
+          contains(r'mixin _$ProfileAck'),
+        );
+        expect(
+          generated['lib/models.ack.dart'],
+          contains('abstract final class ProfileSchema'),
+        );
+        expect(
+          generated['lib/models.ack.dart'],
+          contains('final _profileSchema'),
+        );
+        expect(
+          generated['lib/coexist.g.dart'],
+          contains('extension type FrozenType'),
+        );
+        expect(generated['lib/coexist.ack.dart'], contains('class Modern'));
+        expect(
+          generated['lib/coexist.ack.dart'],
+          contains(r'mixin _$HandwrittenAck'),
+        );
+        expect(
+          generated['lib/models.ack.dart'],
+          isNot(contains('final profileSchema =')),
+        );
+
+        _expectSuccess(
+          await _run(temporary, ['analyze', '--fatal-infos']),
+          'dart analyze --fatal-infos',
+        );
+        _expectSuccess(await _run(temporary, ['test']), 'dart test');
+        _expectSuccess(
+          await _run(temporary, ['run', 'build_runner', 'build']),
+          'outputs-present build_runner build',
+        );
+        expect(_generatedFiles(temporary), generated);
+      } finally {
+        temporary.deleteSync(recursive: true);
+      }
+    },
+    timeout: const Timeout(Duration(minutes: 3)),
+  );
+}

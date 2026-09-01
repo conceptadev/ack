@@ -3,255 +3,267 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
-/// Integration test that verifies the example folder builds correctly
-/// and has no analyze errors. The retained output set and structural checks
-/// keep generated code stable and analyzer-clean.
-void main() {
-  group('Example Folder Build Integration', () {
-    const expectedGeneratedFiles = [
-      'lib/args_getter_example.g.dart',
-      'lib/pet.g.dart',
-      'lib/schema_types_discriminated.g.dart',
-      'lib/schema_types_edge_cases.g.dart',
-      'lib/schema_types_primitives.g.dart',
-      'lib/schema_types_simple.g.dart',
-      'lib/schema_types_transforms.g.dart',
-      'lib/user_with_color.g.dart',
-    ];
-    late Directory projectRoot;
-    late Directory exampleDir;
+void _copyDirectory(
+  Directory source,
+  Directory destination, {
+  bool keepGenerated = false,
+}) {
+  destination.createSync(recursive: true);
+  for (final entity in source.listSync()) {
+    final name = p.basename(entity.path);
+    if (name == '.dart_tool' || name == 'build') {
+      continue;
+    }
+    final target = p.join(destination.path, name);
+    if (entity is Directory) {
+      _copyDirectory(entity, Directory(target), keepGenerated: keepGenerated);
+    } else if (entity is File &&
+        (keepGenerated ||
+            (!name.endsWith('.ack.dart') && !name.endsWith('.g.dart')))) {
+      entity.copySync(target);
+    }
+  }
+}
 
-    setUpAll(() {
-      // Find project root (go up from test directory)
-      var current = Directory.current;
+Future<ProcessResult> _run(Directory directory, List<String> arguments) {
+  return Process.run('dart', arguments, workingDirectory: directory.path);
+}
 
-      while (current.path.contains('packages')) {
-        current = current.parent;
-      }
-      projectRoot = current;
-      exampleDir = Directory(p.join(projectRoot.path, 'example'));
-    });
+void _expectSuccess(ProcessResult result, String command) {
+  expect(
+    result.exitCode,
+    0,
+    reason:
+        '$command failed\nSTDOUT:\n${result.stdout}\nSTDERR:\n${result.stderr}',
+  );
+}
 
-    test(
-      'example folder should build successfully with build_runner',
-      () async {
-        // Clean previous builds
-        final cleanResult = await Process.run('dart', [
-          'run',
-          'build_runner',
-          'clean',
-        ], workingDirectory: exampleDir.path);
-
-        expect(
-          cleanResult.exitCode,
-          0,
-          reason:
-              'build_runner clean should succeed\n'
-              'STDOUT: ${cleanResult.stdout}\n'
-              'STDERR: ${cleanResult.stderr}',
-        );
-
-        // Run build_runner
-        final buildResult = await Process.run('dart', [
-          'run',
-          'build_runner',
-          'build',
-        ], workingDirectory: exampleDir.path);
-
-        expect(
-          buildResult.exitCode,
-          0,
-          reason:
-              'build_runner should complete successfully\n'
-              'STDOUT: ${buildResult.stdout}\n'
-              'STDERR: ${buildResult.stderr}',
-        );
-
-        // Verify that generated files were created
-        final generatedFiles = exampleDir
-            .listSync(recursive: true)
-            .whereType<File>()
-            .where((f) => f.path.endsWith('.g.dart'))
-            .toList();
-        final generatedRelativePaths =
-            generatedFiles
-                .map((file) => p.relative(file.path, from: exampleDir.path))
-                .toList()
-              ..sort();
-
-        expect(
-          generatedRelativePaths,
-          expectedGeneratedFiles,
-          reason: 'The retained AckType example output set should stay stable',
-        );
-      },
-      timeout: const Timeout(Duration(minutes: 2)),
-    );
-
-    test('example folder should have no dart analyze errors', () async {
-      final analyzeResult = await Process.run('dart', [
-        'analyze',
-        '--fatal-infos',
-      ], workingDirectory: exampleDir.path);
-
-      expect(
-        analyzeResult.exitCode,
-        0,
-        reason:
-            'dart analyze should find no issues\n'
-            'STDOUT: ${analyzeResult.stdout}\n'
-            'STDERR: ${analyzeResult.stderr}',
-      );
-    });
-
-    test('generated files should match expected schema patterns', () async {
-      final generatedFiles = exampleDir
+Map<String, String> _generatedContents(Directory directory) => {
+  for (final file
+      in directory
           .listSync(recursive: true)
           .whereType<File>()
-          .where((f) => f.path.endsWith('.g.dart'))
-          .toList();
+          .where(
+            (file) =>
+                file.path.endsWith('.ack.dart') ||
+                file.path.endsWith('.g.dart'),
+          ))
+    p.relative(file.path, from: directory.path): file.readAsStringSync(),
+};
 
-      for (final file in generatedFiles) {
-        final content = await file.readAsString();
-        final fileName = p.basename(file.path);
-
-        // Verify basic structure
-        expect(
-          content,
-          contains('// GENERATED CODE - DO NOT MODIFY BY HAND'),
-          reason: '$fileName should have generation warning',
-        );
-
-        // AckType-only examples should emit extension types.
-        final hasExtensionType = RegExp(
-          r'extension type \w+Type',
-        ).hasMatch(content);
-
-        expect(
-          hasExtensionType,
-          isTrue,
-          reason: '$fileName should contain generated extension types',
-        );
-
-        // Verify it's a part file (generated files are parts of the main file)
-        expect(
-          content,
-          matches(RegExp(r"part of '.*\.dart';")),
-          reason: '$fileName should be a part file',
-        );
-
-        // Verify the corresponding main file exists and imports ack
-        final mainFileName = fileName.replaceAll('.g.dart', '.dart');
-        final mainFile = File(p.join(p.dirname(file.path), mainFileName));
-
-        expect(
-          mainFile.existsSync(),
-          isTrue,
-          reason: 'Main file $mainFileName should exist for $fileName',
-        );
-
-        final mainContent = await mainFile.readAsString();
-        expect(
-          mainContent,
-          contains("import 'package:ack/ack.dart'"),
-          reason: 'Main file $mainFileName should import ack package',
-        );
-
-        expect(
-          mainContent,
-          contains("part '$fileName'"),
-          reason: 'Main file $mainFileName should include part directive',
-        );
+void main() {
+  test(
+    'example clean-builds, analyzes, tests, and regenerates deterministically',
+    () async {
+      var projectRoot = Directory.current;
+      while (!Directory(
+        p.join(projectRoot.path, 'packages', 'ack_generator'),
+      ).existsSync()) {
+        projectRoot = projectRoot.parent;
       }
-
-      final discriminatedFile = File(
-        p.join(exampleDir.path, 'lib', 'schema_types_discriminated.g.dart'),
+      final sourceExample = Directory(p.join(projectRoot.path, 'example'));
+      final temporaryRoot = await Directory.systemTemp.createTemp(
+        'ack_generator_example_',
       );
-      expect(
-        discriminatedFile.existsSync(),
-        isTrue,
-        reason:
-            'schema_types_discriminated.g.dart should be generated in example/lib',
+      final temporaryExample = Directory(
+        p.join(temporaryRoot.path, 'ack_example'),
       );
 
-      final discriminatedContent = await discriminatedFile.readAsString();
-      expect(
-        discriminatedContent,
-        contains('extension type PetType(Map<String, Object?> _data)'),
-        reason:
-            'schema_types_discriminated.g.dart should include a discriminated base extension type',
+      try {
+        _copyDirectory(sourceExample, temporaryExample);
+        File(
+          p.join(temporaryExample.path, 'analysis_options.yaml'),
+        ).writeAsStringSync('''
+analyzer:
+  language:
+    strict-casts: true
+''');
+        File(p.join(temporaryExample.path, 'pubspec.yaml')).writeAsStringSync(
+          '''
+name: ack_example
+publish_to: none
+environment:
+  sdk: '>=3.9.0 <4.0.0'
+dependencies:
+  ack:
+    path: ${p.join(projectRoot.path, 'packages', 'ack')}
+  ack_annotations:
+    path: ${p.join(projectRoot.path, 'packages', 'ack_annotations')}
+dev_dependencies:
+  ack_generator:
+    path: ${p.join(projectRoot.path, 'packages', 'ack_generator')}
+  build_runner: ^2.15.0
+  test: ^1.29.0
+dependency_overrides:
+  ack:
+    path: ${p.join(projectRoot.path, 'packages', 'ack')}
+  ack_annotations:
+    path: ${p.join(projectRoot.path, 'packages', 'ack_annotations')}
+''',
+        );
+
+        _expectSuccess(
+          await _run(temporaryExample, ['pub', 'get']),
+          'dart pub get',
+        );
+        _expectSuccess(
+          await _run(temporaryExample, ['run', 'build_runner', 'build']),
+          'clean build_runner build',
+        );
+
+        final first = _generatedContents(temporaryExample);
+        expect(first.keys, {
+          'lib/additional_properties_example.ack.dart',
+          'lib/additional_properties_example.ack.g.dart',
+          'lib/class_first_models.ack.dart',
+          'lib/class_first_models.ack.g.dart',
+          'lib/pet.ack.dart',
+          'lib/pet.ack.g.dart',
+          'lib/schema_types_discriminated.ack.dart',
+          'lib/schema_types_discriminated.ack.g.dart',
+          'lib/schema_types_edge_cases.ack.dart',
+          'lib/schema_types_edge_cases.ack.g.dart',
+          'lib/schema_types_primitives.ack.dart',
+          'lib/schema_types_primitives.ack.g.dart',
+          'lib/schema_types_simple.ack.dart',
+          'lib/schema_types_simple.ack.g.dart',
+          'lib/schema_types_transforms.ack.dart',
+          'lib/schema_types_transforms.ack.g.dart',
+          'lib/user_with_color.ack.dart',
+          'lib/user_with_color.ack.g.dart',
+        });
+        for (final entry in first.entries) {
+          final isClassFirst = entry.key.contains('class_first_models');
+          if (entry.key.endsWith('.ack.dart')) {
+            if (isClassFirst) {
+              expect(entry.value, contains(r'mixin _$AccountAck'));
+              expect(entry.value, contains('final _accountSchema'));
+              expect(
+                entry.value,
+                contains('abstract final class AccountSchema'),
+              );
+              expect(entry.value, isNot(contains('final accountSchema')));
+            } else {
+              expect(entry.value, contains('class '));
+              expect(entry.value, contains('jsonSerializable'));
+            }
+            expect(entry.value, isNot(contains('extension type')));
+            expect(entry.value, isNot(contains('fromMap')));
+            expect(entry.value, isNot(contains('toMap')));
+          } else {
+            expect(entry.value, contains('JsonSerializableGenerator'));
+            expect(
+              entry.value,
+              contains(
+                isClassFirst ? '_ackAccountFromRuntime' : '_ackFromRuntime',
+              ),
+            );
+          }
+        }
+
+        _expectSuccess(
+          await _run(temporaryExample, ['analyze', '--fatal-infos']),
+          'dart analyze --fatal-infos',
+        );
+        _expectSuccess(await _run(temporaryExample, ['test']), 'dart test');
+        _expectSuccess(
+          await _run(temporaryExample, ['run', 'build_runner', 'build']),
+          'second build_runner build',
+        );
+        expect(_generatedContents(temporaryExample), first);
+      } finally {
+        temporaryRoot.deleteSync(recursive: true);
+      }
+    },
+    timeout: const Timeout(Duration(minutes: 3)),
+  );
+
+  test(
+    'rebuilds when generated outputs are already present',
+    () async {
+      var projectRoot = Directory.current;
+      while (!Directory(
+        p.join(projectRoot.path, 'packages', 'ack_generator'),
+      ).existsSync()) {
+        projectRoot = projectRoot.parent;
+      }
+      final sourceExample = Directory(p.join(projectRoot.path, 'example'));
+      final temporaryRoot = await Directory.systemTemp.createTemp(
+        'ack_generator_example_present_',
       );
-      expect(
-        discriminatedContent,
-        contains('extension type CatType(Map<String, Object?> _data)'),
-        reason:
-            'schema_types_discriminated.g.dart should include discriminated subtype extension types',
-      );
-      expect(
-        discriminatedContent,
-        contains('implements PetType, Map<String, Object?>'),
-        reason:
-            'schema_types_discriminated.g.dart discriminated subtypes should implement PetType and Map<String, Object?>',
+      final temporaryExample = Directory(
+        p.join(temporaryRoot.path, 'ack_example'),
       );
 
-      final transformsFile = File(
-        p.join(exampleDir.path, 'lib', 'schema_types_transforms.g.dart'),
-      );
-      expect(
-        transformsFile.existsSync(),
-        isTrue,
-        reason:
-            'schema_types_transforms.g.dart should be generated in example/lib',
-      );
+      try {
+        _copyDirectory(sourceExample, temporaryExample, keepGenerated: true);
+        File(
+          p.join(temporaryExample.path, 'analysis_options.yaml'),
+        ).writeAsStringSync('''
+analyzer:
+  language:
+    strict-casts: true
+''');
+        File(p.join(temporaryExample.path, 'pubspec.yaml')).writeAsStringSync(
+          '''
+name: ack_example
+publish_to: none
+environment:
+  sdk: '>=3.9.0 <4.0.0'
+dependencies:
+  ack:
+    path: ${p.join(projectRoot.path, 'packages', 'ack')}
+  ack_annotations:
+    path: ${p.join(projectRoot.path, 'packages', 'ack_annotations')}
+dev_dependencies:
+  ack_generator:
+    path: ${p.join(projectRoot.path, 'packages', 'ack_generator')}
+  build_runner: ^2.15.0
+  test: ^1.29.0
+dependency_overrides:
+  ack:
+    path: ${p.join(projectRoot.path, 'packages', 'ack')}
+  ack_annotations:
+    path: ${p.join(projectRoot.path, 'packages', 'ack_annotations')}
+''',
+        );
 
-      final transformsContent = await transformsFile.readAsString();
-      expect(
-        transformsContent,
-        contains('extension type ColorType(Color _value)'),
-        reason:
-            'schema_types_transforms.g.dart should include the transformed Color extension type',
-      );
-      expect(
-        transformsContent,
-        contains('extension type ProfileType(Map<String, Object?> _data)'),
-        reason:
-            'schema_types_transforms.g.dart should include the transform-backed object wrapper',
-      );
-      expect(
-        transformsContent,
-        allOf([
-          contains('Uri get homepage'),
-          contains('DateTime get birthday'),
-          contains('DateTime get lastLogin'),
-          contains('Duration get timeout'),
-          contains('List<Uri> get links'),
-          contains('ColorType get accent'),
-          contains('List<ColorType> get colors'),
-          contains('List<Color> get customColors'),
-          contains('TagList get tagList'),
-          isNot(contains('Uri.parse(')),
-          isNot(contains('DateTime.parse(')),
-          isNot(contains('Duration(milliseconds:')),
-        ]),
-        reason:
-            'schema_types_transforms.g.dart should emit transformed getters without unsafe reparsing',
-      );
-    });
+        _expectSuccess(
+          await _run(temporaryExample, ['pub', 'get']),
+          'dart pub get',
+        );
 
-    test('example folder pub get should succeed', () async {
-      final pubGetResult = await Process.run('dart', [
-        'pub',
-        'get',
-      ], workingDirectory: exampleDir.path);
+        final schemaFile = File(
+          p.join(temporaryExample.path, 'lib', 'schema_types_simple.dart'),
+        );
+        schemaFile.writeAsStringSync(
+          schemaFile.readAsStringSync().replaceFirst(
+            "'name': Ack.string(),",
+            "'name': Ack.string(),\n  'nickname': Ack.string().optional(),",
+          ),
+        );
+        final generatedFile = File(
+          p.join(temporaryExample.path, 'lib', 'schema_types_simple.ack.dart'),
+        );
+        final before = generatedFile.readAsStringSync();
 
-      expect(
-        pubGetResult.exitCode,
-        0,
-        reason:
-            'dart pub get should succeed\n'
-            'STDOUT: ${pubGetResult.stdout}\n'
-            'STDERR: ${pubGetResult.stderr}',
-      );
-    });
-  });
+        _expectSuccess(
+          await _run(temporaryExample, ['run', 'build_runner', 'build']),
+          'outputs-present build_runner build',
+        );
+
+        final after = generatedFile.readAsStringSync();
+        expect(after, isNot(equals(before)));
+        expect(after, contains('nickname'));
+        _expectSuccess(
+          await _run(temporaryExample, ['analyze', '--fatal-infos']),
+          'dart analyze --fatal-infos',
+        );
+        _expectSuccess(await _run(temporaryExample, ['test']), 'dart test');
+      } finally {
+        temporaryRoot.deleteSync(recursive: true);
+      }
+    },
+    timeout: const Timeout(Duration(minutes: 3)),
+  );
 }

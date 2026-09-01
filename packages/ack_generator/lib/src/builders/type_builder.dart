@@ -1,4 +1,4 @@
-import 'package:analyzer/dart/element/element2.dart';
+import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/type.dart';
 import 'package:build/build.dart' show log;
 import 'package:code_builder/code_builder.dart';
@@ -795,13 +795,12 @@ ${cases.join(',\n')},
 
     // Special types
     if (_isSpecialType(field.type)) {
-      return field.type.getDisplayString(withNullability: false);
+      return field.type.getDisplayString();
     }
 
     // Enums
     if (field.isEnum) {
-      return field.displayTypeOverride ??
-          field.type.getDisplayString(withNullability: false);
+      return field.displayTypeOverride ?? field.type.getDisplayString();
     }
 
     // Lists
@@ -853,7 +852,7 @@ ${cases.join(',\n')},
 
     // Nested schema
     if (field.isNestedSchema && _hasAckType(field, lookups)) {
-      final baseType = field.type.getDisplayString(withNullability: false);
+      final baseType = field.type.getDisplayString();
       return '${baseType}Type';
     }
 
@@ -891,7 +890,7 @@ ${cases.join(',\n')},
   }
 
   String _resolveTypeReference(DartType type, _ModelLookups lookups) {
-    final baseType = type.getDisplayString(withNullability: false);
+    final baseType = type.getDisplayString();
 
     // Primitives
     if (type.isDartCoreString) return 'String';
@@ -904,8 +903,8 @@ ${cases.join(',\n')},
     if (_isSpecialType(type)) return baseType;
 
     // Check if this is a custom type with @AckType
-    final element = type.element3;
-    if (element is InterfaceElement2) {
+    final element = type.element;
+    if (element is InterfaceElement) {
       if (_hasAckTypeForElement(element, lookups)) {
         return baseType;
       }
@@ -915,11 +914,11 @@ ${cases.join(',\n')},
   }
 
   bool _isSpecialType(DartType type) {
-    final element = type.element3;
+    final element = type.element;
     if (element == null) return false;
 
-    final name = element.name3;
-    final library = element.library2?.name3;
+    final name = element.name;
+    final library = element.library?.name;
 
     return (name == 'DateTime' && library == 'dart.core') ||
         (name == 'Uri' && library == 'dart.core') ||
@@ -927,14 +926,14 @@ ${cases.join(',\n')},
   }
 
   bool _hasAckType(FieldInfo field, _ModelLookups lookups) {
-    final element = field.type.element3;
-    if (element is! InterfaceElement2) return false;
+    final element = field.type.element;
+    if (element is! InterfaceElement) return false;
 
     return _hasAckTypeForElement(element, lookups);
   }
 
-  bool _hasAckTypeForElement(InterfaceElement2 element, _ModelLookups lookups) {
-    final name = element.name3;
+  bool _hasAckTypeForElement(InterfaceElement element, _ModelLookups lookups) {
+    final name = element.name;
     if (name == null) return false;
     return lookups.byClassName.containsKey(name);
   }
@@ -955,15 +954,15 @@ ${cases.join(',\n')},
     if (paramType.typeArguments.isEmpty) return false;
 
     final elementType = paramType.typeArguments[0];
-    final element = elementType.element3;
+    final element = elementType.element;
 
-    if (element is! InterfaceElement2) return false;
+    if (element is! InterfaceElement) return false;
 
     return _hasAckTypeForElement(element, lookups);
   }
 
   String _getTypeConstructor(FieldInfo field) {
-    final baseType = field.type.getDisplayString(withNullability: false);
+    final baseType = field.type.getDisplayString();
     return '${baseType}Type';
   }
 
@@ -1017,7 +1016,7 @@ ${cases.join(',\n')},
 
       // Nested schema
       if (field.isNestedSchema) {
-        final typeName = field.type.getDisplayString(withNullability: false);
+        final typeName = field.type.getDisplayString();
 
         // Skip self-references - circular schemas are valid for Map-based extension types
         // Extension types don't require declaration order since they all wrap Map<String, Object?>
@@ -1036,10 +1035,10 @@ ${cases.join(',\n')},
           final paramType = field.type as ParameterizedType;
           if (paramType.typeArguments.isNotEmpty) {
             final elementType = paramType.typeArguments[0];
-            final element = elementType.element3;
+            final element = elementType.element;
 
-            if (element is InterfaceElement2) {
-              final name = element.name3;
+            if (element is InterfaceElement) {
+              final name = element.name;
               if (name != null && lookups.byClassName.containsKey(name)) {
                 dependencies.add(name);
               }

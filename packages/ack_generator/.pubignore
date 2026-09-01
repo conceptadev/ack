@@ -5,8 +5,10 @@ pubspec_overrides.yaml
 # Development documentation
 docs/
 
-# Local example (if any development examples exist)
-example/
-
 # Tool scripts
 tool/
+
+# The shared lint config. Its `include: ../../analysis_options.yaml`
+# cannot resolve outside the workspace, so shipping it breaks
+# `dart format` and `dart analyze` in the published archive.
+analysis_options.yaml

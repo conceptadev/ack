@@ -1,3 +1,39 @@
+## 1.2.0
+
+### Added
+
+* Add `AckModelAdapter` as the non-nullable runtime bridge used by generated
+  immutable Ack models. The adapter keeps schema parse/encode around model
+  mapping so public JSON methods remain schema-backed.
+* Add `Ack.preserveBoundary`, which validates through a schema while returning
+  the original wire value instead of values decoded by nested codecs.
+* Add `deepUnmodifiableJsonMap`, which creates detached, recursively
+  unmodifiable snapshots of nested maps, lists, and sets without validation.
+
+### Fixed
+
+* Preserve propagated `Error` objects during validation instead of converting
+  programming defects into recoverable schema failures.
+* Compare collection contents independently of growable or unmodifiable wrapper
+  implementations. Numerically equal `int` and `double` values now compare and
+  hash equally on native and web runtimes; other scalar types remain distinct.
+* Keep deep map-key equality consistent with `deepHashCode`, and apply JSON
+  Schema Draft 7 numeric equality to `uniqueItems` (including nested values).
+* Reject the native minimum integer from `.safe()` without overflowing `abs()`.
+
+### Changed
+
+* Export `deepEquals`, `deepHashCode`, and `deepUnmodifiableJsonMap` for
+  generated Ack data classes and class-first constructors.
+* `Ack.integer()` accepts losslessly representable numbers with no fractional
+  part and normalizes them to `int`. `Ack.double()` accepts exactly
+  representable numeric inputs and normalizes them to `double`. Numeric
+  `anyOf` branches can therefore overlap; the first matching branch determines
+  the runtime representation. Use `Ack.number()` to preserve the input's
+  numeric representation and `.safe()` to require JavaScript's portable
+  integer range.
+* Raise the minimum Dart SDK to 3.9.
+
 ## 1.1.0
 
 ### Fixed
@@ -13,16 +49,11 @@
 * Snapshot factory collections so a caller mutating the passed list or map can no
   longer corrupt a constructed schema.
 * Correct behavior-based schema and deep-collection equality.
-* Normalize losslessly representable integer and double inputs consistently on
-  Dart VM and JavaScript.
-* Reject the native minimum integer from `.safe()` without overflowing `abs()`.
-* Treat mathematically equal JSON numbers, such as `1` and `1.0`, as equal in
-  deep comparisons and `uniqueItems` validation.
 
 ### Behavior changes
 
 No public API changed (verified with `dart_apitool` against 1.0.1); the following
-validation and serialization behavior changed.
+now reject inputs that previously passed or misbehaved silently.
 
 * Validate numeric `multipleOf`, IPv6, and RFC 3339 date-time values strictly.
   Announced leap seconds are preserved by `Ack.string().datetime()` but rejected
@@ -39,11 +70,6 @@ validation and serialization behavior changed.
   snapshot or golden tests of exported schemas.)*
 * `parse()` throws `AckException` — instead of the raw callback error — when a
   constraint or refinement throws.
-* `Ack.integer()` accepts integral doubles and returns an `int`, while
-  `Ack.double()` accepts exactly representable integers and returns a `double`.
-  Lossy native numeric conversions are rejected; use `Ack.integer().safe()` to
-  require JavaScript's portable integer range. `uniqueItems` now reports `1`
-  and `1.0` as duplicates, matching JSON Schema semantics.
 
 ## 1.0.1
 

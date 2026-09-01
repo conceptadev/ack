@@ -171,27 +171,26 @@ void main() {
         expect(duplicateResult.isOk, isFalse);
       });
 
-      test('should treat equal int and double values as duplicates', () {
-        final schema = Ack.list(Ack.any()).unique();
+      test('should treat numerically equal JSON numbers as duplicates', () {
+        final schema = Ack.list(Ack.number()).unique();
         final result = schema.safeParse([1, 1.0]);
 
+        expect(schema.toJsonSchema()['uniqueItems'], isTrue);
         expect(
           result.isOk,
           isFalse,
-          reason: 'JSON numbers are equal by mathematical value',
+          reason: 'JSON Schema considers 1 and 1.0 equal numeric instances',
         );
       });
 
-      test('should detect equal numeric values in nested structures', () {
+      test('should use JSON numeric equality inside nested values', () {
         final schema = Ack.list(Ack.any()).unique();
         final result = schema.safeParse([
           {
-            'count': 1,
-            'values': [2, 3],
+            'items': [1, 2.0],
           },
           {
-            'values': [2.0, 3.0],
-            'count': 1.0,
+            'items': [1.0, 2],
           },
         ]);
 

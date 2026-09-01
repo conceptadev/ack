@@ -3,16 +3,16 @@ import 'package:test/test.dart';
 import 'package:ack_example/schema_types_transforms.dart';
 
 void main() {
-  group('Transform schema examples', () {
-    test('top-level transformed wrappers preserve the transformed value', () {
-      final color = ColorType.parse('#12AB34');
+  group('Codec schema examples', () {
+    test('top-level codec models preserve the decoded value', () {
+      final color = ColorModel.parse('#12AB34');
 
-      expect(color, isA<ColorType>());
-      expect(color.value, '#12AB34');
+      expect(color, isA<ColorModel>());
+      expect(color.value.value, '#12AB34');
     });
 
-    test('profile wrapper exposes transformed object getters', () {
-      final profile = ProfileType.parse({
+    test('profile model exposes decoded codec values', () {
+      final profile = Profile.parse({
         'homepage': 'https://example.com',
         'birthday': '2025-06-15',
         'lastLogin': '2025-06-15T10:30:00Z',
@@ -38,8 +38,8 @@ void main() {
       ]);
       expect(profile.favoriteColor.value, '#FF5733');
       expect(profile.slug, 'docs#');
-      expect(profile.accent.value, '#00FF00');
-      expect(profile.colors.map((color) => color.value), [
+      expect(profile.accent.value.value, '#00FF00');
+      expect(profile.colors.map((color) => color.value.value), [
         '#111111',
         '#222222',
       ]);

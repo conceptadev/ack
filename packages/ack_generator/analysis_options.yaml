@@ -2,13 +2,6 @@
 # See /analysis_options.yaml at the workspace root.
 include: ../../analysis_options.yaml
 
-analyzer:
-  errors:
-    # Suppresses deprecations from the EXTERNAL `analyzer` package (mid-migration
-    # from the `Element2` API back to `Element`). Not related to Ack's own API,
-    # which has no deprecations. Remove once ack_generator migrates off Element2.
-    deprecated_member_use: ignore
-
 linter:
   rules:
     # Generator-specific relaxations for codegen-heavy code.
