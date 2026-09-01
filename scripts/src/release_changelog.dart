@@ -44,6 +44,12 @@ ChangelogUpdate updateReleaseChangelog(
   return (content: updated, found: true, changed: updated != content);
 }
 
+/// Reports whether [content] declares a release heading for [version].
+///
+/// Prerelease headings such as `1.0.0-beta.1` do not match version `1.0.0`.
+bool hasVersionHeading(String content, {required String version}) =>
+    content.split('\n').any((line) => _isVersionHeading(line, version));
+
 bool _isVersionHeading(String line, String version) {
   final escapedVersion = RegExp.escape(version);
   final pattern = RegExp(

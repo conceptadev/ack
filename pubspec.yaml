@@ -18,8 +18,12 @@ dependencies:
 
 dev_dependencies:
   melos: ^7.3.0
+  # Release tooling under /scripts reads and rewrites pubspecs.
+  path: ^1.9.0
   test: ^1.25.15
   very_good_analysis: ^9.0.0
+  yaml: ^3.1.2
+  yaml_edit: ^2.2.1
   # Shared lint config consumed by /analysis_options.yaml (workspace-wide).
   lints: ^5.0.0
   dart_code_metrics_presets: ^2.22.0
@@ -27,13 +31,6 @@ dev_dependencies:
 melos:
   ide:
     intellij: false
-
-  bootstrap:
-    dependencies:
-      meta: ^1.15.0
-    dev_dependencies:
-      lints: ^5.0.0
-      test: ^1.25.15
 
   command:
     version:
@@ -109,17 +106,10 @@ melos:
       packageFilters:
         dependsOn: build_runner
 
-    # Version and publish scripts
-    # Publishing helpers
-    publish:
-      run: dart run melos publish --no-dry-run --yes
-      description: Publish packages to pub.dev
-
-    release:
-      run: |
-        dart run melos version --yes
-        dart run melos publish --no-dry-run --yes
-      description: One-step version and publish
+    # There is deliberately no `publish` or `release` script. Publishing runs
+    # only from a `v*` tag through .github/workflows/release.yml, which
+    # verifies the tag, reruns the preflight, and uploads through pub.dev OIDC.
+    # See PUBLISHING.md.
 
     # ACK Generator specific test commands
     test:gen:

@@ -2,34 +2,45 @@ name: Documentation
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [main]
     paths:
       - 'docs/**'
       - 'docs.json'
       - 'llms.txt'
+  # No `branches:` filter. A stacked pull request targets its parent
+  # branch, not main, and would otherwise run no checks at all.
   pull_request:
-    branches: [ "main" ]
     paths:
       - 'docs/**'
       - 'docs.json'
       - 'llms.txt'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   validate:
-    runs-on: ubuntu-latest
+    name: validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Checkout repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '22'
-      
-      - name: Install docs.page CLI
-        run: npm install -g @docs.page/cli
 
       - name: Verify llms.txt sources
         run: |
+          set -euo pipefail
           test -s llms.txt || {
             echo "llms.txt is missing or empty."
             exit 1
@@ -42,19 +53,11 @@ jobs:
             echo "The docs homepage must link to the generated docs.page llms.txt export."
             exit 1
           }
-      
+
+      # Pin the CLI version. An unpinned `npm install -g @docs.page/cli` would
+      # execute whatever the registry serves at run time, which is the
+      # mutable-dependency problem that the other workflows removed.
       - name: Validate documentation
-        run: npx @docs.page/cli check
-      
-  notify:
-    needs: validate
-    if: success() && github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Notify docs.page update
-        run: |
-          echo "Documentation has been updated and is now available at https://concepta.dev/ack"
-          # You could add additional notification steps here, such as:
-          # - Sending a Slack message
-          # - Creating a GitHub issue
-          # - Sending an email notification
+        env:
+          DOCS_PAGE_CLI_VERSION: '2.0.0'
+        run: npx --yes "@docs.page/cli@$DOCS_PAGE_CLI_VERSION" check

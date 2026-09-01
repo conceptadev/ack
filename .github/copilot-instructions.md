@@ -14,7 +14,8 @@
 - `example`: sample usage.
 
 ## Environment and setup
-- Required SDKs: Dart `>=3.9.0 <4.0.0`, Flutter `>=3.16.0` (see `/pubspec.yaml`).
+- Required SDKs: Dart `>=3.9.0 <4.0.0`, Flutter `>=3.35.0` (see `/pubspec.yaml`).
+- CI pins Flutter to the version in `/.fvmrc`. Add a new version to `/.github/flutter-releases.json` with its checksum before a workflow may install it.
 - Use from repo root:
   1. `dart pub get`
   2. `dart run melos bootstrap`
@@ -37,7 +38,9 @@
 - Do not hand-edit generated `*.g.dart` files unless the repo pattern for that area explicitly requires it; prefer rerunning build/golden tooling.
 
 ## CI and release notes
-- CI is defined in `/.github/workflows/ci.yml` and delegates to `btwld/dart-actions/.github/workflows/ci.yml@main` with DCM enabled.
+- CI is defined in `/.github/workflows/ci.yml`. It runs in this repository, installs the pinned Flutter SDK through `/.github/actions/setup-flutter`, and pins every external action to a commit SHA.
+- `/.github/workflows/preflight.yml` holds the release checks: minimum-SDK lanes, JSON Schema Draft-7 batch validation, API comparison against the published baseline, deterministic regeneration, and publish dry runs.
+- `/.github/workflows/release.yml` verifies the tag with `dart scripts/verify_release_tag.dart` and reruns the preflight before it publishes.
 - Conventional Commits are expected for commit messages.
 - Publishing/versioning flows are documented in `/PUBLISHING.md` (`dart run melos version`, `dart run melos publish`).
 
