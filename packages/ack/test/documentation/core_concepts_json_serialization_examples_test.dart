@@ -114,7 +114,7 @@ void main() {
       expect(user['email'], equals('alice@example.com'));
     });
 
-    test('doc copy focuses on validated data and typed wrappers', () async {
+    test('doc copy focuses on validated data and immutable models', () async {
       final content = await File(
         '../../docs/core-concepts/json-serialization.mdx',
       ).readAsString();
@@ -125,7 +125,7 @@ void main() {
           contains('Ack schemas convert between Dart models and JSON data'),
         ),
       );
-      expect(content, contains('typed wrapper'));
+      expect(content, contains('generated immutable model'));
     });
   });
 }

@@ -2,8 +2,27 @@ import 'package:build/build.dart';
 import 'package:source_gen/source_gen.dart';
 
 import 'generator.dart';
+import 'json/ack_json_generator.dart';
+import 'model_generator.dart';
 
-/// Creates the builder for ack_generator
+/// Creates the frozen legacy `.g.dart` builder for `@AckType`.
 Builder ackGenerator(BuilderOptions options) {
   return LibraryBuilder(AckSchemaGenerator(), generatedExtension: '.g.dart');
+}
+
+/// Creates the dedicated modern model part.
+///
+/// Keeping modern output separate prevents changes to the legacy `.g.dart`
+/// contract.
+Builder ackModelBuilder(BuilderOptions options) {
+  return PartBuilder([AckModelGenerator()], '.ack.dart', options: options);
+}
+
+/// Creates the dedicated modern JSON part after `.ack.dart` exists.
+Builder ackModelJsonBuilder(BuilderOptions options) {
+  return PartBuilder(
+    [AckJsonSerializableGenerator()],
+    '.ack.g.dart',
+    options: options,
+  );
 }

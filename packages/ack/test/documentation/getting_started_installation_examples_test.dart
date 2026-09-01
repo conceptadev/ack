@@ -17,20 +17,17 @@ void main() {
       expect(invalidResult.isFail, isTrue);
     });
 
-    test('generator setup documents the AckType workflow', () async {
+    test('generator setup documents both generation directions', () async {
       final content = await File(
         '../../docs/getting-started/installation.mdx',
       ).readAsString();
 
       expect(content, contains('ack_annotations'));
-      expect(content, contains('@AckType()'));
+      expect(content, contains('@AckInfer()'));
+      expect(content, contains('@AckModel()'));
       expect(content, contains('ack_generator'));
       expect(content, contains('build_runner'));
-      expect(
-        content,
-        isNot(contains('automatic schema generation from Dart classes')),
-      );
-      expect(content, isNot(contains('annotated classes')));
+      expect(content, contains('There is no `@AckSchema()`'));
     });
   });
 }

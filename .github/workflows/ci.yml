@@ -3,18 +3,40 @@ name: CI
 on:
   push:
     branches: [main]
+  # No `branches:` filter. A stacked pull request targets its parent
+  # branch, not main, and would otherwise run no checks at all.
   pull_request:
-    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   test:
-    # The dart-actions repo moved from the btwld org to conceptadev. The REST
-    # API follows that rename redirect, but the Actions reusable-workflow
-    # resolver does not, so the old path fails startup with "workflow was not
-    # found". Keep this owner in sync with the repo's actual location.
-    uses: conceptadev/dart-actions/.github/workflows/ci.yml@main
-    secrets:
-      token: ${{ secrets.GITHUB_TOKEN }}
-    with:
-      flutter-version: "stable"
-      run-dcm: true
+    # This job used to call conceptadev/dart-actions/.github/workflows/ci.yml@main.
+    # That reference was mutable and its FVM step piped an unverified installer
+    # into a shell, so every run could execute code that nobody reviewed here.
+    # The checks now live in this repository and pin every dependency.
+    name: Run tests for all packages
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Set up the pinned Flutter SDK
+        uses: ./.github/actions/setup-flutter
+
+      - name: Resolve workspace dependencies
+        run: dart pub get
+
+      - name: Check formatting
+        run: dart format --output=none --set-exit-if-changed .
+
+      - name: Analyze and test every package
+        run: dart run melos run ci --no-select

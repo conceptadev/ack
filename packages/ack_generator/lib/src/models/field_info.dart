@@ -1,4 +1,4 @@
-import 'package:analyzer/dart/element/element2.dart';
+import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/type.dart';
 import 'package:logging/logging.dart';
 
@@ -86,31 +86,31 @@ class FieldInfo {
 
   /// Whether this field is an enum type
   bool get isEnum {
-    final element = type.element3;
+    final element = type.element;
     if (element == null) return false;
 
     // Check if this is an enum by looking at the element type
-    return element is EnumElement2;
+    return element is EnumElement;
   }
 
   /// Get enum values if this is an enum type
   List<String> get enumValues {
     if (!isEnum) return [];
-    final element = type.element3;
+    final element = type.element;
     if (element == null) return [];
 
     // For enums, get the enum constants using the analyzer API
-    if (element is EnumElement2) {
+    if (element is EnumElement) {
       try {
-        final enumConstants = element.constants2
-            .map((field) => field.name3!)
+        final enumConstants = element.constants
+            .map((field) => field.name!)
             .toList();
 
         return enumConstants;
       } catch (e) {
         // If the analyzer can't resolve the enum constants, fall back to empty
         // values so generation still works for manual string-enum schemas.
-        _log.warning('Could not extract enum values for ${element.name3}: $e');
+        _log.warning('Could not extract enum values for ${element.name}: $e');
         return [];
       }
     }

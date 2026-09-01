@@ -1,14 +1,20 @@
 name: ack
-description: A simple validation library for Dart
-version: 1.1.0
-repository: https://github.com/btwld/ack
-issue_tracker: https://github.com/btwld/ack/issues
-homepage: https://docs.page/btwld/ack
+description: Schema validation and bidirectional codecs for Dart and Flutter
+version: 1.2.0
+repository: https://github.com/conceptadev/ack
+issue_tracker: https://github.com/conceptadev/ack/issues
+homepage: https://concepta.dev/ack
 
 resolution: workspace
+topics:
+  - validation
+  - schema
+  - json-schema
+  - codec
+  - serialization
 
 environment:
-  sdk: '>=3.8.0 <4.0.0'
+  sdk: '>=3.9.0 <4.0.0'
 dependencies:
   meta: ^1.15.0
   collection: ^1.18.0

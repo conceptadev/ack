@@ -199,7 +199,7 @@ void printUsage() {
   print('Arguments:');
   print('  PACKAGE  Package to check (${ackPackages.join('|')})');
   print('           If not provided, checks all packages');
-  print('  VERSION  Version to compare against (e.g., v0.2.0 or 0.2.0)');
+  print('  VERSION  Version to compare against (e.g., v1.1.0 or 1.1.0)');
   print(
     '           If not provided with single package, uses latest from pub.dev',
   );
@@ -209,13 +209,13 @@ void printUsage() {
     '  dart scripts/api_check.dart ack                    # Check ack against latest',
   );
   print(
-    '  dart scripts/api_check.dart ack v0.2.0            # Check ack against v0.2.0',
+    '  dart scripts/api_check.dart ack v1.1.0            # Check ack against v1.1.0',
   );
   print(
-    '  dart scripts/api_check.dart v0.2.0                # Check all packages against v0.2.0',
+    '  dart scripts/api_check.dart v1.1.0                # Check all packages against v1.1.0',
   );
   print('');
   print('Melos usage:');
-  print('  dart run melos run api-check -- ack v0.2.0');
-  print('  dart run melos run api-check -- v0.2.0');
+  print('  dart run melos run api-check -- ack v1.1.0');
+  print('  dart run melos run api-check -- v1.1.0');
 }

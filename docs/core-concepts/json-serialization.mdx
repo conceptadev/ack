@@ -45,7 +45,7 @@ void processApiResponse(String jsonString) {
     print('Valid JSON received: $validDataMap');
 
     // Pass the validated map to your own model layer,
-    // or use an AckType-generated wrapper (see next section).
+    // or use an Ack-generated model (see next section).
   } else {
     // Handle validation errors (see the Error Handling guide).
     print('Invalid JSON data: ${result.getError()}');
@@ -63,7 +63,7 @@ processApiResponse('not valid json'); // Decoding error
 
 ## Working with validated data
 
-After successful validation, `result.getOrThrow()` returns a `Map<String, Object?>` whose structure and types match your schema. You can work with it directly, pass it into a model class, or use a generated typed wrapper:
+After successful validation, `result.getOrThrow()` returns a `Map<String, Object?>` whose structure and types match your schema. You can work with it directly, pass it into your own model class, or parse it into a generated immutable model:
 
 ```dart
 final result = userSchema.safeParse(jsonData);
@@ -77,25 +77,25 @@ if (result.isOk) {
 
   // Option 2: Pass the validated map into your own model layer
   // - Constructor: User(name: validData['name'], age: validData['age'])
-  // - json_serializable: User.fromJson(Map<String, dynamic>.from(validData))
+  // - generated model: User.parse(validData)
   // - freezed: User.fromJson(Map<String, dynamic>.from(validData))
   // - dart_mappable: UserMapper.fromMap(validData)
   // - Manual factory: User.fromMap(validData)
 }
 ```
 
-## Parsing JSON into typed wrappers
+## Parsing JSON into generated models
 
-Once a schema is annotated with `@AckType()` (see [TypeSafe Schemas](./typesafe-schemas.mdx) for setup), parse JSON straight into typed getters — no manual casting:
+Once a schema is annotated with `@AckInfer()` (see [Model Code Generation](./typesafe-schemas.mdx) for setup), parse JSON into a generated immutable model. Public `fromJson` / `toJson` still cross the source Ack schema; `json_serializable` only maps the already-validated runtime value onto stored fields.
 
 ```dart
 import 'dart:convert';
 
 final jsonData = jsonDecode('{"name": "Alice", "email": "alice@example.com"}');
-final result = UserType.safeParse(jsonData);
+final result = User.safeParse(jsonData);
 
 if (result.isOk) {
-  final user = result.getOrThrow()!;
+  final user = result.getOrThrow();
   print(user.name);  // typed String
   print(user.email); // typed String?
 }
@@ -149,4 +149,4 @@ conversions.
   validates values and encodes codec runtime values back to their boundary
   representation.
 - **Type safety:** `jsonDecode` produces `dynamic`, but successful validation guarantees the structure and types of the resulting `Map<String, Object?>`.
-- **Model conversion:** After validation, how you convert the validated map into an app model is up to you. Ack keeps validation and wrapper generation separate from your model layer.
+- **Model conversion:** After validation, how you convert the validated map into an app model is up to you. Generated models still parse and encode through an Ack schema; `json_serializable` only maps that runtime value onto stored fields. `@AckInfer()` starts from the schema, while `@AckModel()` starts from your class.

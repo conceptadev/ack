@@ -1,0 +1,152 @@
+name: Publish packages to pub.dev
+
+on:
+  workflow_call:
+    inputs:
+      packages_folder_path:
+        description: Path to the packages folder
+        required: true
+        type: string
+      packages:
+        description: Packages to publish, one per line
+        required: true
+        type: string
+
+jobs:
+  prepare:
+    name: Prepare package list
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - name: Convert packages to a JSON array
+        id: set-matrix
+        env:
+          PACKAGES: ${{ inputs.packages }}
+        run: |
+          set -euo pipefail
+          packages="$({ printf '%s\n' "$PACKAGES" | grep -v '^$' || true; } | jq -R -s -c 'split("\n") | map(select(length > 0))')"
+          printf 'matrix=%s\n' "$packages" >> "$GITHUB_OUTPUT"
+
+  publish:
+    name: Publish ${{ matrix.package }} to pub.dev
+    needs: prepare
+    environment: Production
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write
+    strategy:
+      fail-fast: false
+      matrix:
+        package: ${{ fromJson(needs.prepare.outputs.matrix) }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      # `pub` performs the pub.dev OIDC exchange itself when the job grants
+      # `id-token: write`, so no extra action provisions credentials. Each
+      # package must also enable automated publishing on pub.dev for the
+      # `conceptadev/ack` repository. See PUBLISHING.md.
+      - name: Set up the pinned Flutter SDK
+        uses: ./.github/actions/setup-flutter
+
+      - name: Choose the SDK executable for this package
+        id: sdk
+        env:
+          PUBSPEC: ${{ inputs.packages_folder_path }}/${{ matrix.package }}/pubspec.yaml
+        run: |
+          set -euo pipefail
+          if grep -q "sdk: flutter" "$PUBSPEC"; then
+            printf 'executable=flutter\n' >> "$GITHUB_OUTPUT"
+          else
+            printf 'executable=dart\n' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Resolve workspace dependencies
+        run: dart pub get
+
+      # Workspace resolution replaces every `ack: ^1.2.0` constraint with the
+      # sibling directory, so a workspace test never proves that a pub.dev
+      # consumer can resolve this release. The staged copy leaves the workspace
+      # and therefore resolves the versions that the previous stage published.
+      - name: Stage the package outside the workspace
+        id: stage
+        env:
+          PACKAGE: ${{ matrix.package }}
+        run: |
+          set -euo pipefail
+          staged="$(dart scripts/stage_package.dart "$PACKAGE" \
+            "$RUNNER_TEMP/staged")"
+          printf 'directory=%s\n' "$staged" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve the staged package against pub.dev
+        working-directory: ${{ steps.stage.outputs.directory }}
+        env:
+          SDK: ${{ steps.sdk.outputs.executable }}
+        run: |
+          set -euo pipefail
+          # pub.dev needs a moment to serve a version that the preceding stage
+          # published, so a first failure is not yet a release failure.
+          for attempt in 1 2 3 4 5; do
+            if "$SDK" pub get; then
+              exit 0
+            fi
+            echo "Resolution attempt $attempt failed; retrying in 30 seconds."
+            sleep 30
+          done
+          echo "The staged package cannot resolve its hosted dependencies." >&2
+          exit 1
+
+      # Analysis is the strongest check the staged copy can run. The
+      # `ack_generator` end-to-end tests build fixtures that path-depend on
+      # sibling packages, and staging deliberately leaves those siblings behind.
+      # The tests therefore run in the workspace copy below.
+      - name: Analyze the staged package against pub.dev
+        working-directory: ${{ steps.stage.outputs.directory }}
+        env:
+          SDK: ${{ steps.sdk.outputs.executable }}
+        run: |
+          set -euo pipefail
+          "$SDK" analyze . --fatal-infos
+
+      - name: Run the package tests
+        working-directory: ${{ inputs.packages_folder_path }}/${{ matrix.package }}
+        env:
+          SDK: ${{ steps.sdk.outputs.executable }}
+        run: |
+          set -euo pipefail
+          if [ ! -d test ]; then
+            echo "No test folder found; skipping tests."
+            exit 0
+          fi
+          "$SDK" test
+
+      - name: Restore the reviewed package tree
+        working-directory: ${{ inputs.packages_folder_path }}/${{ matrix.package }}
+        run: |
+          set -euo pipefail
+          modified="$(git diff --name-only -- .)"
+          if [ -n "$modified" ]; then
+            echo "Build steps modified tracked files; restoring the tag contents:"
+            printf '%s\n' "$modified"
+            git restore --worktree -- .
+          fi
+
+      - name: Validate package publication
+        env:
+          PACKAGE: ${{ matrix.package }}
+        run: dart scripts/publish_dry_run.dart "$PACKAGE"
+
+      - name: Publish package with pub.dev OIDC
+        working-directory: ${{ inputs.packages_folder_path }}/${{ matrix.package }}
+        env:
+          SDK: ${{ steps.sdk.outputs.executable }}
+        run: |
+          set -euo pipefail
+          "$SDK" pub publish --force

@@ -1,11 +1,11 @@
 import 'package:ack/ack.dart';
 import 'package:ack_example/schema_types_primitives.dart';
-import 'package:test/test.dart';
+import 'package:test/test.dart' hide Tags;
 
 /// Tests for primitive schemas.
 ///
-/// Extension types are generated for primitive schemas, but the schema can
-/// still be used directly via `safeParse()` or `parse()`.
+/// Generated value models are available for annotated primitive schemas, while
+/// these tests exercise the underlying schemas directly.
 void main() {
   group('Primitive Schemas', () {
     test('passwordSchema validates and returns String', () {
@@ -116,6 +116,12 @@ void main() {
       // Can use String methods on elements
       final uppercaseTags = tags.map((t) => t.toUpperCase()).toList();
       expect(uppercaseTags, ['DART', 'FLUTTER', 'VALIDATION']);
+    });
+
+    test('Tags.toJson returns a mutable top-level list', () {
+      final json = Tags.parse(['dart', 'flutter']).toJson();
+      json.add('ack');
+      expect(json, ['dart', 'flutter', 'ack']);
     });
   });
 

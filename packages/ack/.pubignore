@@ -6,5 +6,7 @@ melos_ack.iml
 build/
 coverage/
 
-# Local example (if any development examples exist)
-example/
+# The shared lint config. Its `include: ../../analysis_options.yaml`
+# cannot resolve outside the workspace, so shipping it breaks
+# `dart format` and `dart analyze` in the published archive.
+analysis_options.yaml

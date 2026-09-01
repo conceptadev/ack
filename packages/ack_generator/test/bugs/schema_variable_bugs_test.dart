@@ -10,7 +10,7 @@
 library;
 
 import 'package:ack_generator/src/analyzer/schema_ast_analyzer.dart';
-import 'package:analyzer/dart/element/element2.dart';
+import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/type.dart';
 import 'package:build/build.dart';
 import 'package:build_test/build_test.dart';
@@ -40,8 +40,8 @@ final listSchema = Ack.object({
           AssetId('test_pkg', 'lib/schema.dart'),
         );
         final schemaVar = library.topLevelVariables
-            .whereType<TopLevelVariableElement2>()
-            .firstWhere((e) => e.name3 == 'listSchema');
+            .whereType<TopLevelVariableElement>()
+            .firstWhere((e) => e.name == 'listSchema');
 
         final analyzer = SchemaAstAnalyzer();
         final modelInfo = analyzer.analyzeSchemaVariable(schemaVar);
@@ -64,7 +64,7 @@ final listSchema = Ack.object({
           isTrue,
           reason:
               'Expected String, got '
-              '${elementType.getDisplayString(withNullability: false)}',
+              '${elementType.getDisplayString()}',
         );
       });
     });
@@ -88,7 +88,7 @@ final listSchema = Ack.object({
           AssetId('test_pkg', 'lib/schema.dart'),
         );
         final schemaVar = library.topLevelVariables.firstWhere(
-          (e) => e.name3 == 'listSchema',
+          (e) => e.name == 'listSchema',
         );
 
         final analyzer = SchemaAstAnalyzer();
@@ -106,7 +106,7 @@ final listSchema = Ack.object({
           isTrue,
           reason:
               'Expected int, got '
-              '${elementType.getDisplayString(withNullability: false)}',
+              '${elementType.getDisplayString()}',
         );
       });
     });
@@ -130,7 +130,7 @@ final nestedListSchema = Ack.object({
           AssetId('test_pkg', 'lib/schema.dart'),
         );
         final schemaVar = library.topLevelVariables.firstWhere(
-          (e) => e.name3 == 'nestedListSchema',
+          (e) => e.name == 'nestedListSchema',
         );
 
         final analyzer = SchemaAstAnalyzer();
@@ -149,7 +149,7 @@ final nestedListSchema = Ack.object({
           isTrue,
           reason:
               'Expected List<int>, got '
-              '${innerType.getDisplayString(withNullability: false)}',
+              '${innerType.getDisplayString()}',
         );
 
         if (innerType is InterfaceType && innerType.isDartCoreList) {
@@ -159,7 +159,7 @@ final nestedListSchema = Ack.object({
             isTrue,
             reason:
                 'Expected int, got '
-                '${innerElementType.getDisplayString(withNullability: false)}',
+                '${innerElementType.getDisplayString()}',
           );
         }
       });
@@ -187,8 +187,8 @@ final statusesSchema = Ack.list(statusSchema);
           AssetId('test_pkg', 'lib/schema.dart'),
         );
         final schemaVar = library.topLevelVariables
-            .whereType<TopLevelVariableElement2>()
-            .firstWhere((e) => e.name3 == 'statusesSchema');
+            .whereType<TopLevelVariableElement>()
+            .firstWhere((e) => e.name == 'statusesSchema');
 
         final analyzer = SchemaAstAnalyzer();
         final modelInfo = analyzer.analyzeSchemaVariable(schemaVar);
@@ -218,8 +218,8 @@ final schemaBSchema = Ack.list(schemaASchema);
           AssetId('test_pkg', 'lib/schema.dart'),
         );
         final schemaVar = library.topLevelVariables
-            .whereType<TopLevelVariableElement2>()
-            .firstWhere((e) => e.name3 == 'schemaASchema');
+            .whereType<TopLevelVariableElement>()
+            .firstWhere((e) => e.name == 'schemaASchema');
 
         final analyzer = SchemaAstAnalyzer();
 
@@ -249,8 +249,8 @@ final usersSchema = Ack.list(Ack.object({
           AssetId('test_pkg', 'lib/schema.dart'),
         );
         final schemaVar = library.topLevelVariables
-            .whereType<TopLevelVariableElement2>()
-            .firstWhere((e) => e.name3 == 'usersSchema');
+            .whereType<TopLevelVariableElement>()
+            .firstWhere((e) => e.name == 'usersSchema');
 
         final analyzer = SchemaAstAnalyzer();
 
@@ -282,8 +282,8 @@ final usersSchema = Ack.list(schemaFactory());
             AssetId('test_pkg', 'lib/schema.dart'),
           );
           final schemaVar = library.topLevelVariables
-              .whereType<TopLevelVariableElement2>()
-              .firstWhere((e) => e.name3 == 'usersSchema');
+              .whereType<TopLevelVariableElement>()
+              .firstWhere((e) => e.name == 'usersSchema');
 
           final analyzer = SchemaAstAnalyzer();
 
@@ -315,8 +315,8 @@ final statusesSchema = ack.Ack.list(ack.Ack.string().minLength(2));
           AssetId('test_pkg', 'lib/schema.dart'),
         );
         final schemaVar = library.topLevelVariables
-            .whereType<TopLevelVariableElement2>()
-            .firstWhere((e) => e.name3 == 'statusesSchema');
+            .whereType<TopLevelVariableElement>()
+            .firstWhere((e) => e.name == 'statusesSchema');
 
         final analyzer = SchemaAstAnalyzer();
         final modelInfo = analyzer.analyzeSchemaVariable(schemaVar);
@@ -348,8 +348,8 @@ final schemaBSchema = schemaASchema;
           AssetId('test_pkg', 'lib/schema.dart'),
         );
         final schemaVar = library.topLevelVariables
-            .whereType<TopLevelVariableElement2>()
-            .firstWhere((e) => e.name3 == 'schemaASchema');
+            .whereType<TopLevelVariableElement>()
+            .firstWhere((e) => e.name == 'schemaASchema');
 
         final analyzer = SchemaAstAnalyzer();
 
@@ -394,7 +394,7 @@ final userSchema = Ack.object({
           AssetId('test_pkg', 'lib/schema.dart'),
         );
         final schemaVar = library.topLevelVariables.firstWhere(
-          (e) => e.name3 == 'userSchema',
+          (e) => e.name == 'userSchema',
         );
 
         final analyzer = SchemaAstAnalyzer();
@@ -442,7 +442,7 @@ final contactSchema = Ack.object({
           AssetId('test_pkg', 'lib/schema.dart'),
         );
         final schemaVar = library.topLevelVariables.firstWhere(
-          (e) => e.name3 == 'contactSchema',
+          (e) => e.name == 'contactSchema',
         );
 
         final analyzer = SchemaAstAnalyzer();
@@ -481,7 +481,7 @@ final chainedSchema = Ack.object({
           AssetId('test_pkg', 'lib/schema.dart'),
         );
         final schemaVar = library.topLevelVariables.firstWhere(
-          (e) => e.name3 == 'chainedSchema',
+          (e) => e.name == 'chainedSchema',
         );
 
         final analyzer = SchemaAstAnalyzer();
@@ -530,7 +530,7 @@ final deepSchema = Ack.object({
             AssetId('test_pkg', 'lib/schema.dart'),
           );
           final schemaVar = library.topLevelVariables.firstWhere(
-            (e) => e.name3 == 'deepSchema',
+            (e) => e.name == 'deepSchema',
           );
 
           final analyzer = SchemaAstAnalyzer();
@@ -570,8 +570,8 @@ final testSchema = Ack.object({
           AssetId('test_pkg', 'lib/schema.dart'),
         );
         final schemaVar = library.topLevelVariables
-            .whereType<TopLevelVariableElement2>()
-            .firstWhere((e) => e.name3 == 'testSchema');
+            .whereType<TopLevelVariableElement>()
+            .firstWhere((e) => e.name == 'testSchema');
 
         final analyzer = SchemaAstAnalyzer();
         final modelInfo = analyzer.analyzeSchemaVariable(schemaVar);
@@ -587,7 +587,7 @@ final testSchema = Ack.object({
           isTrue,
           reason:
               'Expected String, got '
-              '${elementType.getDisplayString(withNullability: false)}',
+              '${elementType.getDisplayString()}',
         );
       });
     });
@@ -611,8 +611,8 @@ final testSchema = Ack.object({
           AssetId('test_pkg', 'lib/schema.dart'),
         );
         final schemaVar = library.topLevelVariables
-            .whereType<TopLevelVariableElement2>()
-            .firstWhere((e) => e.name3 == 'testSchema');
+            .whereType<TopLevelVariableElement>()
+            .firstWhere((e) => e.name == 'testSchema');
 
         final analyzer = SchemaAstAnalyzer();
         final modelInfo = analyzer.analyzeSchemaVariable(schemaVar);
@@ -628,7 +628,7 @@ final testSchema = Ack.object({
           isTrue,
           reason:
               'Expected String, got '
-              '${elementType.getDisplayString(withNullability: false)}',
+              '${elementType.getDisplayString()}',
         );
       });
     });
@@ -652,8 +652,8 @@ final testSchema = Ack.object({
           AssetId('test_pkg', 'lib/schema.dart'),
         );
         final schemaVar = library.topLevelVariables
-            .whereType<TopLevelVariableElement2>()
-            .firstWhere((e) => e.name3 == 'testSchema');
+            .whereType<TopLevelVariableElement>()
+            .firstWhere((e) => e.name == 'testSchema');
 
         final analyzer = SchemaAstAnalyzer();
         final modelInfo = analyzer.analyzeSchemaVariable(schemaVar);
@@ -669,7 +669,7 @@ final testSchema = Ack.object({
           isTrue,
           reason:
               'Expected int, got '
-              '${elementType.getDisplayString(withNullability: false)}',
+              '${elementType.getDisplayString()}',
         );
       });
     });
@@ -697,8 +697,8 @@ final testSchema = Ack.object({
             AssetId('test_pkg', 'lib/schema.dart'),
           );
           final schemaVar = library.topLevelVariables
-              .whereType<TopLevelVariableElement2>()
-              .firstWhere((e) => e.name3 == 'testSchema');
+              .whereType<TopLevelVariableElement>()
+              .firstWhere((e) => e.name == 'testSchema');
 
           final analyzer = SchemaAstAnalyzer();
 
@@ -734,8 +734,8 @@ final testSchema = Ack.object({
             AssetId('test_pkg', 'lib/schema.dart'),
           );
           final schemaVar = library.topLevelVariables
-              .whereType<TopLevelVariableElement2>()
-              .firstWhere((e) => e.name3 == 'testSchema');
+              .whereType<TopLevelVariableElement>()
+              .firstWhere((e) => e.name == 'testSchema');
 
           final analyzer = SchemaAstAnalyzer();
 
@@ -770,8 +770,8 @@ final testSchema = Ack.object({
           AssetId('test_pkg', 'lib/schema.dart'),
         );
         final schemaVar = library.topLevelVariables
-            .whereType<TopLevelVariableElement2>()
-            .firstWhere((e) => e.name3 == 'testSchema');
+            .whereType<TopLevelVariableElement>()
+            .firstWhere((e) => e.name == 'testSchema');
 
         final analyzer = SchemaAstAnalyzer();
         expect(
@@ -802,8 +802,8 @@ final testSchema = Ack.object({
           AssetId('test_pkg', 'lib/schema.dart'),
         );
         final schemaVar = library.topLevelVariables
-            .whereType<TopLevelVariableElement2>()
-            .firstWhere((e) => e.name3 == 'testSchema');
+            .whereType<TopLevelVariableElement>()
+            .firstWhere((e) => e.name == 'testSchema');
 
         final analyzer = SchemaAstAnalyzer();
         expect(
@@ -839,8 +839,8 @@ final containerSchema = Ack.object({
           AssetId('test_pkg', 'lib/schema.dart'),
         );
         final schemaVar = library.topLevelVariables
-            .whereType<TopLevelVariableElement2>()
-            .firstWhere((e) => e.name3 == 'containerSchema');
+            .whereType<TopLevelVariableElement>()
+            .firstWhere((e) => e.name == 'containerSchema');
 
         final analyzer = SchemaAstAnalyzer();
         final modelInfo = analyzer.analyzeSchemaVariable(schemaVar);
@@ -856,7 +856,7 @@ final containerSchema = Ack.object({
           isTrue,
           reason:
               'Expected Map<String, Object?>, got '
-              '${elementType.getDisplayString(withNullability: false)}',
+              '${elementType.getDisplayString()}',
         );
       });
     });
@@ -885,8 +885,8 @@ final userSchema = Ack.object({
           AssetId('test_pkg', 'lib/schema.dart'),
         );
         final schemaVar = library.topLevelVariables
-            .whereType<TopLevelVariableElement2>()
-            .firstWhere((e) => e.name3 == 'userSchema');
+            .whereType<TopLevelVariableElement>()
+            .firstWhere((e) => e.name == 'userSchema');
 
         final analyzer = SchemaAstAnalyzer();
         final modelInfo = analyzer.analyzeSchemaVariable(schemaVar);
@@ -902,7 +902,7 @@ final userSchema = Ack.object({
           isTrue,
           reason:
               'Expected Map<String, Object?>, got '
-              '${elementType.getDisplayString(withNullability: false)}',
+              '${elementType.getDisplayString()}',
         );
       });
     });
@@ -943,8 +943,8 @@ $properties
           AssetId('test_pkg', 'lib/schema.dart'),
         );
         final schemaVar = library.topLevelVariables
-            .whereType<TopLevelVariableElement2>()
-            .firstWhere((e) => e.name3 == 'keywordSchema');
+            .whereType<TopLevelVariableElement>()
+            .firstWhere((e) => e.name == 'keywordSchema');
 
         final analyzer = SchemaAstAnalyzer();
         final modelInfo = analyzer.analyzeSchemaVariable(schemaVar);
@@ -978,8 +978,8 @@ final keywordSchema = Ack.object({
             AssetId('test_pkg', 'lib/schema.dart'),
           );
           final schemaVar = library.topLevelVariables
-              .whereType<TopLevelVariableElement2>()
-              .firstWhere((e) => e.name3 == 'keywordSchema');
+              .whereType<TopLevelVariableElement>()
+              .firstWhere((e) => e.name == 'keywordSchema');
 
           final analyzer = SchemaAstAnalyzer();
 
@@ -1015,8 +1015,8 @@ final reviewSchema = Ack.object({
           AssetId('test_pkg', 'lib/schema.dart'),
         );
         final schemaVar = library.topLevelVariables
-            .whereType<TopLevelVariableElement2>()
-            .firstWhere((e) => e.name3 == 'reviewSchema');
+            .whereType<TopLevelVariableElement>()
+            .firstWhere((e) => e.name == 'reviewSchema');
 
         final analyzer = SchemaAstAnalyzer();
         final modelInfo = analyzer.analyzeSchemaVariable(schemaVar);
@@ -1051,8 +1051,8 @@ final formSchema = Ack.object({
           AssetId('test_pkg', 'lib/schema.dart'),
         );
         final schemaVar = library.topLevelVariables
-            .whereType<TopLevelVariableElement2>()
-            .firstWhere((e) => e.name3 == 'formSchema');
+            .whereType<TopLevelVariableElement>()
+            .firstWhere((e) => e.name == 'formSchema');
 
         final analyzer = SchemaAstAnalyzer();
         final modelInfo = analyzer.analyzeSchemaVariable(schemaVar);
@@ -1089,8 +1089,8 @@ final eventSchema = Ack.object({
           AssetId('test_pkg', 'lib/schema.dart'),
         );
         final schemaVar = library.topLevelVariables
-            .whereType<TopLevelVariableElement2>()
-            .firstWhere((e) => e.name3 == 'eventSchema');
+            .whereType<TopLevelVariableElement>()
+            .firstWhere((e) => e.name == 'eventSchema');
 
         final analyzer = SchemaAstAnalyzer();
         final modelInfo = analyzer.analyzeSchemaVariable(schemaVar);
@@ -1125,8 +1125,8 @@ final userSchema = Ack.object({
           AssetId('test_pkg', 'lib/schema.dart'),
         );
         final schemaVar = library.topLevelVariables
-            .whereType<TopLevelVariableElement2>()
-            .firstWhere((e) => e.name3 == 'userSchema');
+            .whereType<TopLevelVariableElement>()
+            .firstWhere((e) => e.name == 'userSchema');
 
         final analyzer = SchemaAstAnalyzer();
         final modelInfo = analyzer.analyzeSchemaVariable(schemaVar);
@@ -1136,11 +1136,8 @@ final userSchema = Ack.object({
 
         final roleField = modelInfo.fields.firstWhere((f) => f.name == 'role');
 
-        expect(roleField.type.element3, isNotNull);
-        expect(
-          roleField.type.getDisplayString(withNullability: false),
-          equals('UserRole'),
-        );
+        expect(roleField.type.element, isNotNull);
+        expect(roleField.type.getDisplayString(), equals('UserRole'));
       });
     });
 
@@ -1168,8 +1165,8 @@ final taskSchema = Ack.object({
             AssetId('test_pkg', 'lib/schema.dart'),
           );
           final schemaVar = library.topLevelVariables
-              .whereType<TopLevelVariableElement2>()
-              .firstWhere((e) => e.name3 == 'taskSchema');
+              .whereType<TopLevelVariableElement>()
+              .firstWhere((e) => e.name == 'taskSchema');
 
           final analyzer = SchemaAstAnalyzer();
           final modelInfo = analyzer.analyzeSchemaVariable(schemaVar);
@@ -1181,10 +1178,7 @@ final taskSchema = Ack.object({
           );
 
           expect(priorityField.isRequired, isFalse);
-          expect(
-            priorityField.type.getDisplayString(withNullability: false),
-            equals('Priority'),
-          );
+          expect(priorityField.type.getDisplayString(), equals('Priority'));
         });
       },
     );
@@ -1208,8 +1202,8 @@ final configSchema = Ack.object({
           AssetId('test_pkg', 'lib/schema.dart'),
         );
         final schemaVar = library.topLevelVariables
-            .whereType<TopLevelVariableElement2>()
-            .firstWhere((e) => e.name3 == 'configSchema');
+            .whereType<TopLevelVariableElement>()
+            .firstWhere((e) => e.name == 'configSchema');
 
         final analyzer = SchemaAstAnalyzer();
         final modelInfo = analyzer.analyzeSchemaVariable(schemaVar);
@@ -1248,8 +1242,8 @@ final teamSchema = Ack.object({
           AssetId('test_pkg', 'lib/schema.dart'),
         );
         final schemaVar = library.topLevelVariables
-            .whereType<TopLevelVariableElement2>()
-            .firstWhere((e) => e.name3 == 'teamSchema');
+            .whereType<TopLevelVariableElement>()
+            .firstWhere((e) => e.name == 'teamSchema');
 
         final analyzer = SchemaAstAnalyzer();
         final modelInfo = analyzer.analyzeSchemaVariable(schemaVar);
@@ -1264,10 +1258,7 @@ final teamSchema = Ack.object({
 
         final listType = rolesField.type as InterfaceType;
         final elementType = listType.typeArguments.first;
-        expect(
-          elementType.getDisplayString(withNullability: false),
-          equals('UserRole'),
-        );
+        expect(elementType.getDisplayString(), equals('UserRole'));
       });
     });
 
@@ -1291,8 +1282,8 @@ final actionSchema = Ack.object({
           AssetId('test_pkg', 'lib/schema.dart'),
         );
         final schemaVar = library.topLevelVariables
-            .whereType<TopLevelVariableElement2>()
-            .firstWhere((e) => e.name3 == 'actionSchema');
+            .whereType<TopLevelVariableElement>()
+            .firstWhere((e) => e.name == 'actionSchema');
 
         final analyzer = SchemaAstAnalyzer();
         final modelInfo = analyzer.analyzeSchemaVariable(schemaVar);
@@ -1333,8 +1324,8 @@ final profileSchema = Ack.object({
           AssetId('test_pkg', 'lib/schema.dart'),
         );
         final schemaVar = library.topLevelVariables
-            .whereType<TopLevelVariableElement2>()
-            .firstWhere((e) => e.name3 == 'profileSchema');
+            .whereType<TopLevelVariableElement>()
+            .firstWhere((e) => e.name == 'profileSchema');
 
         final analyzer = SchemaAstAnalyzer();
         final modelInfo = analyzer.analyzeSchemaVariable(schemaVar);
@@ -1343,10 +1334,7 @@ final profileSchema = Ack.object({
 
         final roleField = modelInfo!.fields.firstWhere((f) => f.name == 'role');
 
-        expect(
-          roleField.type.getDisplayString(withNullability: false),
-          equals('UserRole'),
-        );
+        expect(roleField.type.getDisplayString(), equals('UserRole'));
         expect(roleField.isNullable, isTrue);
         expect(
           roleField.isRequired,

@@ -1,3 +1,30 @@
+## 1.2.0
+
+### Added
+
+* Add `AckModelAdapter` as the non-nullable runtime bridge used by generated
+  immutable Ack models. The adapter keeps schema parse/encode around model
+  mapping so public JSON methods remain schema-backed.
+* Add `Ack.preserveBoundary`, which validates through a schema while returning
+  the original wire value instead of values decoded by nested codecs.
+* Add `deepUnmodifiableJsonMap`, which creates detached, recursively
+  unmodifiable snapshots of nested maps, lists, and sets without validation.
+
+### Fixed
+
+* Preserve propagated `Error` objects during validation instead of converting
+  programming defects into recoverable schema failures.
+* Compare collection contents independently of growable or unmodifiable wrapper
+  implementations while preserving distinct scalar runtime types.
+* Keep deep map-key equality consistent with `deepHashCode`, and apply JSON
+  Schema Draft 7 numeric equality to `uniqueItems` (including nested values).
+
+### Changed
+
+* Export `deepEquals`, `deepHashCode`, and `deepUnmodifiableJsonMap` for
+  generated Ack data classes and class-first constructors.
+* Raise the minimum Dart SDK to 3.9.
+
 ## 1.1.0
 
 ### Fixed
