@@ -71,6 +71,224 @@ final modernSchema = Ack.object({'name': Ack.string()});
     },
   );
 
+  test('modern generators reject a class and facade name collision', () async {
+    var sawDiagnostic = false;
+    await _build(
+      ackModelBuilder(BuilderOptions.empty),
+      '''
+$_parts
+@AckInfer(name: 'AddressSchema')
+final valueSchema = Ack.string();
+
+@AckModel()
+final class Address with _\$AddressAck {
+  const Address({required this.city});
+
+  final String city;
+}
+''',
+      outputs: const {},
+      onLog: (log) {
+        if (log.level.name == 'SEVERE' &&
+            log.message.contains('AddressSchema') &&
+            log.message.contains('@AckInfer') &&
+            log.message.contains('@AckModel')) {
+          sawDiagnostic = true;
+        }
+      },
+    );
+    expect(sawDiagnostic, isTrue);
+  });
+
+  for (final entry in {
+    'List': 'List<Address?>',
+    'Set': 'Set<Address?>',
+    'nested List': 'List<List<Address?>>',
+  }.entries) {
+    test('class-first models reject nullable future-generated elements in '
+        '${entry.key}', () async {
+      var sawLocatedDiagnostic = false;
+      await _build(
+        ackModelBuilder(BuilderOptions.empty),
+        '''
+$_parts
+@AckInfer()
+final addressSchema = Ack.object({'city': Ack.string()});
+
+@AckModel()
+final class User with _\$UserAck {
+  const User({required this.addresses});
+
+  final ${entry.value} addresses;
+}
+''',
+        outputs: const {},
+        onLog: (log) {
+          if (log.level.name == 'SEVERE' &&
+              log.message.contains('User.addresses') &&
+              log.message.contains('nullable collection elements') &&
+              log.message.contains('Ack.list')) {
+            sawLocatedDiagnostic = true;
+          }
+        },
+      );
+      expect(sawLocatedDiagnostic, isTrue);
+    });
+  }
+
+  test('class-first models allow a direct nullable future-generated model', () {
+    return _build(
+      ackModelBuilder(BuilderOptions.empty),
+      '''
+$_parts
+@AckInfer()
+final addressSchema = Ack.object({'city': Ack.string()});
+
+@AckModel()
+final class User with _\$UserAck {
+  const User({this.address});
+
+  final Address? address;
+}
+''',
+      outputs: {
+        'test_pkg|lib/models.ack.dart': decodedMatches(
+          allOf([
+            contains(r'Address.$ack.schema.optional().nullable()'),
+            contains('address as Address?'),
+          ]),
+        ),
+      },
+    );
+  });
+
+  test(
+    'AckField schema overrides nullable future-generated collection inference',
+    () {
+      return _build(
+        ackModelBuilder(BuilderOptions.empty),
+        '''
+$_parts
+AckSchema<Object?, List<Address?>> addressListSchema() =>
+    Ack.any().nullable().codec<List<Address?>>(
+      decode: (value) => value as List<Address?>,
+      encode: (value) => value,
+    );
+
+@AckInfer()
+final addressSchema = Ack.object({'city': Ack.string()});
+
+@AckModel()
+final class User with _\$UserAck {
+  const User({required this.addresses});
+
+  @AckField(schema: addressListSchema)
+  final List<Address?> addresses;
+}
+''',
+        outputs: {
+          'test_pkg|lib/models.ack.dart': decodedMatches(
+            contains('addressListSchema()'),
+          ),
+        },
+      );
+    },
+  );
+
+  test(
+    'class-first models resolve a future schema-first model through a barrel',
+    () {
+      return _build(
+        ackModelBuilder(BuilderOptions.empty),
+        '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+import 'exports.dart';
+
+part 'models.ack.dart';
+part 'models.ack.g.dart';
+
+@AckModel()
+final class User with _\$UserAck {
+  const User({required this.address});
+
+  final Address address;
+}
+''',
+        supportingSources: {
+          'address.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+part 'address.ack.dart';
+part 'address.ack.g.dart';
+
+@AckInfer()
+final addressSchema = Ack.object({'city': Ack.string()});
+''',
+          'exports.dart': "export 'address.dart' show addressSchema, Address;",
+        },
+        outputs: {
+          'test_pkg|lib/models.ack.dart': decodedMatches(
+            allOf([
+              contains(r'Address.$ack.schema'),
+              contains(r'Address.$ack.fromRuntime'),
+            ]),
+          ),
+          'test_pkg|lib/address.ack.dart': anything,
+        },
+      );
+    },
+  );
+
+  test(
+    'class-first models reject a future schema-first class hidden by a barrel',
+    () async {
+      var sawLocatedDiagnostic = false;
+      await _build(
+        ackModelBuilder(BuilderOptions.empty),
+        '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+import 'exports.dart';
+
+part 'models.ack.dart';
+part 'models.ack.g.dart';
+
+@AckModel()
+final class User with _\$UserAck {
+  const User({required this.address});
+
+  final Address address;
+}
+''',
+        supportingSources: {
+          'address.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+part 'address.ack.dart';
+part 'address.ack.g.dart';
+
+@AckInfer()
+final addressSchema = Ack.object({'city': Ack.string()});
+''',
+          'exports.dart': "export 'address.dart' show addressSchema;",
+        },
+        outputs: {'test_pkg|lib/address.ack.dart': anything},
+        onLog: (log) {
+          if (log.level.name == 'SEVERE' &&
+              log.message.contains('User.address') &&
+              log.message.contains('Address') &&
+              log.message.contains('export combinator')) {
+            sawLocatedDiagnostic = true;
+          }
+        },
+      );
+      expect(sawLocatedDiagnostic, isTrue);
+    },
+  );
+
   test('modern schemas reject a nested legacy reference graph', () async {
     var sawDiagnostic = false;
     await _build(

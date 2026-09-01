@@ -89,6 +89,40 @@ final class User with _\$UserAck {
     );
   });
 
+  test(
+    'rejects nullable List elements instead of narrowing the field',
+    () async {
+      await _expectFailure(
+        '''
+@AckModel()
+final class User with _\$UserAck {
+  const User({required this.tags});
+
+  final List<String?> tags;
+}
+''',
+        ['User.tags', 'nullable collection elements', 'Ack.list'],
+      );
+    },
+  );
+
+  test(
+    'rejects nullable Set elements instead of narrowing the field',
+    () async {
+      await _expectFailure(
+        '''
+@AckModel()
+final class User with _\$UserAck {
+  const User({required this.tags});
+
+  final Set<String?> tags;
+}
+''',
+        ['User.tags', 'nullable collection elements', 'Ack.list'],
+      );
+    },
+  );
+
   test('rejects a static-method AckField escape hatch', () async {
     await _expectFailure(
       '''
@@ -812,6 +846,99 @@ final class Address with _\$AddressAck {
       );
     },
   );
+
+  test('allows split imports for a class-first model and its facade', () async {
+    final readerWriter = TestReaderWriter(rootPackage: 'test_pkg');
+    await readerWriter.testing.loadIsolateSources();
+    await testBuilder(
+      ackModelBuilder(BuilderOptions.empty),
+      {
+        'test_pkg|lib/model.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+import 'address.dart' show Address;
+import 'address.dart' show AddressSchema;
+
+part 'model.ack.dart';
+part 'model.ack.g.dart';
+
+@AckModel()
+final class Order with _\$OrderAck {
+  const Order({required this.address});
+
+  final Address address;
+}
+''',
+        'test_pkg|lib/address.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+part 'address.ack.dart';
+part 'address.ack.g.dart';
+
+@AckModel()
+final class Address with _\$AddressAck {
+  const Address({required this.city});
+
+  final String city;
+}
+''',
+      },
+      generateFor: const {
+        'test_pkg|lib/model.dart',
+        'test_pkg|lib/address.dart',
+      },
+      readerWriter: readerWriter,
+      outputs: {
+        'test_pkg|lib/address.ack.dart': decodedMatches(anything),
+        'test_pkg|lib/model.ack.dart': decodedMatches(
+          contains('AddressSchema.schema'),
+        ),
+      },
+    );
+  });
+
+  test('rejects a class-first facade hidden by a barrel export', () async {
+    await _expectFailure(
+      '''
+@AckModel()
+final class Order with _\$OrderAck {
+  const Order({required this.address});
+
+  final Address address;
+}
+''',
+      ['AddressSchema', 'export combinator'],
+      head: '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+import 'exports.dart';
+
+part 'model.ack.dart';
+part 'model.ack.g.dart';
+''',
+      extraSources: {
+        'exports.dart': "export 'address.dart' show Address;",
+        'address.dart': '''
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+part 'address.ack.dart';
+part 'address.ack.g.dart';
+
+@AckModel()
+final class Address with _\$AddressAck {
+  const Address({required this.city});
+
+  final String city;
+}
+''',
+      },
+      allowedOutputs: {
+        'test_pkg|lib/address.ack.dart': decodedMatches(anything),
+      },
+    );
+  });
 
   test('rejects case-style key collisions', () async {
     await _expectFailure(

@@ -237,6 +237,200 @@ final userSchema = Ack.object({
     );
   });
 
+  test('allows split imports for a schema and its generated model', () async {
+    await _build(
+      {
+        'address.dart':
+            '''
+$_imports
+part 'address.ack.dart';
+part 'address.ack.g.dart';
+
+@AckInfer()
+final addressSchema = Ack.object({'city': Ack.string()});
+''',
+        'person.dart':
+            '''
+$_imports
+import 'address.dart' show addressSchema;
+import 'address.dart' show Address;
+part 'person.ack.dart';
+part 'person.ack.g.dart';
+
+@AckInfer()
+final personSchema = Ack.object({'address': addressSchema});
+''',
+      },
+      outputs: {
+        'test_pkg|lib/address.ack.dart': decodedMatches(
+          contains('final class Address'),
+        ),
+        'test_pkg|lib/person.ack.dart': decodedMatches(
+          allOf([
+            contains('final Address address'),
+            contains(r'Address.$ack.fromRuntime'),
+          ]),
+        ),
+      },
+    );
+  });
+
+  test(
+    'allows split imports for a model and future class-first facade',
+    () async {
+      await _build(
+        {
+          'address.dart':
+              '''
+$_imports
+part 'address.ack.dart';
+part 'address.ack.g.dart';
+
+@AckModel()
+final class Address with _\$AddressAck {
+  const Address({required this.city});
+
+  final String city;
+}
+''',
+          'person.dart':
+              '''
+$_imports
+import 'address.dart' show Address;
+import 'address.dart' show AddressSchema;
+part 'person.ack.dart';
+part 'person.ack.g.dart';
+
+@AckInfer()
+final personSchema = Ack.object({'address': AddressSchema.schema});
+''',
+        },
+        outputs: {
+          'test_pkg|lib/address.ack.dart': decodedMatches(
+            contains('abstract final class AddressSchema'),
+          ),
+          'test_pkg|lib/person.ack.dart': decodedMatches(
+            contains('final Address address'),
+          ),
+        },
+      );
+    },
+  );
+
+  test('rejects a class-first facade hidden by a barrel export', () async {
+    final messages = <String>{};
+    await _build(
+      {
+        'address.dart':
+            '''
+$_imports
+part 'address.ack.dart';
+part 'address.ack.g.dart';
+
+@AckModel()
+final class Address with _\$AddressAck {
+  const Address({required this.city});
+
+  final String city;
+}
+''',
+        'exports.dart': "export 'address.dart' show Address;",
+        'person.dart':
+            '''
+$_imports
+import 'exports.dart';
+part 'person.ack.dart';
+part 'person.ack.g.dart';
+
+@AckInfer()
+final personSchema = Ack.object({'address': AddressSchema.schema});
+''',
+      },
+      outputs: {'test_pkg|lib/address.ack.dart': anything},
+      onLog: (log) {
+        if (log.level.name != 'SEVERE') return;
+        for (final message in ['AddressSchema', 'export combinator']) {
+          if (log.message.contains(message)) messages.add(message);
+        }
+      },
+    );
+    expect(messages, containsAll(['AddressSchema', 'export combinator']));
+  });
+
+  test(
+    'rejects a cross-library model hidden by an import combinator',
+    () async {
+      final messages = <String>{};
+      await _build(
+        {
+          'address.dart':
+              '''
+$_imports
+part 'address.ack.dart';
+part 'address.ack.g.dart';
+
+@AckInfer()
+final addressSchema = Ack.object({'city': Ack.string()});
+''',
+          'person.dart':
+              '''
+$_imports
+import 'address.dart' show addressSchema;
+part 'person.ack.dart';
+part 'person.ack.g.dart';
+
+@AckInfer()
+final personSchema = Ack.object({'address': addressSchema});
+''',
+        },
+        outputs: {'test_pkg|lib/address.ack.dart': anything},
+        onLog: (log) {
+          if (log.level.name != 'SEVERE') return;
+          for (final message in ['Address', 'import combinator']) {
+            if (log.message.contains(message)) messages.add(message);
+          }
+        },
+      );
+      expect(messages, containsAll(['Address', 'import combinator']));
+    },
+  );
+
+  test('rejects a generated model hidden by a barrel export', () async {
+    final messages = <String>{};
+    await _build(
+      {
+        'address.dart':
+            '''
+$_imports
+part 'address.ack.dart';
+part 'address.ack.g.dart';
+
+@AckInfer()
+final addressSchema = Ack.object({'city': Ack.string()});
+''',
+        'exports.dart': "export 'address.dart' show addressSchema;",
+        'person.dart':
+            '''
+$_imports
+import 'exports.dart';
+part 'person.ack.dart';
+part 'person.ack.g.dart';
+
+@AckInfer()
+final personSchema = Ack.object({'address': addressSchema});
+''',
+      },
+      outputs: {'test_pkg|lib/address.ack.dart': anything},
+      onLog: (log) {
+        if (log.level.name != 'SEVERE') return;
+        for (final message in ['Address', 'export combinator']) {
+          if (log.message.contains(message)) messages.add(message);
+        }
+      },
+    );
+    expect(messages, containsAll(['Address', 'export combinator']));
+  });
+
   test('emits sealed unions with final same-library branches', () async {
     await _build(
       {

@@ -42,7 +42,9 @@
 - `/.github/workflows/preflight.yml` holds the release checks: minimum-SDK lanes, JSON Schema Draft-7 batch validation, API comparison against the published baseline, deterministic regeneration, and publish dry runs.
 - `/.github/workflows/release.yml` verifies the tag with `dart scripts/verify_release_tag.dart` and reruns the preflight before it publishes.
 - Conventional Commits are expected for commit messages.
-- Publishing/versioning flows are documented in `/PUBLISHING.md` (`dart run melos version`, `dart run melos publish`).
+- Versioning and tag-only publishing are documented in `/PUBLISHING.md`.
+  Use `dart run melos version` to prepare versions; publication runs only from
+  a reviewed `v*` tag through the release workflow.
 
 ## Errors encountered during onboarding and workarounds
 1. **Error:** `melos: command not found` when running checks in a fresh environment.  

@@ -102,7 +102,17 @@ generated expression during a clean phase-1 build. In the other direction,
 class-first analysis resolves written future `@AckInfer()` model names and
 emits `[prefix.]Address.$ack.schema`. These fallbacks are restricted to unique,
 accessible annotated declarations; ordinary unresolved dynamic expressions
-remain errors. `show`/`hide` combinators must expose both the model and facade.
+remain errors. Generated-companion visibility is checked across the complete
+import/export route: `show`/`hide` combinators must expose both the authored
+declaration and generated companion, although visibility may be split across
+multiple imports using the same prefix. A barrel that hides the companion is a
+located generation error.
+
+Automatic `Ack.list` inference rejects nullable item schemas. Class-first
+`List<T?>` and `Set<T?>` fields follow the same rule after both resolved and
+same-build future-generated type discovery. Direct nullable model fields stay
+valid, and an explicit `@AckField(schema: ...)` codec bypasses automatic field
+schema inference.
 
 Direct and same-library mutual class-first recursion are rejected before
 emission because automatic lazy naming and JSON Schema definition semantics

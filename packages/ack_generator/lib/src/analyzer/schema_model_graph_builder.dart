@@ -11,6 +11,7 @@ import 'package:source_gen/source_gen.dart';
 
 import '../json/helper_names.dart';
 import '../models/schema_model_graph.dart';
+import 'generated_companion_visibility.dart';
 
 final class _Declaration {
   const _Declaration({
@@ -642,9 +643,20 @@ final class SchemaModelGraphBuilder {
     Set<Element>? visited,
     int depth = 0,
     String? followedName,
+    bool collectionElement = false,
   }) async {
     final chain = _chain(expression);
     _rejectTransform(chain, path, context);
+    if (collectionElement && chain.nullable) {
+      throw InvalidGenerationSource(
+        '$path uses nullable collection elements. Ack.list does not support '
+        'nullable item schemas.',
+        element: context,
+        todo:
+            'Remove .nullable() from the item schema. Make the list itself '
+            'nullable with Ack.list(item).nullable() when needed.',
+      );
+    }
     if (chain.hasCodec) {
       await _rejectReferencedTransform(
         chain.reference,
@@ -687,6 +699,7 @@ final class SchemaModelGraphBuilder {
             throughLazy: throughLazy,
             visited: visited,
             depth: depth,
+            collectionElement: true,
           ),
         );
       case 'enumValues':
@@ -736,6 +749,7 @@ final class SchemaModelGraphBuilder {
           throughLazy: throughLazy,
           visited: visited ?? {},
           depth: depth,
+          collectionElement: collectionElement,
         );
         if (followed != null) return followed;
       }
@@ -755,6 +769,7 @@ final class SchemaModelGraphBuilder {
     required bool throughLazy,
     required Set<Element> visited,
     required int depth,
+    required bool collectionElement,
   }) async {
     final element = _referencedElement(reference);
     if (element == null) return null;
@@ -803,6 +818,7 @@ final class SchemaModelGraphBuilder {
       visited: {...visited, canonical},
       depth: depth + 1,
       followedName: element.name,
+      collectionElement: collectionElement,
     );
   }
 
@@ -880,15 +896,71 @@ final class SchemaModelGraphBuilder {
     final name = declaration.name;
     final owningLibrary = declaration.library;
     if (name == null || owningLibrary == null) return null;
+    final className = _className(
+      name,
+      _annotationName(declaration),
+      declaration,
+    );
+    final prefix = _expressionPrefix(expression);
+    _validateGeneratedModelImport(
+      declaration,
+      className,
+      prefix: prefix,
+      path: path,
+      context: context,
+    );
     return AckModelTypeRef(
       schemaId: AckSchemaId(
         libraryUri: owningLibrary.uri,
         declarationName: name,
       ),
-      className: _className(name, _annotationName(declaration), declaration),
+      className: className,
       runtimeRef: _schemaTypes(expression, path, context).runtime,
-      importPrefix: _expressionPrefix(expression),
+      importPrefix: prefix,
     );
+  }
+
+  void _validateGeneratedModelImport(
+    Element declaration,
+    String className, {
+    required String? prefix,
+    required String path,
+    required Element context,
+  }) {
+    if (declaration.library == library.element) return;
+    final declarationName = declaration.name;
+    if (declarationName == null) return;
+    var declarationVisible = false;
+    var generatedModelVisible = false;
+    for (final import in library.element.firstFragment.libraryImports) {
+      if (import.isSynthetic || (import.prefix?.isDeferred ?? false)) continue;
+      final importPrefix = import.prefix?.element.name;
+      if (importPrefix != prefix) continue;
+      final candidate = prefix == null
+          ? import.namespace.get2(declarationName)
+          : import.namespace.getPrefixed2(prefix, declarationName);
+      if (candidate != null &&
+          _propertyDeclaration(candidate).baseElement ==
+              declaration.baseElement) {
+        declarationVisible = true;
+      }
+      if (importExposesGeneratedCompanion(
+        import,
+        definingLibrary: declaration.library!,
+        generatedName: className,
+      )) {
+        generatedModelVisible = true;
+      }
+    }
+    if (declarationVisible && generatedModelVisible) return;
+    if (declarationVisible) {
+      throw InvalidGenerationSource(
+        '$path resolves to generated model "$className", which is hidden by '
+        'an import combinator or an upstream export combinator. Expose both '
+        '$declarationName and $className through the full import route.',
+        element: context,
+      );
+    }
   }
 
   AckExternalTypeRef? _classFirstModelReference(
@@ -903,42 +975,63 @@ final class SchemaModelGraphBuilder {
     final prefix = match.group(1);
     final facadeName = match.group(2)!;
     final matches = <ClassElement>{};
+    final candidates = <ClassElement>{};
+    final visibleModels = <ClassElement>{};
     String? hiddenModelName;
 
-    void consider(ClassElement element, LibraryImport? import) {
+    void consider(ClassElement element) {
       final generatedFacade = _classFirstFacadeName(element);
       if (generatedFacade != facadeName) return;
-      if (import != null &&
-          (!_importAllowsName(import, element.name!) ||
-              !_importAllowsName(import, facadeName))) {
-        hiddenModelName = element.name;
-        return;
-      }
-      matches.add(element);
+      candidates.add(element);
     }
 
     if (prefix == null) {
       for (final element in library.element.classes) {
-        consider(element, null);
+        if (_classFirstFacadeName(element) == facadeName) {
+          matches.add(element);
+        }
       }
     }
+    final imports = <LibraryImport>[];
     for (final import in library.element.firstFragment.libraryImports) {
       if (import.isSynthetic || (import.prefix?.isDeferred ?? false)) continue;
       final importPrefix = import.prefix?.element.name;
       if (importPrefix != prefix) continue;
-      final elements = <Element>{
-        ...import.namespace.definedNames2.values,
-        ...?import.importedLibrary?.classes,
-      };
-      for (final element in elements.whereType<ClassElement>()) {
-        consider(element, import);
+      imports.add(import);
+      final importedLibrary = import.importedLibrary;
+      if (importedLibrary == null) continue;
+      for (final element in _classesInExportClosure(importedLibrary)) {
+        consider(element);
+        final modelName = element.name;
+        if (modelName == null) continue;
+        final visible = prefix == null
+            ? import.namespace.get2(modelName)
+            : import.namespace.getPrefixed2(prefix, modelName);
+        if (visible?.baseElement == element.baseElement) {
+          visibleModels.add(element);
+        }
+      }
+    }
+    for (final target in candidates) {
+      final facadeVisible = imports.any(
+        (import) => importExposesGeneratedCompanion(
+          import,
+          definingLibrary: target.library,
+          generatedName: facadeName,
+        ),
+      );
+      if (visibleModels.contains(target) && facadeVisible) {
+        matches.add(target);
+      } else {
+        hiddenModelName = target.name;
       }
     }
     if (matches.isEmpty) {
       if (hiddenModelName != null) {
         throw InvalidGenerationSource(
-          'Generated facade "$facadeName" is hidden by an import combinator. '
-          'Expose both $hiddenModelName and $facadeName.',
+          'Generated facade "$facadeName" is hidden by an import combinator '
+          'or an upstream export combinator. Expose both $hiddenModelName and '
+          '$facadeName through the full import route.',
           element: context,
         );
       }
@@ -952,6 +1045,21 @@ final class SchemaModelGraphBuilder {
     }
     final target = matches.single;
     return AckExternalTypeRef(name: target.name!, importPrefix: prefix);
+  }
+
+  Iterable<ClassElement> _classesInExportClosure(LibraryElement root) sync* {
+    final pending = <LibraryElement>[root];
+    final visited = <Uri>{};
+    while (pending.isNotEmpty) {
+      final current = pending.removeLast();
+      if (!visited.add(current.uri)) continue;
+      yield* current.classes;
+      for (final export in current.firstFragment.libraryExports) {
+        if (export.exportedLibrary case final exported?) {
+          pending.add(exported);
+        }
+      }
+    }
   }
 
   String? _classFirstFacadeName(ClassElement element) {
@@ -973,20 +1081,6 @@ final class SchemaModelGraphBuilder {
     return isImplicitUnionBranch
         ? ackClassSchemaFacadeName(element.name!)
         : null;
-  }
-
-  bool _importAllowsName(LibraryImport import, String name) {
-    for (final combinator in import.combinators) {
-      if (combinator is ShowElementCombinator &&
-          !combinator.shownNames.contains(name)) {
-        return false;
-      }
-      if (combinator is HideElementCombinator &&
-          combinator.hiddenNames.contains(name)) {
-        return false;
-      }
-    }
-    return true;
   }
 
   _SchemaTypes _schemaTypes(
@@ -1619,76 +1713,18 @@ final class SchemaModelGraphBuilder {
     return null;
   }
 
-  /// Normalizes analyzer argument nodes into the expression API used by the
+  /// Normalizes Analyzer 10 argument nodes into the expression API used by the
   /// graph.
-  ///
-  /// The `dynamic` shim keeps AST shape-specific access localized. The package
-  /// currently supports `analyzer: ">=10.0.0 <11.0.0"`; this compatibility
-  /// code does not advertise support outside that pubspec constraint.
   List<Expression> _argumentExpressions(ArgumentList argumentList) =>
       argumentList.arguments
           .map((argument) => _argumentExpression(argument))
           .toList(growable: false);
 
-  Expression _argumentExpression(AstNode argument) {
-    final named = _namedArgument(argument);
-    if (named != null) return named.expression;
-    if (argument is Expression) return argument;
+  Expression _argumentExpression(Expression argument) =>
+      argument is NamedExpression ? argument.expression : argument;
 
-    final dynamic dynamicArgument = argument;
-    try {
-      // Alternate AST shapes expose positional values as argumentExpression.
-      // ignore: avoid_dynamic_calls
-      return dynamicArgument.argumentExpression as Expression;
-    } on Object {
-      throw InvalidGenerationSource(
-        'Unsupported analyzer argument node ${argument.runtimeType}; '
-        'ack_generator supports analyzer >=10.0.0 <11.0.0',
-      );
-    }
-  }
-
-  ({String name, Expression expression})? _namedArgument(AstNode argument) {
-    // The supported AST exposes either a Label or Token-like name. Keep the
-    // shape-specific access dynamic and local to this compatibility boundary.
-    final dynamic dynamicArgument = argument;
-    String? name;
-    try {
-      // Token-like names expose lexeme directly.
-      // ignore: avoid_dynamic_calls
-      name = dynamicArgument.name.lexeme as String?;
-    } on Object {
-      try {
-        // Analyzer 10 exposes NamedExpression.name as a Label.
-        // ignore: avoid_dynamic_calls
-        name = dynamicArgument.name.label.name as String?;
-      } on Object {
-        if (argument is Expression) return null;
-        throw InvalidGenerationSource(
-          'Unsupported analyzer argument node ${argument.runtimeType}; '
-          'ack_generator supports analyzer >=10.0.0 <11.0.0',
-        );
-      }
-    }
-    if (name == null) return null;
-
-    try {
-      // Alternate AST shapes expose argumentExpression.
-      // ignore: avoid_dynamic_calls
-      final expression = dynamicArgument.argumentExpression as Expression;
-      return (name: name, expression: expression);
-    } on Object {
-      try {
-        // Analyzer 10 uses NamedExpression.expression.
-        // ignore: avoid_dynamic_calls
-        final expression = dynamicArgument.expression as Expression;
-        return (name: name, expression: expression);
-      } on Object {
-        throw InvalidGenerationSource(
-          'Unsupported analyzer argument node ${argument.runtimeType}; '
-          'ack_generator supports analyzer >=10.0.0 <11.0.0',
-        );
-      }
-    }
-  }
+  ({String name, Expression expression})? _namedArgument(Expression argument) =>
+      argument is NamedExpression
+      ? (name: argument.name.label.name, expression: argument.expression)
+      : null;
 }

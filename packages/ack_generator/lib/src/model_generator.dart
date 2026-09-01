@@ -11,6 +11,7 @@ import 'analyzer/class_model_graph_builder.dart';
 import 'analyzer/schema_model_graph_builder.dart';
 import 'builders/class_model_emitter.dart';
 import 'builders/model_emitter.dart';
+import 'models/schema_model_graph.dart';
 
 /// Generates immutable model classes for top-level schemas annotated with
 /// `@AckInfer`.
@@ -87,13 +88,41 @@ final class AckModelGenerator extends Generator {
       annotated.isNotEmpty ? annotated.first : annotatedModels.first,
     );
 
-    final output = <String>[];
+    ({AckModelGraph graph, String? ackPrefix, String? ackInferPrefix})?
+    schemaFirst;
     if (annotated.isNotEmpty) {
       final graph = await SchemaModelGraphBuilder(library).build(annotated);
-      final specs = AckModelEmitter(
+      schemaFirst = (
+        graph: graph,
         ackPrefix: _ackRuntimeQualifier(library, annotated.first),
         ackInferPrefix: _ackInferQualifier(library, annotated.first),
-      ).emit(graph);
+      );
+    }
+    ({AckModelGraph graph, String? ackPrefix})? classFirst;
+    if (annotatedModels.isNotEmpty) {
+      final ackPrefix = _classFirstAckQualifier(library, annotatedModels.first);
+      classFirst = (
+        graph: await ClassModelGraphBuilder(
+          library,
+          ackPrefix: ackPrefix,
+        ).build(annotatedModels),
+        ackPrefix: ackPrefix,
+      );
+    }
+    if (schemaFirst != null && classFirst != null) {
+      _validateModernGeneratedNames(
+        library,
+        schemaFirst.graph,
+        classFirst.graph,
+      );
+    }
+
+    final output = <String>[];
+    if (schemaFirst != null) {
+      final specs = AckModelEmitter(
+        ackPrefix: schemaFirst.ackPrefix,
+        ackInferPrefix: schemaFirst.ackInferPrefix,
+      ).emit(schemaFirst.graph);
       output.add(
         Library((b) => b.body.addAll(specs))
             .accept(
@@ -106,15 +135,37 @@ final class AckModelGenerator extends Generator {
             .toString(),
       );
     }
-    if (annotatedModels.isNotEmpty) {
-      final ackPrefix = _classFirstAckQualifier(library, annotatedModels.first);
-      final graph = await ClassModelGraphBuilder(
-        library,
-        ackPrefix: ackPrefix,
-      ).build(annotatedModels);
-      output.add(AckClassModelEmitter(ackPrefix: ackPrefix).emit(graph));
+    if (classFirst != null) {
+      output.add(
+        AckClassModelEmitter(
+          ackPrefix: classFirst.ackPrefix,
+        ).emit(classFirst.graph),
+      );
     }
     return output.where((chunk) => chunk.trim().isNotEmpty).join('\n\n');
+  }
+
+  void _validateModernGeneratedNames(
+    LibraryReader library,
+    AckModelGraph schemaFirst,
+    AckModelGraph classFirst,
+  ) {
+    final schemaClassNames = {
+      for (final node in schemaFirst.nodes) node.className,
+    };
+    final classesByName = {
+      for (final element in library.classes) element.name!: element,
+    };
+    for (final node in classFirst.nodes) {
+      final facadeName = classFirst.classMetadataFor(node.id)!.facadeName;
+      if (!schemaClassNames.contains(facadeName)) continue;
+      throw InvalidGenerationSource(
+        'Generated @AckInfer class "$facadeName" conflicts with the '
+        '@AckModel facade for ${node.className}. Choose a different '
+        '@AckInfer name or AckModel.schemaName.',
+        element: classesByName[node.className],
+      );
+    }
   }
 
   String? _classFirstAckQualifier(

@@ -46,6 +46,14 @@
 * Reject unsupported `JsonKey` options and parameter placement, cross-library
   class-first cycles, direct one-way transforms beneath codecs, and legacy
   object fields whose schema expressions cannot be analyzed.
+* Reject nullable collection elements consistently for modern schema-first,
+  resolved class-first, and same-build future-generated model paths while
+  preserving direct nullable fields and explicit `@AckField` codecs.
+* Validate generated model/facade visibility through import and barrel export
+  combinators, allow valid split imports, and reject cross-direction generated
+  class/facade name collisions before emission.
+* Use Analyzer 10's typed argument AST APIs instead of dynamic compatibility
+  fallbacks outside the declared Analyzer support range.
 
 ### Changed
 

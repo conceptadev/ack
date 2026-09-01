@@ -12,6 +12,7 @@ import 'package:source_gen/source_gen.dart';
 
 import '../json/helper_names.dart';
 import '../models/schema_model_graph.dart';
+import 'generated_companion_visibility.dart';
 
 typedef _ModelOptions = ({
   String? schemaName,
@@ -765,6 +766,7 @@ final class ClassModelGraphBuilder {
       }
     }
     if (futureType != null) {
+      _rejectNullableFutureCollectionElement(field, futureType.runtimeRef);
       final setListSchema = futureType.setListSchema;
       if (setListSchema != null) {
         return _setCodec(
@@ -778,7 +780,9 @@ final class ClassModelGraphBuilder {
     if (type is InterfaceType &&
         type.isDartCoreSet &&
         type.typeArguments.length == 1) {
-      final item = await _schemaForType(type.typeArguments.single, field);
+      final itemType = type.typeArguments.single;
+      _rejectNullableCollectionElement(field, itemType);
+      final item = await _schemaForType(itemType, field);
       final list = _applySugar('${_ack('Ack')}.list($item)', field);
       return _setCodec(list, _typeRef(type, field));
     }
@@ -920,30 +924,30 @@ final class ClassModelGraphBuilder {
     required FieldElement field,
   }) {
     final matches = <Element>{};
+    final candidates = <Element>{};
+    final imports = <LibraryImport>[];
     String? hiddenDeclaration;
 
-    void consider(Element element, LibraryImport? import) {
+    Element? candidateFor(Element element) {
       final declaration = _ackInferDeclaration(element);
       if (declaration == null ||
           _generatedAckInferClassName(declaration) != className) {
-        return;
+        return null;
       }
-      if (import != null && !_importAllowsName(import, className)) {
-        hiddenDeclaration = declaration.name;
-        return;
-      }
-      matches.add(declaration.baseElement);
+      return declaration.baseElement;
     }
 
     if (prefix == null) {
       for (final element in library.allElements) {
-        consider(element, null);
+        final candidate = candidateFor(element);
+        if (candidate != null) matches.add(candidate);
       }
     }
     for (final import in library.element.firstFragment.libraryImports) {
       if (import.isSynthetic || (import.prefix?.isDeferred ?? false)) continue;
       final importPrefix = import.prefix?.element.name;
       if (importPrefix != prefix) continue;
+      imports.add(import);
       final importedLibrary = import.importedLibrary;
       final elements = <Element>{
         if (importedLibrary != null)
@@ -951,14 +955,34 @@ final class ClassModelGraphBuilder {
         ...import.namespace.definedNames2.values,
       };
       for (final element in elements) {
-        consider(element, import);
+        final candidate = candidateFor(element);
+        if (candidate != null) candidates.add(candidate);
+      }
+    }
+    for (final candidate in candidates) {
+      final definingLibrary = candidate.library;
+      final generatedClassVisible =
+          definingLibrary != null &&
+          imports.any(
+            (import) => importExposesGeneratedCompanion(
+              import,
+              definingLibrary: definingLibrary,
+              generatedName: className,
+            ),
+          );
+      if (generatedClassVisible) {
+        matches.add(candidate);
+      } else {
+        hiddenDeclaration = candidate.name;
       }
     }
     if (matches.isEmpty) {
       if (hiddenDeclaration != null) {
+        final fieldPath = '${field.enclosingElement.name}.${field.name}';
         throw InvalidGenerationSource(
-          'Generated schema-first type "$className" is hidden by an import '
-          'combinator. Expose $className from the import.',
+          '$fieldPath resolves to generated schema-first type "$className", '
+          'which is hidden by an import combinator or an upstream export '
+          'combinator. Expose $className through the full import route.',
           element: field,
         );
       }
@@ -1172,15 +1196,15 @@ final class ClassModelGraphBuilder {
     }
     if (interfaceType.isDartCoreList &&
         interfaceType.typeArguments.length == 1) {
-      final item = await _schemaForType(
-        interfaceType.typeArguments.single,
-        field,
-      );
+      final itemType = interfaceType.typeArguments.single;
+      _rejectNullableCollectionElement(field, itemType);
+      final item = await _schemaForType(itemType, field);
       return '${_ack('Ack')}.list($item)';
     }
     if (interfaceType.isDartCoreSet &&
         interfaceType.typeArguments.length == 1) {
       final itemType = interfaceType.typeArguments.single;
+      _rejectNullableCollectionElement(field, itemType);
       final item = await _schemaForType(itemType, field);
       final rendered = _renderType(_typeRef(interfaceType, field));
       return '${_ack('Ack')}.list($item).codec<$rendered>('
@@ -1215,6 +1239,41 @@ final class ClassModelGraphBuilder {
     _unsupportedFieldType(field, interfaceType);
   }
 
+  void _rejectNullableCollectionElement(FieldElement field, DartType itemType) {
+    if (!_isNullable(itemType)) return;
+    _nullableCollectionElementError(field, itemType.getDisplayString());
+  }
+
+  void _rejectNullableFutureCollectionElement(
+    FieldElement field,
+    AckInferRef type,
+  ) {
+    switch (type) {
+      case AckNullableTypeRef(:final inner):
+        _rejectNullableFutureCollectionElement(field, inner);
+      case AckListTypeRef(:final elementType) ||
+          AckSetTypeRef(:final elementType):
+        if (elementType is AckNullableTypeRef) {
+          _nullableCollectionElementError(field, _renderType(elementType));
+        }
+        _rejectNullableFutureCollectionElement(field, elementType);
+      case AckMapTypeRef(:final valueType):
+        _rejectNullableFutureCollectionElement(field, valueType);
+      case AckScalarTypeRef() || AckExternalTypeRef() || AckModelTypeRef():
+        return;
+    }
+  }
+
+  Never _nullableCollectionElementError(FieldElement field, String itemType) {
+    throw InvalidGenerationSource(
+      '${field.enclosingElement.name}.${field.name} uses nullable collection '
+      'elements ($itemType). Ack.list does not support '
+      'nullable item schemas; make the element non-nullable or provide an '
+      'explicit @AckField(schema: ...) codec.',
+      element: field,
+    );
+  }
+
   void _validateClassFirstFacadeImport(
     ClassElement target,
     String facadeName, {
@@ -1223,6 +1282,8 @@ final class ClassModelGraphBuilder {
   }) {
     if (target.library == library.element) return;
     final modelName = target.name!;
+    var modelVisible = false;
+    var facadeVisible = false;
     for (final import in library.element.firstFragment.libraryImports) {
       if (import.isSynthetic || (import.prefix?.isDeferred ?? false)) continue;
       final importPrefix = import.prefix?.element.name;
@@ -1230,11 +1291,24 @@ final class ClassModelGraphBuilder {
       final candidate = prefix == null
           ? import.namespace.get2(modelName)
           : import.namespace.getPrefixed2(prefix, modelName);
-      if (candidate?.baseElement != target.baseElement) continue;
-      if (_importAllowsName(import, facadeName)) return;
+      if (candidate?.baseElement == target.baseElement) {
+        modelVisible = true;
+      }
+      if (importExposesGeneratedCompanion(
+        import,
+        definingLibrary: target.library,
+        generatedName: facadeName,
+      )) {
+        facadeVisible = true;
+      }
+    }
+    if (modelVisible && facadeVisible) return;
+    if (modelVisible) {
       throw InvalidGenerationSource(
-        'Generated class-first facade "$facadeName" is hidden by the import '
-        'for $modelName. Change the import to show $modelName, $facadeName.',
+        'Generated class-first facade "$facadeName" is hidden by an import '
+        'combinator or an upstream export combinator for $modelName. Expose '
+        'both through the full import route (for example, show $modelName, '
+        '$facadeName).',
         element: field,
       );
     }

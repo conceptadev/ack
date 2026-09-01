@@ -180,7 +180,10 @@ If the release workflow fails, check:
 
 If manual publishing fails:
 
-1. **Authentication**: Ensure you're logged in to pub.dev with `dart pub login`
+1. **Authentication**: Run `dart pub publish` and follow its authentication
+   prompt. If your release process explicitly uses a pub.dev token instead of
+   browser authorization, add that token with
+   `dart pub token add https://pub.dev`.
 2. **Version Conflicts**: Check if the version already exists on pub.dev
 3. **Dependency Issues**: Verify that all dependencies are correctly specified
 

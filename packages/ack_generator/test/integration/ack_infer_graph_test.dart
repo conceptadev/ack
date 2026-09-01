@@ -394,6 +394,35 @@ final bagSchema = Ack.object({
     );
   });
 
+  test('rejects a direct nullable Ack.list item schema', () async {
+    await _expectFailure(
+      '''
+$_head
+@AckInfer()
+final tagsSchema = Ack.list(Ack.string().nullable());
+''',
+      ['tagsSchema[]', 'nullable collection elements', 'Ack.list'],
+    );
+  });
+
+  test('rejects a referenced nullable Ack.list item schema', () async {
+    await _expectFailure(
+      '''
+$_head
+final itemSchema = Ack.string().nullable();
+
+@AckInfer()
+final tagsSchema = Ack.list(itemSchema);
+''',
+      [
+        'tagsSchema[]',
+        'itemSchema',
+        'nullable collection elements',
+        'Ack.list',
+      ],
+    );
+  });
+
   test('rejects a dynamic factory root with the declaration path', () async {
     await _expectFailure(
       '''

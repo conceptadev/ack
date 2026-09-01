@@ -99,6 +99,9 @@ Generation rejects shapes without a useful static, encodable model contract:
 - one-way `.transform()` calls, including `.trim()`, `.toLowerCase()`, and
   `.toUpperCase()`; use `.codec()` with an encoder;
 - nullable roots;
+- nullable `Ack.list` item schemas and automatically inferred `List<T?>` or
+  `Set<T?>` fields; make the collection nullable instead, or use an explicit
+  `@AckField(schema: ...)` codec for a different collection contract;
 - `Ack.any()`, `Ack.anyOf()`, and bare `Ack.instance<T>()`;
 - anonymous inline object fields and unresolved dynamic schema factories;
 - invalid names, generated-member collisions, and cross-library union branches.
@@ -154,8 +157,11 @@ typed `schema`, and raw `wireSchema`. Instantiable models apply the generated
 explicit `null` clears a nullable field), and deep collection-aware equality. Add
 `static final fromJson = AccountSchema.fromJson;` when the class should expose
 the conventional one-argument entry point. Imported nested models compose as
-`prefix.AddressSchema.schema`; `show`/`hide` combinators must expose both the
-model and facade.
+`prefix.AddressSchema.schema`. Across all imports and barrel exports,
+`show`/`hide` combinators must expose both the authored declaration and its
+generated companion (`Address` plus `AddressSchema` for class-first, or
+`addressSchema` plus `Address` for schema-first). Visibility may be split
+across multiple imports that use the same prefix.
 
 Class-first wire-name overrides support `@JsonKey(name: 'wire_name')` on the
 field. Other `JsonKey` options and constructor-parameter placement fail
