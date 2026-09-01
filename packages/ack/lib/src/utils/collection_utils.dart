@@ -38,17 +38,22 @@ Object? _deepUnmodifiableCopy(Object? value) {
 /// Performs deep equality comparison between two values.
 ///
 /// This function recursively compares:
-/// - Primitives (num, String, bool, null) using standard equality
+/// - JSON numbers by numeric value (`1` and `1.0` are equal)
+/// - Other primitives using standard equality
 /// - Lists by comparing each element in order
 /// - Maps by comparing keys and values
 /// - Sets by comparing elements (order-independent)
 ///
 /// Returns `true` if the values are structurally equal, `false` otherwise.
-/// Collection wrappers do not affect equality, while different scalar types
-/// remain distinct (for example, `int` and `double`).
+/// Collection wrappers and numeric runtime representations do not affect
+/// equality. Other scalar values preserve their concrete types.
 bool deepEquals(Object? a, Object? b) {
   // Fast path: identical objects or both null
   if (identical(a, b)) return true;
+
+  // dart2js does not preserve the VM's int/double representation boundary.
+  // Compare numbers by value so equality is stable across platforms.
+  if (a is num || b is num) return a is num && b is num && a == b;
 
   // Handle Lists
   if (a is List || b is List) {
@@ -116,7 +121,7 @@ bool deepEquals(Object? a, Object? b) {
     return !iterB.moveNext(); // Ensure b has no more elements
   }
 
-  // Scalars preserve their concrete type so `1` and `1.0` stay distinct.
+  // Preserve concrete types for non-numeric scalar values.
   if (a.runtimeType != b.runtimeType) return false;
   return a == b;
 }
@@ -128,6 +133,10 @@ bool deepEquals(Object? a, Object? b) {
 /// inputs such as JSON-derived data; cyclic structures overflow the stack.
 int deepHashCode(Object? value) {
   if (value == null) return Object.hash(null, null);
+
+  // Dart numeric equality guarantees equal hash codes across int and double
+  // representations, so use one type tag for every numeric value.
+  if (value is num) return Object.hash('ack:number', value);
 
   if (value is! Iterable && value is! Map) {
     return Object.hash(value.runtimeType, value);

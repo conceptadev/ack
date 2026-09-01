@@ -15,14 +15,23 @@
 * Preserve propagated `Error` objects during validation instead of converting
   programming defects into recoverable schema failures.
 * Compare collection contents independently of growable or unmodifiable wrapper
-  implementations while preserving distinct scalar runtime types.
+  implementations. Numerically equal `int` and `double` values now compare and
+  hash equally on native and web runtimes; other scalar types remain distinct.
 * Keep deep map-key equality consistent with `deepHashCode`, and apply JSON
   Schema Draft 7 numeric equality to `uniqueItems` (including nested values).
+* Reject the native minimum integer from `.safe()` without overflowing `abs()`.
 
 ### Changed
 
 * Export `deepEquals`, `deepHashCode`, and `deepUnmodifiableJsonMap` for
   generated Ack data classes and class-first constructors.
+* `Ack.integer()` accepts losslessly representable numbers with no fractional
+  part and normalizes them to `int`. `Ack.double()` accepts exactly
+  representable numeric inputs and normalizes them to `double`. Numeric
+  `anyOf` branches can therefore overlap; the first matching branch determines
+  the runtime representation. Use `Ack.number()` to preserve the input's
+  numeric representation and `.safe()` to require JavaScript's portable
+  integer range.
 * Raise the minimum Dart SDK to 3.9.
 
 ## 1.1.0

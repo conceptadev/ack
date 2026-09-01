@@ -40,3 +40,12 @@ jobs:
 
       - name: Analyze and test every package
         run: dart run melos run ci --no-select
+
+      - name: Test numeric parity in Chrome
+        working-directory: packages/ack
+        run: |
+          dart test --platform chrome \
+            test/schemas/numeric_platform_parity_test.dart \
+            test/schemas/extensions/numeric_extensions_test.dart \
+            test/schemas/extensions/list_schema_extensions_test.dart \
+            test/utils/collection_utils_test.dart

@@ -22,6 +22,9 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 * Align `uniqueItems` with Draft 7 numeric equality and fail generation on
   unsupported `JsonKey` behavior, mixed legacy fields, one-way transforms,
   and recursive class-first graphs across libraries.
+* Normalize losslessly representable numeric inputs consistently across native
+  and web runtimes, align deep numeric equality and hashing, and reject the
+  native minimum integer from `.safe()`.
 * Preserve original boundary values from generated class-first `wireSchema`
   facades while still validating nested codecs and models.
 * Rename the pre-release class-first unknown-key API to

@@ -197,6 +197,16 @@ void main() {
         expect(result.isOk, isFalse);
       });
 
+      test('should preserve list order when comparing numeric values', () {
+        final schema = Ack.list(Ack.any()).unique();
+        final result = schema.safeParse([
+          [1, 2],
+          [2.0, 1.0],
+        ]);
+
+        expect(result.isOk, isTrue);
+      });
+
       test('should detect duplicate integers', () {
         final schema = Ack.list(Ack.any()).unique();
         final result = schema.safeParse([1, 2, 1]);

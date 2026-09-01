@@ -296,19 +296,20 @@ Requires all items to be unique. Uses deep structural equality, so nested maps a
 Ack.list(Ack.string()).unique()
 ```
 
-## Primitive type strictness
+## Primitive inputs and numeric normalization
 
-Primitive schemas (`Ack.string()`, `Ack.integer()`, `Ack.double()`, `Ack.number()`, `Ack.boolean()`) are strict: a value must already match the expected Dart runtime type. Mismatched inputs surface as a `TypeMismatchError` rather than being silently coerced.
+String and boolean schemas require the expected Dart runtime type. Numeric
+schemas require a `num`, but normalize by mathematical value so native and web
+builds behave identically. Non-numeric inputs surface as a `TypeMismatchError`
+rather than being silently coerced.
 
-Each schema maps to a specific runtime type:
-
-| Schema           | Accepted runtime type | Notes                              |
-| ---------------- | --------------------- | ---------------------------------- |
-| `Ack.string()`   | `String`              | rejects `num`, `bool`, etc.        |
-| `Ack.integer()`  | `int`                 | rejects `double` (even `42.0`)     |
-| `Ack.double()`   | `double`              | rejects `int` (even `42`)          |
-| `Ack.number()`   | `num`                 | accepts both `int` and `double`    |
-| `Ack.boolean()`  | `bool`                | rejects `"true"`, `1`, `0`, etc.   |
+| Schema          | Accepted boundary value                         | Runtime value                        |
+| --------------- | ----------------------------------------------- | ------------------------------------ |
+| `Ack.string()`  | `String`                                        | unchanged `String`                   |
+| `Ack.integer()` | finite `num` with no fractional part, lossless  | normalized `int`                     |
+| `Ack.double()`  | finite `num`, exactly representable as `double` | normalized `double`                  |
+| `Ack.number()`  | finite `num`                                    | original `int` or `double`           |
+| `Ack.boolean()` | `bool`                                          | unchanged `bool`                     |
 
 ```dart
 final stringSchema = Ack.string();
@@ -317,13 +318,14 @@ stringSchema.safeParse(123);      // ❌ FAIL: TypeMismatchError
 stringSchema.safeParse(true);     // ❌ FAIL: TypeMismatchError
 
 final intSchema = Ack.integer();
-intSchema.safeParse(42);    // ✅ OK
-intSchema.safeParse('42');  // ❌ FAIL: TypeMismatchError
-intSchema.safeParse(42.0);  // ❌ FAIL: TypeMismatchError (double is not int)
+intSchema.parse(42);       // => 42 (int)
+intSchema.parse(42.0);     // => 42 (int)
+intSchema.safeParse(42.5); // ❌ FAIL: not a mathematical integer
+intSchema.safeParse('42'); // ❌ FAIL: TypeMismatchError
 
 final doubleSchema = Ack.double();
-doubleSchema.safeParse(3.14);  // ✅ OK
-doubleSchema.safeParse(42);    // ❌ FAIL: TypeMismatchError (int is not double)
+doubleSchema.parse(3.14); // => 3.14 (double)
+doubleSchema.parse(42);   // => 42.0 (double)
 
 final numberSchema = Ack.number();
 numberSchema.safeParse(42);    // ✅ OK (int is num)
@@ -331,9 +333,14 @@ numberSchema.safeParse(3.14);  // ✅ OK (double is num)
 numberSchema.safeParse('42');  // ❌ FAIL: TypeMismatchError
 ```
 
-Because `Ack.integer()` and `Ack.double()` do not overlap, use `Ack.number()` when a field may be either an `int` or a `double`. Use `transform`/`codec` only when the boundary value isn't already a `num` (for example, a numeric string).
+`Ack.integer()` and `Ack.double()` overlap for integral values. `Ack.anyOf`
+returns the first successful branch, so order numeric branches according to the
+runtime representation you want. Use `Ack.number()` when validation should
+preserve an input that is already an `int` or `double`. Use `transform`/`codec`
+when the boundary value is not already a `num` (for example, a numeric string).
 
-This strictness makes `anyOf` and discriminated unions reliable — they can distinguish the string `"42"` from the integer `42` without configuration:
+Primitive type checking still lets unions distinguish the string `"42"` from
+the numeric value `42` without configuration:
 
 ```dart
 final stringOrNumber = Ack.anyOf([

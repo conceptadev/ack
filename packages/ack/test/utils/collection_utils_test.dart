@@ -68,8 +68,8 @@ void main() {
       expect(deepEquals(left, right), isTrue);
       expect(deepHashCode(left), deepHashCode(right));
       expect(deepEquals(left, different), isFalse);
-      expect(deepEquals([1], [1.0]), isFalse);
-      expect(deepHashCode([1]), isNot(deepHashCode([1.0])));
+      expect(deepEquals([1], [1.0]), isTrue);
+      expect(deepHashCode([1]), deepHashCode([1.0]));
     },
   );
 
@@ -89,10 +89,11 @@ void main() {
 
     expect(deepEquals(growable, wrapped), isTrue);
     expect(deepHashCode(growable), deepHashCode(wrapped));
-    expect(deepEquals([1], [1.0]), isFalse);
+    expect(deepEquals([1], [1.0]), isTrue);
+    expect(deepHashCode([1]), deepHashCode([1.0]));
   });
 
-  test('deep map keys preserve scalar types and the hash contract', () {
+  test('deep map keys follow scalar equality and the hash contract', () {
     final equivalentPairs = <(Object?, Object?)>[
       (<num, String>{1: 'one'}, <num, String>{1: 'one'}),
       (
@@ -134,10 +135,48 @@ void main() {
       );
     }
 
+    final integerKey = <num, String>{1: 'one'};
+    final doubleKey = <num, String>{1.0: 'one'};
+
     expect(
-      deepEquals(<num, String>{1: 'one'}, <num, String>{1.0: 'one'}),
-      isFalse,
-      reason: 'map keys follow the same type-sensitive scalar semantics',
+      deepEquals(integerKey, doubleKey),
+      isTrue,
+      reason: 'mathematically equal numeric map keys are equivalent',
     );
+    expect(deepHashCode(integerKey), deepHashCode(doubleKey));
+  });
+
+  test('numeric scalar equality and hashing ignore representation', () {
+    for (final (left, right) in <(num, num)>[(1, 1.0), (0, -0.0)]) {
+      expect(deepEquals(left, right), isTrue);
+      expect(deepHashCode(left), deepHashCode(right));
+    }
+
+    expect(deepEquals(1, 1.5), isFalse);
+  });
+
+  test(
+    'numeric equality and hashing recurse through every collection kind',
+    () {
+      final integers = <String, Object?>{
+        'list': [1, 2],
+        'set': {3, 4},
+        'iterable': Iterable<int>.generate(2, (index) => index + 5),
+      };
+      final doubles = <String, Object?>{
+        'list': [1.0, 2.0],
+        'set': {4.0, 3.0},
+        'iterable': Iterable<double>.generate(2, (index) => index + 5.0),
+      };
+
+      expect(deepEquals(integers, doubles), isTrue);
+      expect(deepHashCode(integers), deepHashCode(doubles));
+    },
+  );
+
+  test('deep equality preserves collection category and list order', () {
+    expect(deepEquals([1, 2], [2.0, 1.0]), isFalse);
+    expect(deepEquals([1], {1.0}), isFalse);
+    expect(deepEquals([1], Iterable<int>.generate(1, (index) => 1)), isFalse);
   });
 }
