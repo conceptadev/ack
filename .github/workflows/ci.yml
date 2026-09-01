@@ -3,8 +3,9 @@ name: CI
 on:
   push:
     branches: [main]
+  # No `branches:` filter. A stacked pull request targets its parent
+  # branch, not main, and would otherwise run no checks at all.
   pull_request:
-    branches: [main]
 
 permissions:
   contents: read
