@@ -4,7 +4,7 @@
 @import '@conceptadev/docs-theme/theme.css';
 
 @source '../packages/docs-theme/src';
-@source '../../docs';
+@source '../content/docs';
 
 html {
   scrollbar-gutter: stable;
