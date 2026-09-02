@@ -66,6 +66,11 @@ jobs:
           set -euo pipefail
           test -s docs-site/out/index.html
           test -s docs-site/out/core-concepts/schemas/index.html
+          test -s docs-site/out/llms.txt
+          test -s docs-site/out/llms-full.txt
+          test -s docs-site/out/llms.mdx/core-concepts/schemas/content.md
+          test -s docs-site/out/og/core-concepts/schemas/image.png
           grep -q '/ack/_next/' docs-site/out/index.html
+          grep -q 'https://concepta.dev/ack/core-concepts/schemas' docs-site/out/llms.txt
           test ! -e docs.json
           ! grep -R --line-number 'docs\.page/conceptadev/ack' docs README.md
