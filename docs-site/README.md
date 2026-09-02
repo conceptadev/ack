@@ -4,7 +4,8 @@ This directory contains the Fumadocs application for Ack.
 
 The canonical documentation content stays in the repository-level `docs/`
 directory. This preserves Ack's existing documentation tests and keeps content
-changes beside the Dart packages.
+changes beside the Dart packages. Do not edit `docs-site/content`; it is a
+generated mirror and is ignored by Git.
 
 ## Local development
 
@@ -15,7 +16,8 @@ pnpm install
 pnpm dev
 ```
 
-Open `http://localhost:3000`.
+Open `http://localhost:3000`. The development command watches the canonical
+`docs/` directory and refreshes the generated mirror when a page changes.
 
 To test the production subpath used by `https://concepta.dev/ack`:
 
