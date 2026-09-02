@@ -81,4 +81,5 @@ jobs:
           grep -q '/ack/_next/' docs-site/out/index.html
           grep -q 'https://concepta.dev/ack/core-concepts/schemas' docs-site/out/llms.txt
           test ! -e docs.json
-          ! grep -R --line-number 'docs\.page/conceptadev/ack' docs README.md
+          ! git grep -n 'docs\.page/conceptadev/ack'
+          ! git grep -n 'concepta\.dev/documentation/ack' -- '*.md' '*.mdx'
