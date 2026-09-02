@@ -184,6 +184,32 @@ void main() {
       expect(publish['environment'], 'Production');
     });
 
+    test('provisions pub.dev OIDC credentials before publishing', () {
+      final jobs = _jobs('.github/workflows/publish-packages.yml');
+      final publish = jobs['publish'] as Map;
+      final steps = (publish['steps'] as List).cast<Map>();
+      final oidcStep = steps.indexWhere(
+        (step) => '${step['uses']}'.startsWith('dart-lang/setup-dart@'),
+      );
+      final publishStep = steps.indexWhere(
+        (step) => step['name'] == 'Publish package with pub.dev OIDC',
+      );
+
+      expect(
+        oidcStep,
+        isNonNegative,
+        reason:
+            'dart-lang/setup-dart exchanges the GitHub Actions ID token for '
+            'the PUB_TOKEN that pub.dev requires',
+      );
+      expect(
+        oidcStep,
+        publishStep - 1,
+        reason:
+            'the short-lived token must be acquired immediately before upload',
+      );
+    });
+
     test('proves the hosted dependency graph before it uploads', () {
       final source = File(
         '.github/workflows/publish-packages.yml',

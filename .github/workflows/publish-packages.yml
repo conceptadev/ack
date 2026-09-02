@@ -49,11 +49,8 @@ jobs:
         with:
           persist-credentials: false
 
-      # `pub` performs the pub.dev OIDC exchange itself when the job grants
-      # `id-token: write`, so no extra action provisions credentials. Each
-      # package must also enable automated publishing on pub.dev for the
-      # `conceptadev/ack` repository. See PUBLISHING.md.
       - name: Set up the pinned Flutter SDK
+        id: flutter
         uses: ./.github/actions/setup-flutter
 
       - name: Choose the SDK executable for this package
@@ -142,6 +139,15 @@ jobs:
         env:
           PACKAGE: ${{ matrix.package }}
         run: dart scripts/publish_dry_run.dart "$PACKAGE"
+
+      # Acquire the short-lived token immediately before upload. setup-dart
+      # registers the token with `pub` and uses the exact Dart version bundled
+      # by the checksum-verified Flutter archive above.
+      - name: Provision pub.dev OIDC credentials
+        uses: dart-lang/setup-dart@6afc89df92d6eb3834022f73cd65adc8cdfcb92d # v1.8.1
+        with:
+          sdk: ${{ steps.flutter.outputs.dart-version }}
+          problem-matcher: false
 
       - name: Publish package with pub.dev OIDC
         working-directory: ${{ inputs.packages_folder_path }}/${{ matrix.package }}

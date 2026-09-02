@@ -103,9 +103,10 @@ archive against the SHA-256 value in `.github/flutter-releases.json`.
 
 ### pub.dev automated publishing
 
-`pub` exchanges the GitHub OIDC token for a pub.dev token by itself, so the
-publish job only grants `id-token: write`. Each of the five packages must also
-enable automated publishing on pub.dev before the first automated release:
+The publish job grants `id-token: write`, then the pinned
+`dart-lang/setup-dart` action exchanges GitHub's OIDC token for a short-lived
+pub.dev `PUB_TOKEN` and registers it with `pub`. Each of the five packages must
+also enable automated publishing on pub.dev before the first automated release:
 
 1. Open `https://pub.dev/packages/<package>/admin`.
 2. Enable **Automated publishing** from GitHub Actions.
