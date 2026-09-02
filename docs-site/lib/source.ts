@@ -7,7 +7,7 @@ import { defineDocs } from 'fumadocs-mdx/macro';
 import { z } from 'zod';
 
 const docs = defineDocs({
-  dir: '../docs',
+  dir: 'content/docs',
   docs: {
     schema: pageSchema.extend({
       status: z

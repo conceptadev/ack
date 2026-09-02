@@ -55,6 +55,7 @@ tools/package-lock.json
 docs-site/node_modules/
 docs-site/.next/
 docs-site/.source/
+docs-site/content/
 docs-site/out/
 
 # Temporary test files

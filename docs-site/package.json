@@ -4,10 +4,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "next build",
-    "dev": "next dev",
+    "docs:sync": "node scripts/sync-docs.mjs",
+    "build": "pnpm docs:sync && next build",
+    "dev": "pnpm docs:sync && next dev",
     "start": "next start",
-    "typecheck": "next typegen && tsc --noEmit",
+    "typecheck": "pnpm docs:sync && next typegen && tsc --noEmit",
     "check": "pnpm typecheck && pnpm build"
   },
   "dependencies": {
