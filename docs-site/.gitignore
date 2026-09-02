@@ -1,0 +1,6 @@
+.generated/
+.next/
+node_modules/
+out/
+public/_ack-docs/
+*.tsbuildinfo
