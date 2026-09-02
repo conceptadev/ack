@@ -48,7 +48,7 @@ jobs:
 
       - name: Install documentation dependencies
         working-directory: docs-site
-        run: pnpm install --frozen-lockfile
+        run: pnpm i --frozen-lockfile
 
       - name: Check documentation scripts
         run: |
