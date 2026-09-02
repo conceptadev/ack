@@ -5,13 +5,16 @@ on:
     branches: [main]
     paths:
       - 'docs/**'
-      - 'docs.json'
+      - 'docs-site/**'
+      - '.github/workflows/docs.yml'
       - 'llms.txt'
-  # No `branches:` filter. A stacked pull request targets its parent
-  # branch, not main, and would otherwise run no checks at all.
+  # No `branches:` filter. A stacked pull request targets its parent branch,
+  # not main, and would otherwise run no documentation checks.
   pull_request:
     paths:
       - 'docs/**'
+      - 'docs-site/**'
+      - '.github/workflows/docs.yml'
       - 'docs.json'
       - 'llms.txt'
 
@@ -26,7 +29,7 @@ jobs:
   validate:
     name: validate
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - name: Checkout repository
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -36,28 +39,47 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '22'
+          node-version: '24.14.0'
+          cache: npm
+          cache-dependency-path: docs-site/pnpm-lock.yaml
 
-      - name: Verify llms.txt sources
+      - name: Install pinned pnpm
+        run: npm install --global pnpm@11.5.3
+
+      - name: Install documentation dependencies
+        working-directory: docs-site
+        run: pnpm i --frozen-lockfile
+
+      - name: Check documentation scripts
+        run: |
+          node --check docs-site/scripts/sync-docs.mjs
+          node --check docs-site/scripts/dev.mjs
+
+      - name: Type-check documentation
+        working-directory: docs-site
+        run: pnpm typecheck
+
+      - name: Verify the canonical content mirror
+        run: diff -qr docs docs-site/content/docs
+
+      - name: Build production documentation
+        working-directory: docs-site
+        env:
+          DOCS_BASE_PATH: /ack
+          NEXT_PUBLIC_SITE_URL: https://concepta.dev/ack
+        run: pnpm build
+
+      - name: Verify static output
         run: |
           set -euo pipefail
-          test -s llms.txt || {
-            echo "llms.txt is missing or empty."
-            exit 1
-          }
-          test ! -e docs/llms.txt.mdx || {
-            echo "docs.page reserves /llms.txt; remove docs/llms.txt.mdx to avoid a duplicate index entry."
-            exit 1
-          }
-          grep -q 'https://docs.page/conceptadev/ack/llms.txt' docs/index.mdx || {
-            echo "The docs homepage must link to the generated docs.page llms.txt export."
-            exit 1
-          }
-
-      # Pin the CLI version. An unpinned `npm install -g @docs.page/cli` would
-      # execute whatever the registry serves at run time, which is the
-      # mutable-dependency problem that the other workflows removed.
-      - name: Validate documentation
-        env:
-          DOCS_PAGE_CLI_VERSION: '2.0.0'
-        run: npx --yes "@docs.page/cli@$DOCS_PAGE_CLI_VERSION" check
+          test -s docs-site/out/index.html
+          test -s docs-site/out/core-concepts/schemas/index.html
+          test -s docs-site/out/llms.txt
+          test -s docs-site/out/llms-full.txt
+          test -s docs-site/out/llms.mdx/core-concepts/schemas/content.md
+          test -s docs-site/out/og/core-concepts/schemas/image.png
+          grep -q '/ack/_next/' docs-site/out/index.html
+          grep -q 'https://concepta.dev/ack/core-concepts/schemas' docs-site/out/llms.txt
+          test ! -e docs.json
+          ! git grep -n 'docs\.page/conceptadev/ack'
+          ! git grep -n 'concepta\.dev/documentation/ack' -- '*.md' '*.mdx'
