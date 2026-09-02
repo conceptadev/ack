@@ -60,10 +60,11 @@ jobs:
         run: |
           set -euo pipefail
           if grep -q "sdk: flutter" "$PUBSPEC"; then
-            printf 'executable=flutter\n' >> "$GITHUB_OUTPUT"
+            executable="$(command -v flutter)"
           else
-            printf 'executable=dart\n' >> "$GITHUB_OUTPUT"
+            executable="$(command -v dart)"
           fi
+          printf 'executable=%s\n' "$executable" >> "$GITHUB_OUTPUT"
 
       - name: Resolve workspace dependencies
         run: dart pub get

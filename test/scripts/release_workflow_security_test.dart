@@ -210,6 +210,19 @@ void main() {
       );
     });
 
+    test('preserves the selected SDK path across OIDC provisioning', () {
+      final jobs = _jobs('.github/workflows/publish-packages.yml');
+      final publish = jobs['publish'] as Map;
+      final steps = (publish['steps'] as List).cast<Map>();
+      final selectSdk = steps.singleWhere(
+        (step) => step['name'] == 'Choose the SDK executable for this package',
+      );
+      final script = '${selectSdk['run']}';
+
+      expect(script, contains('command -v flutter'));
+      expect(script, contains('command -v dart'));
+    });
+
     test('proves the hosted dependency graph before it uploads', () {
       final source = File(
         '.github/workflows/publish-packages.yml',
