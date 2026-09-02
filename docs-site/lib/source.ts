@@ -5,6 +5,7 @@ import {
 } from 'fumadocs-core/source/schema';
 import { defineDocs } from 'fumadocs-mdx/macro';
 import { z } from 'zod';
+import { absoluteSiteUrl } from '@/lib/routes';
 
 const docs = defineDocs({
   dir: 'content/docs',
@@ -53,5 +54,5 @@ export function getPageMarkdownUrl(page: (typeof source)['$inferPage']) {
 export async function getLLMText(page: (typeof source)['$inferPage']) {
   const processed = await page.data.getText('processed');
 
-  return `# ${page.data.title} (${page.url})\n\n${processed}`;
+  return `# ${page.data.title} (${absoluteSiteUrl(page.url)})\n\n${processed}`;
 }
