@@ -6,7 +6,7 @@
   "scripts": {
     "docs:sync": "node scripts/sync-docs.mjs",
     "build": "pnpm docs:sync && next build",
-    "dev": "pnpm docs:sync && next dev",
+    "dev": "node scripts/dev.mjs",
     "start": "next start",
     "typecheck": "pnpm docs:sync && next typegen && tsc --noEmit",
     "check": "pnpm typecheck && pnpm build"
