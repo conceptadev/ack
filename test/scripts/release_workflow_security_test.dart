@@ -205,7 +205,8 @@ void main() {
       expect(
         oidcStep,
         publishStep - 1,
-        reason: 'the short-lived token must be acquired immediately before upload',
+        reason:
+            'the short-lived token must be acquired immediately before upload',
       );
     });
 
