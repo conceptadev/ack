@@ -50,9 +50,17 @@ jobs:
         working-directory: docs-site
         run: pnpm install --frozen-lockfile
 
+      - name: Check documentation scripts
+        run: |
+          node --check docs-site/scripts/sync-docs.mjs
+          node --check docs-site/scripts/dev.mjs
+
       - name: Type-check documentation
         working-directory: docs-site
         run: pnpm typecheck
+
+      - name: Verify the canonical content mirror
+        run: diff -qr docs docs-site/content/docs
 
       - name: Build production documentation
         working-directory: docs-site
