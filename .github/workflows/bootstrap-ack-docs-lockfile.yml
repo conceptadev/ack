@@ -1,0 +1,44 @@
+name: Bootstrap ACK docs lockfile
+
+on:
+  push:
+    branches:
+      - docs/fumadocs-migration
+    paths:
+      - 'docs-site/package.json'
+      - 'docs-site/theme/package.json'
+      - 'docs-site/pnpm-workspace.yaml'
+      - '.github/workflows/bootstrap-ack-docs-lockfile.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: docs/fumadocs-migration
+
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 11.5.3
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24.14.0
+
+      - name: Generate lockfile
+        run: pnpm --dir docs-site install --lockfile-only
+
+      - name: Commit lockfile and remove bootstrap workflow
+        run: |
+          rm .github/workflows/bootstrap-ack-docs-lockfile.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs-site/pnpm-lock.yaml .github/workflows/bootstrap-ack-docs-lockfile.yml
+          git commit -m 'chore(docs): add pnpm lockfile'
+          git push
