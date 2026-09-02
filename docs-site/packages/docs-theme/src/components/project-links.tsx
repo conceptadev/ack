@@ -1,0 +1,43 @@
+import type { ComponentProps, ReactNode } from 'react';
+import type { DocsProject } from '../types';
+
+export interface ProjectLinksProps
+  extends Omit<ComponentProps<'section'>, 'title'> {
+  projects: DocsProject[];
+  title?: ReactNode;
+}
+
+export function ProjectLinks({
+  projects,
+  title = 'Related projects',
+  className,
+  ...props
+}: ProjectLinksProps) {
+  return (
+    <section
+      {...props}
+      className={['not-prose my-6', className].filter(Boolean).join(' ')}
+    >
+      <h2 className="mb-3 text-lg font-semibold">{title}</h2>
+      <ul className="grid gap-3 sm:grid-cols-2">
+        {projects.map((project) => (
+          <li key={project.id}>
+            <a
+              className="block h-full rounded-xl border border-fd-border bg-fd-card p-4 transition-colors hover:bg-fd-accent"
+              href={project.docsUrl}
+            >
+              <span className="font-medium text-fd-foreground">
+                {project.name}
+              </span>
+              {project.description ? (
+                <span className="mt-1 block text-sm text-fd-muted-foreground">
+                  {project.description}
+                </span>
+              ) : null}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
