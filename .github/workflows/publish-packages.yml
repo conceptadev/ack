@@ -53,15 +53,6 @@ jobs:
         id: flutter
         uses: ./.github/actions/setup-flutter
 
-      # setup-dart exchanges the GitHub Actions ID token for a short-lived
-      # pub.dev token and registers it with `pub`. Keep the SDK version aligned
-      # with the checksum-verified Flutter archive above.
-      - name: Provision pub.dev OIDC credentials
-        uses: dart-lang/setup-dart@6afc89df92d6eb3834022f73cd65adc8cdfcb92d # v1.8.1
-        with:
-          sdk: ${{ steps.flutter.outputs.dart-version }}
-          problem-matcher: false
-
       - name: Choose the SDK executable for this package
         id: sdk
         env:
@@ -148,6 +139,15 @@ jobs:
         env:
           PACKAGE: ${{ matrix.package }}
         run: dart scripts/publish_dry_run.dart "$PACKAGE"
+
+      # Acquire the short-lived token immediately before upload. setup-dart
+      # registers the token with `pub` and uses the exact Dart version bundled
+      # by the checksum-verified Flutter archive above.
+      - name: Provision pub.dev OIDC credentials
+        uses: dart-lang/setup-dart@6afc89df92d6eb3834022f73cd65adc8cdfcb92d # v1.8.1
+        with:
+          sdk: ${{ steps.flutter.outputs.dart-version }}
+          problem-matcher: false
 
       - name: Publish package with pub.dev OIDC
         working-directory: ${{ inputs.packages_folder_path }}/${{ matrix.package }}

@@ -202,7 +202,11 @@ void main() {
             'dart-lang/setup-dart exchanges the GitHub Actions ID token for '
             'the PUB_TOKEN that pub.dev requires',
       );
-      expect(oidcStep, lessThan(publishStep));
+      expect(
+        oidcStep,
+        publishStep - 1,
+        reason: 'the short-lived token must be acquired immediately before upload',
+      );
     });
 
     test('proves the hosted dependency graph before it uploads', () {
