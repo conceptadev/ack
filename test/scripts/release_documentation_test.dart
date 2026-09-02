@@ -43,4 +43,12 @@ void main() {
     expect(publishing, matches(RegExp(r'authentication\s+prompt')));
     expect(publishing, contains('dart pub token add https://pub.dev'));
   });
+
+  test('automated publishing documents OIDC credential provisioning', () {
+    final publishing = File('PUBLISHING.md').readAsStringSync();
+
+    expect(publishing, contains('dart-lang/setup-dart'));
+    expect(publishing, contains('PUB_TOKEN'));
+    expect(publishing, isNot(contains('by itself')));
+  });
 }
