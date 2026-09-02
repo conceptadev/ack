@@ -1,0 +1,55 @@
+name: Normalize documentation front matter
+
+on:
+  push:
+    branches:
+      - docs/fumadocs-migration
+    paths:
+      - '.github/workflows/fix-doc-frontmatter.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  normalize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - name: Add Fumadocs metadata
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('docs/architecture/ackinfer-model-generation.md')
+          content = path.read_text()
+          if content.startswith('---\n'):
+              raise SystemExit(0)
+
+          heading = '# Ack model and schema generation\n\n'
+          if not content.startswith(heading):
+              raise SystemExit(f'unexpected heading in {path}')
+
+          frontmatter = '''---
+          title: Ack model and schema generation
+          description: Architecture and generation contracts for AckInfer and AckModel.
+          ---
+
+          '''
+          path.write_text(frontmatter + content[len(heading):])
+          PY
+
+      - name: Commit metadata
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/architecture/ackinfer-model-generation.md
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'docs: add architecture page metadata'
+          git push
