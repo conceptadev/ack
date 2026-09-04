@@ -5,8 +5,11 @@
 - Harden codec-boundary validation for Flutter values that only assert in
   debug/release-unsafe code paths: recursive `Container.child` nesting is
   capped, `StarBorder` rejects point/valley rounding sums above `1`, gradient
-  stops must be within `[0, 1]` and ascending, and `TextStyle.fontSize` must be
-  positive.
+  stops must be within `[0, 1]` and ascending, `TextStyle.fontSize` must be
+  positive, and `StrutStyle.package` requires a `fontFamily` or a non-empty
+  `fontFamilyFallback` (empty fallback is treated as omitted, matching
+  Flutter). Encoding `Text.rich` now fails with a dedicated unsupported-span
+  diagnostic instead of a generic missing-`data` error.
 - Document that the `EdgeInsets` primitive intentionally remains permissive;
   widget codecs enforce non-negative inset rules where Flutter asserts them.
 

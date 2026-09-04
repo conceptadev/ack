@@ -1,3 +1,4 @@
+import 'package:ack/ack.dart' show SchemaNestedError;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_codec/flutter_codec.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -107,6 +108,22 @@ void main() {
       expect(result.isFail, isTrue);
       expect(
         result.getError().toString(),
+        contains('Text.rich inline span trees are not supported'),
+      );
+    });
+
+    test('widgetCodec keeps the Text.rich diagnostic', () {
+      final result = widgetCodec.safeEncode(
+        const Text.rich(TextSpan(text: 'hello')),
+      );
+
+      expect(result.isFail, isTrue);
+      final error = result.getError();
+      expect(error, isA<SchemaNestedError>());
+      expect(
+        (error as SchemaNestedError).errors
+            .map((nested) => nested.toString())
+            .join('\n'),
         contains('Text.rich inline span trees are not supported'),
       );
     });

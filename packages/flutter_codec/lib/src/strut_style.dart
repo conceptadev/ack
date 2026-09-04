@@ -21,6 +21,13 @@ import 'primitives/font_weight.dart' show fontWeightCodec;
 /// When the prefix is missing or inconsistent, `package` is emitted as
 /// `null` and the stored (prefixed) `fontFamily` is preserved verbatim.
 ///
+/// [StrutStyle] asserts `package == null || (fontFamily != null ||
+/// fontFamilyFallback != null)`. The constructor interpolates a null
+/// `fontFamily` into the literal `'packages/<pkg>/null'`, and Flutter
+/// treats an empty fallback list as omitted, so this codec requires a
+/// non-null family or a non-empty fallback when `package` is set. The
+/// check is enforced here so it holds in release builds too.
+///
 /// [StrutStyle.debugLabel] is excluded — it's debug metadata, ignored by
 /// [StrutStyle] equality.
 final strutStyleCodec =
@@ -39,10 +46,7 @@ final strutStyleCodec =
           'forceStrutHeight': Ack.boolean().nullable().optional(),
         })
         .refine(
-          (data) =>
-              data['package'] == null ||
-              data['fontFamily'] != null ||
-              data['fontFamilyFallback'] != null,
+          _strutStylePackageHasFamily,
           message:
               'StrutStyle package requires fontFamily or '
               'fontFamilyFallback.',
@@ -51,6 +55,14 @@ final strutStyleCodec =
           decode: _decodeStrutStyle,
           encode: _encodeStrutStyle,
         );
+
+bool _strutStylePackageHasFamily(JsonMap data) {
+  if (data['package'] == null) return true;
+  if (data['fontFamily'] != null) return true;
+  final fallback = data['fontFamilyFallback'];
+
+  return fallback is List && fallback.isNotEmpty;
+}
 
 StrutStyle _decodeStrutStyle(JsonMap data) {
   return StrutStyle(

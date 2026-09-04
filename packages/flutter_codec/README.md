@@ -125,7 +125,8 @@ silently falling back.
   `DecorationImage` that carries one **throws** rather than silently dropping it.
 - **No portable JSON shape (encode throws)**: `Gradient.transform`
   (`GradientTransform` is an open abstract type — encoding a transformed
-  gradient throws rather than dropping it silently).
+  gradient throws rather than dropping it silently). `Text.rich` / inline
+  `TextSpan` trees are also rejected on encode instead of dropping the span.
 - **No portable JSON shape**: `Paint`, `Path`, `Shader`,
   `TextStyle.foreground` / `TextStyle.background`,
   `DecorationImage.onError`, `FlutterLogoDecoration`.

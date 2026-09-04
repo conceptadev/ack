@@ -45,6 +45,15 @@ void main() {
       // StrutStyle's constructor folds package into fontFamily.
       expect(decoded!.fontFamily, 'packages/my_pkg/Roboto');
     });
+
+    test('decodes package with only fontFamilyFallback', () {
+      final decoded = strutStyleCodec.parse({
+        'package': 'my_pkg',
+        'fontFamilyFallback': ['Roboto'],
+      });
+
+      expect(decoded!.fontFamilyFallback, ['packages/my_pkg/Roboto']);
+    });
   });
 
   group('strutStyleCodec encode', () {
@@ -100,6 +109,23 @@ void main() {
   group('strutStyleCodec rejects invalid input', () {
     test('rejects package without a font family', () {
       final result = strutStyleCodec.safeParse({'package': 'my_pkg'});
+
+      expect(result.isFail, isTrue);
+      expect(
+        result.getError().toString(),
+        contains(
+          'StrutStyle package requires fontFamily or fontFamilyFallback.',
+        ),
+      );
+    });
+
+    test('rejects package with an empty fontFamilyFallback', () {
+      // Flutter treats an empty fallback list as omitted, and still interpolates
+      // a null fontFamily into the literal 'packages/<pkg>/null'.
+      final result = strutStyleCodec.safeParse({
+        'package': 'my_pkg',
+        'fontFamilyFallback': <String>[],
+      });
 
       expect(result.isFail, isTrue);
       expect(
