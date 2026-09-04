@@ -11,10 +11,11 @@
 - `packages/ack_generator`: build_runner generator + unit/integration tests.
 - `packages/ack_firebase_ai`: Firebase AI schema adapter.
 - `packages/ack_json_schema_builder`: JSON Schema adapter.
+- `packages/flutter_codec`: ACK codecs for portable Flutter value types.
 - `example`: sample usage.
 
 ## Environment and setup
-- Required SDKs: Dart `>=3.9.0 <4.0.0`, Flutter `>=3.35.0` (see `/pubspec.yaml`).
+- Required SDKs: Dart `>=3.9.0 <4.0.0`, Flutter `>=3.41.0` (see `/pubspec.yaml`).
 - CI pins Flutter to the version in `/.fvmrc`. Add a new version to `/.github/flutter-releases.json` with its checksum before a workflow may install it.
 - Use from repo root:
   1. `dart pub get`

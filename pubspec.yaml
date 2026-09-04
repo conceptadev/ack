@@ -3,7 +3,7 @@ description: ACK workspace root package
 
 environment:
   sdk: '>=3.9.0 <4.0.0'
-  flutter: '>=3.35.0'
+  flutter: '>=3.41.0'
 
 workspace:
   - packages/ack
@@ -11,6 +11,7 @@ workspace:
   - packages/ack_generator
   - packages/ack_firebase_ai
   - packages/ack_json_schema_builder
+  - packages/flutter_codec
   - example
 
 dependencies:
@@ -60,6 +61,7 @@ melos:
           - ack_json_schema_builder
           - ack_example
           - ack_annotations
+          - flutter_codec
 
     fix:
       run: dart run melos exec -- "dart fix --apply"

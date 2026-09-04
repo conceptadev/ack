@@ -1,0 +1,24 @@
+name: flutter_codec
+description: JSON codecs for Flutter painting and rendering value types (Color, Gradient, TextStyle, ShapeBorder, EdgeInsets, and more), built on ACK schemas.
+version: 0.1.1
+repository: https://github.com/btwld/ack
+homepage: https://github.com/btwld/ack/tree/main/packages/flutter_codec
+issue_tracker: https://github.com/btwld/ack/issues
+resolution: workspace
+
+environment:
+  sdk: '>=3.8.0 <4.0.0'
+  # Floor is 3.41.0: FontWeight(int) and Container.isAntiAlias are part of the
+  # codec contract and are unavailable in Flutter 3.38.1.
+  flutter: '>=3.41.0'
+
+dependencies:
+  ack: ^1.0.1
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  lints: ^5.0.0
+  test: ^1.25.15

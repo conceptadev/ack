@@ -1,0 +1,16 @@
+# Inherits the shared workspace config (lints + DCM presets/rules).
+# See /analysis_options.yaml at the workspace root.
+include: ../../analysis_options.yaml
+
+analyzer:
+  language:
+    strict-casts: true
+    strict-inference: true
+    strict-raw-types: true
+
+dart_code_metrics:
+  rules:
+    # Dot shorthands require Dart 3.10; this package's SDK floor is 3.8 (see
+    # pubspec.yaml). Same constraint as the workspace root's
+    # prefer-shorthands-with-enums override.
+    prefer-shorthands-with-static-fields: false

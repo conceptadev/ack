@@ -49,3 +49,24 @@ jobs:
             test/schemas/extensions/numeric_extensions_test.dart \
             test/schemas/extensions/list_schema_extensions_test.dart \
             test/utils/collection_utils_test.dart
+
+  test-minimum:
+    name: Flutter 3.41.0
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Set up the minimum workspace Flutter SDK
+        uses: ./.github/actions/setup-flutter
+        with:
+          flutter-version: '3.41.0'
+
+      - name: Resolve workspace dependencies
+        run: dart pub get
+
+      - name: Analyze and test every package
+        run: dart run melos run ci --no-select

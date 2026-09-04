@@ -5,6 +5,10 @@
       "dart": "3.9.0",
       "sha256": "ff2d9474d768fdb61c1b8d6b76fd4eb98235c271e68b10abf41bd9fb41bc273d"
     },
+    "3.41.0": {
+      "dart": "3.11.0",
+      "sha256": "368ae5b6993c51861324e704c42d61c4e290fba7213a88fd0e9fec15ded54599"
+    },
     "3.41.2": {
       "dart": "3.11.0",
       "sha256": "4a04f8a6152986d14fc137ffaf98106ca743c0f9ab66f1bc2f20ee84eb573e5c"
