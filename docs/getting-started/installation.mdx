@@ -2,7 +2,7 @@
 title: Installing Ack
 ---
 
-Ack is a pure-Dart package with no required build step. Add the core library — and, optionally, the code generator for typed wrappers.
+Ack is a pure-Dart package with no required build step. Add the core library — and, optionally, the code generator for immutable models.
 
 ## Add to your project
 
@@ -20,12 +20,13 @@ Or add to your `pubspec.yaml` (check [pub.dev](https://pub.dev/packages/ack) for
 
 ```yaml
 dependencies:
-  ack: ^1.0.0 # Replace with latest version
+  ack: ^1.2.0 # Replace with latest version
 ```
 
-## Code generator (`@AckType()`)
+## Optional code generator
 
-To generate typed wrappers for hand-written schemas, add the annotation and generator packages alongside `ack`:
+To generate models from Ack schemas or Ack schemas from hand-written models,
+add the annotation and generator packages alongside `ack`:
 
 ```bash
 dart pub add ack ack_annotations
@@ -36,36 +37,50 @@ Or add them to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  ack: ^1.0.0 # Replace with latest version
-  ack_annotations: ^1.0.0 # Replace with latest version
+  ack: ^1.2.0 # Replace with latest version
+  ack_annotations: ^1.2.0 # Replace with latest version
 
 dev_dependencies:
-  ack_generator: ^1.0.0 # Replace with latest version
+  ack_generator: ^1.2.0 # Replace with latest version
   build_runner: ^2.4.0
 ```
 
-`ack_generator` does not generate schemas from classes. It reads top-level Ack schema variables and getters annotated with `@AckType()` and emits typed extension wrappers with `parse()`/`safeParse()` helpers.
+The generator works in both directions. `@AckInfer()` marks a top-level schema
+and generates an immutable model. `@AckModel()` marks a hand-written class and
+generates a public `<ClassName>Schema` facade, a private Ack codec, and JSON
+helpers. There is no `@AckSchema()` annotation; `AckSchema` is the runtime
+schema type.
 
 ```dart
 import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
-part 'user.g.dart';
+part 'user.ack.dart';
+part 'user.ack.g.dart';
 
-@AckType()
+@AckInfer()
 final userSchema = Ack.object({
   'name': Ack.string(),
   'email': Ack.string().email(),
 });
+
+@AckModel()
+final class Account with _$AccountAck {
+  const Account({required this.name});
+  final String name;
+
+  static final fromJson = AccountSchema.fromJson;
+}
 ```
 
 Run the generator:
 
 ```bash
-dart run build_runner build --delete-conflicting-outputs
+dart run build_runner build
 ```
 
-See [TypeSafe Schemas](../core-concepts/typesafe-schemas.mdx) for more `@AckType` examples and supported schema shapes.
+See [Model Code Generation](../core-concepts/typesafe-schemas.mdx) for working
+tutorials, supported shapes, and guidance on choosing a direction.
 
 ## Next step
 
@@ -73,4 +88,5 @@ Import `package:ack/ack.dart` and you're ready — the [Quickstart Tutorial](./q
 
 ## Requirements
 
-- Dart SDK: `>=3.8.0 <4.0.0`
+- Dart SDK: `>=3.9.0 <4.0.0` for core `ack`
+- Dart SDK: `>=3.9.0 <4.0.0` when using `ack_annotations` / `ack_generator`

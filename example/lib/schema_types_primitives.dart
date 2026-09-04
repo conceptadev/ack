@@ -1,12 +1,13 @@
 import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
-part 'schema_types_primitives.g.dart';
+part 'schema_types_primitives.ack.dart';
+part 'schema_types_primitives.ack.g.dart';
 
-// Note: Primitive schemas generate extension types, but you can still use
-// the schema directly via parse() or safeParse().
+// Primitive schemas generate immutable value models while the schema remains
+// available directly for parse() and safeParse().
 
-/// Test primitive schema types with @AckType
+/// Test primitive schema types with @AckInfer
 
 /// Test enums for enumValues schema
 enum UserRole { admin, user, guest }
@@ -14,62 +15,60 @@ enum UserRole { admin, user, guest }
 enum Status { active, inactive, pending }
 
 // String schema
-@AckType()
+@AckInfer()
 final passwordSchema = Ack.string().minLength(8);
 
 // Integer schema
-@AckType()
+@AckInfer()
 final ageSchema = Ack.integer().min(0).max(150);
 
 // Double schema
-@AckType()
+@AckInfer()
 final priceSchema = Ack.double().min(0);
 
 // Boolean schema
-@AckType()
+@AckInfer()
 final activeSchema = Ack.boolean();
 
 // List schema
-@AckType()
+@AckInfer()
 final tagsSchema = Ack.list(Ack.string());
 
 // List of integers
-@AckType()
+@AckInfer()
 final scoresSchema = Ack.list(Ack.integer());
 
 // Literal schema
-@AckType()
+@AckInfer(name: 'StatusLiteral')
 final statusSchema = Ack.literal('active');
 
 // String enum schema
-@AckType()
+@AckInfer()
 final roleSchema = Ack.enumString(['admin', 'user', 'guest']);
 
 // EnumValues schemas
-@AckType()
+@AckInfer(name: 'UserRoleModel')
 final userRoleSchema = Ack.enumValues(UserRole.values);
 
-@AckType()
+@AckInfer()
 final statusEnumSchema = Ack.enumValues(Status.values);
 
 // Method chaining tests for new schema types
-@AckType()
+@AckInfer()
 final optionalStatusSchema = Ack.literal('active').optional();
 
-@AckType()
 final nullableRoleSchema = Ack.enumString(['admin', 'user']).nullable();
 
-@AckType()
+@AckInfer()
 final defaultedEnumSchema = Ack.enumValues(
   UserRole.values,
 ).withDefault(UserRole.guest);
 
-@AckType()
 final optionalNullableLiteralSchema = Ack.literal(
   'pending',
 ).optional().nullable();
 
-@AckType()
+@AckInfer()
 final chainedEnumStringSchema = Ack.enumString([
   'read',
   'write',
@@ -77,7 +76,7 @@ final chainedEnumStringSchema = Ack.enumString([
 ]).withDefault('read');
 
 // Test refine - this should work
-@AckType()
+@AckInfer()
 final refinedAgeSchema = Ack.integer()
     .min(0)
     .refine((age) => age < 150, message: 'Age must be less than 150');

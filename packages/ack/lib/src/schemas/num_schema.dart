@@ -35,7 +35,11 @@ sealed class NumSchema<T extends num> extends AckSchema<T, T> {
 
 // --- IntegerSchema ---
 
-/// Schema for validating integer values.
+/// Schema for validating JSON integer values.
+///
+/// JSON Schema defines an integer as any number with a zero fractional part.
+/// Integral [double] inputs are therefore normalized to [int] when conversion
+/// is lossless. Add `.safe()` when integers must remain exact on JavaScript.
 @immutable
 final class IntegerSchema extends NumSchema<int>
     with FluentSchema<int, int, IntegerSchema> {
@@ -56,7 +60,7 @@ final class IntegerSchema extends NumSchema<int>
     final nullResult = handleNullInput(value, context);
     if (nullResult != null) return nullResult;
 
-    if (value is! int) {
+    if (value is! num || !value.isFinite || value.remainder(1) != 0) {
       return SchemaResult.fail(
         _buildTypeMismatch(
           expectedType: schemaType,
@@ -66,7 +70,26 @@ final class IntegerSchema extends NumSchema<int>
       );
     }
 
-    return applyConstraintsAndRefinements(value, context);
+    // JavaScript preserves the sign bit on negative zero even when Dart treats
+    // the value as an `int`. Normalize it explicitly before constraints and
+    // refinements observe the value.
+    if (value == 0) return applyConstraintsAndRefinements(0, context);
+    if (value is int) return applyConstraintsAndRefinements(value, context);
+
+    final normalized = value.toInt();
+    // Native double-to-int conversion saturates outside the platform int
+    // range. Compare mathematical integer values through BigInt because num
+    // equality itself rounds at boundaries such as 2^63.
+    if (BigInt.from(normalized) != BigInt.from(value)) {
+      return SchemaResult.fail(
+        SchemaValidationError(
+          message: 'Number cannot be represented as a Dart int without loss.',
+          context: context,
+        ),
+      );
+    }
+
+    return applyConstraintsAndRefinements(normalized, context);
   }
 
   @override
@@ -103,7 +126,10 @@ final class IntegerSchema extends NumSchema<int>
 
 // --- DoubleSchema ---
 
-/// Schema for validating double values.
+/// Schema for validating JSON number values as Dart [double]s.
+///
+/// JSON Schema's `number` type includes integers. Exactly representable numeric
+/// inputs are normalized to [double]; lossy integer conversions are rejected.
 @immutable
 final class DoubleSchema extends NumSchema<double>
     with FluentSchema<double, double, DoubleSchema> {
@@ -124,7 +150,7 @@ final class DoubleSchema extends NumSchema<double>
     final nullResult = handleNullInput(value, context);
     if (nullResult != null) return nullResult;
 
-    if (value is! double) {
+    if (value is! num) {
       return SchemaResult.fail(
         _buildTypeMismatch(
           expectedType: schemaType,
@@ -134,7 +160,20 @@ final class DoubleSchema extends NumSchema<double>
       );
     }
 
-    return applyConstraintsAndRefinements(value, context);
+    final normalized = value.toDouble();
+    if (normalized.isFinite &&
+        value is int &&
+        BigInt.from(normalized) != BigInt.from(value)) {
+      return SchemaResult.fail(
+        SchemaValidationError(
+          message:
+              'Integer cannot be represented as a Dart double without loss.',
+          context: context,
+        ),
+      );
+    }
+
+    return applyConstraintsAndRefinements(normalized, context);
   }
 
   @override

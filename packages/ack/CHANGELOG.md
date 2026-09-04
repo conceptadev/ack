@@ -1,3 +1,76 @@
+## 1.2.0
+
+### Added
+
+* Add `AckModelAdapter` as the non-nullable runtime bridge used by generated
+  immutable Ack models. The adapter keeps schema parse/encode around model
+  mapping so public JSON methods remain schema-backed.
+* Add `Ack.preserveBoundary`, which validates through a schema while returning
+  the original wire value instead of values decoded by nested codecs.
+* Add `deepUnmodifiableJsonMap`, which creates detached, recursively
+  unmodifiable snapshots of nested maps, lists, and sets without validation.
+
+### Fixed
+
+* Preserve propagated `Error` objects during validation instead of converting
+  programming defects into recoverable schema failures.
+* Compare collection contents independently of growable or unmodifiable wrapper
+  implementations. Numerically equal `int` and `double` values now compare and
+  hash equally on native and web runtimes; other scalar types remain distinct.
+* Keep deep map-key equality consistent with `deepHashCode`, and apply JSON
+  Schema Draft 7 numeric equality to `uniqueItems` (including nested values).
+* Reject the native minimum integer from `.safe()` without overflowing `abs()`.
+
+### Changed
+
+* Export `deepEquals`, `deepHashCode`, and `deepUnmodifiableJsonMap` for
+  generated Ack data classes and class-first constructors.
+* `Ack.integer()` accepts losslessly representable numbers with no fractional
+  part and normalizes them to `int`. `Ack.double()` accepts exactly
+  representable numeric inputs and normalizes them to `double`. Numeric
+  `anyOf` branches can therefore overlap; the first matching branch determines
+  the runtime representation. Use `Ack.number()` to preserve the input's
+  numeric representation and `.safe()` to require JavaScript's portable
+  integer range.
+* Raise the minimum Dart SDK to 3.9.
+
+## 1.1.0
+
+### Fixed
+
+* Keep `safeParse` non-throwing when refinements or constraints throw
+  recoverable `Exception`s, while preserving `Error` values such as
+  `StateError` so programming defects are not masked as validation failures.
+* Decode RFC 3339 lowercase `t`/`z` separators in `Ack.datetime()`, which its
+  own string validation already accepts (previously they failed at the decode
+  step with a misleading "Codec decode failed" message).
+* Bound direct, indirect, wrapper-mediated, and fluent-copy lazy-schema alias
+  recursion (previously unbounded and prone to stack overflow).
+* Snapshot factory collections so a caller mutating the passed list or map can no
+  longer corrupt a constructed schema.
+* Correct behavior-based schema and deep-collection equality.
+
+### Behavior changes
+
+No public API changed (verified with `dart_apitool` against 1.0.1); the following
+now reject inputs that previously passed or misbehaved silently.
+
+* Validate numeric `multipleOf`, IPv6, and RFC 3339 date-time values strictly.
+  Announced leap seconds are preserved by `Ack.string().datetime()` but rejected
+  by `Ack.datetime()`, where Dart cannot represent them. *(migration: some
+  previously-accepted strings and numbers now fail validation.)*
+* Reject invalid constraint configuration at construction — negative
+  lengths/item counts, non-finite numeric bounds, `min > max` ranges,
+  `multipleOf <= 0`, empty unions, empty or duplicate enum inputs, and unions
+  that can yield nullable list items — all throw `ArgumentError`. *(migration:
+  fix the schema definition; put nullability on the list via
+  `Ack.list(item).nullable()`.)*
+* `toJsonSchema()` merges conflicting duplicate keywords into `allOf` and emits
+  `min/maxItems` and `min/maxProperties` for exact counts. *(migration: refresh
+  snapshot or golden tests of exported schemas.)*
+* `parse()` throws `AckException` — instead of the raw callback error — when a
+  constraint or refinement throws.
+
 ## 1.0.1
 
 * See [release notes](https://github.com/btwld/ack/releases/tag/v1.0.1) for details.

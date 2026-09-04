@@ -3,31 +3,8 @@ import 'package:build/build.dart';
 import 'package:build_test/build_test.dart';
 import 'package:test/test.dart';
 
+import '../test_utils/generation_test_utils.dart';
 import '../test_utils/test_assets.dart';
-
-Future<void> _expectGenerationFailure({
-  required Builder builder,
-  required Map<String, String> assets,
-  required String expectedMessage,
-  Map<String, Object>? expectedOutputs,
-}) async {
-  var sawExpectedError = false;
-  await testBuilder(
-    builder,
-    assets,
-    outputs: expectedOutputs ?? {},
-    onLog: (log) {
-      if (log.level.name == 'SEVERE' && log.message.contains(expectedMessage)) {
-        sawExpectedError = true;
-      }
-    },
-  );
-  expect(
-    sawExpectedError,
-    isTrue,
-    reason: 'Expected SEVERE log containing "$expectedMessage"',
-  );
-}
 
 void main() {
   group('@AckType discriminated schemas', () {
@@ -180,7 +157,7 @@ final petSchema = Ack.discriminated(
     test('fails when branch discriminator property is broad string', () async {
       final builder = ackGenerator(BuilderOptions.empty);
 
-      await _expectGenerationFailure(
+      await expectGenerationFailure(
         builder: builder,
         expectedMessage: 'could not be proven to accept "cat"',
         assets: {
@@ -212,7 +189,7 @@ final petSchema = Ack.discriminated(
       () async {
         final builder = ackGenerator(BuilderOptions.empty);
 
-        await _expectGenerationFailure(
+        await expectGenerationFailure(
           builder: builder,
           expectedMessage: 'could not be proven to accept "cat"',
           assets: {
@@ -245,7 +222,7 @@ final petSchema = Ack.discriminated(
       () async {
         final builder = ackGenerator(BuilderOptions.empty);
 
-        await _expectGenerationFailure(
+        await expectGenerationFailure(
           builder: builder,
           expectedMessage: 'could not be proven to accept "cat"',
           assets: {
@@ -276,7 +253,7 @@ final petSchema = Ack.discriminated(
     test('fails when a branch is an inline expression', () async {
       final builder = ackGenerator(BuilderOptions.empty);
 
-      await _expectGenerationFailure(
+      await expectGenerationFailure(
         builder: builder,
         expectedMessage: 'must reference a top-level schema variable/getter',
         assets: {
@@ -303,7 +280,7 @@ final petSchema = Ack.discriminated(
     test('fails when a branch lacks @AckType', () async {
       final builder = ackGenerator(BuilderOptions.empty);
 
-      await _expectGenerationFailure(
+      await expectGenerationFailure(
         builder: builder,
         expectedMessage: 'must be annotated with @AckType',
         assets: {
@@ -332,7 +309,7 @@ final petSchema = Ack.discriminated(
     test('fails when a branch schema is not object-shaped', () async {
       final builder = ackGenerator(BuilderOptions.empty);
 
-      await _expectGenerationFailure(
+      await expectGenerationFailure(
         builder: builder,
         expectedMessage: 'must be an object schema',
         assets: {
@@ -359,7 +336,7 @@ final petSchema = Ack.discriminated(
     test('fails when a branch comes from another library', () async {
       final builder = ackGenerator(BuilderOptions.empty);
 
-      await _expectGenerationFailure(
+      await expectGenerationFailure(
         builder: builder,
         expectedMessage: 'must be declared in the same library',
         expectedOutputs: {'test_pkg|lib/branches.g.dart': anything},
@@ -395,7 +372,7 @@ final petSchema = Ack.discriminated(
     test('fails when discriminated base is nullable', () async {
       final builder = ackGenerator(BuilderOptions.empty);
 
-      await _expectGenerationFailure(
+      await expectGenerationFailure(
         builder: builder,
         expectedMessage: 'cannot be nullable when used with @AckType',
         assets: {
@@ -425,7 +402,7 @@ final petSchema = Ack.discriminated(
     test('fails when schemas map is empty', () async {
       final builder = ackGenerator(BuilderOptions.empty);
 
-      await _expectGenerationFailure(
+      await expectGenerationFailure(
         builder: builder,
         expectedMessage: 'must contain at least one branch',
         assets: {
@@ -447,7 +424,7 @@ final petSchema = Ack.discriminated(
     test('fails when a branch schema is nullable', () async {
       final builder = ackGenerator(BuilderOptions.empty);
 
-      await _expectGenerationFailure(
+      await expectGenerationFailure(
         builder: builder,
         expectedMessage: 'cannot be nullable',
         assets: {
@@ -477,7 +454,7 @@ final petSchema = Ack.discriminated(
     test('fails when discriminator values are duplicated', () async {
       final builder = ackGenerator(BuilderOptions.empty);
 
-      await _expectGenerationFailure(
+      await expectGenerationFailure(
         builder: builder,
         expectedMessage: 'duplicate discriminator value',
         assets: {
@@ -516,7 +493,7 @@ final petSchema = Ack.discriminated(
       () async {
         final builder = ackGenerator(BuilderOptions.empty);
 
-        await _expectGenerationFailure(
+        await expectGenerationFailure(
           builder: builder,
           expectedMessage: 'but is mapped as',
           assets: {
@@ -550,7 +527,7 @@ final petSchema = Ack.discriminated(
       () async {
         final builder = ackGenerator(BuilderOptions.empty);
 
-        await _expectGenerationFailure(
+        await expectGenerationFailure(
           builder: builder,
           expectedMessage: 'but is mapped as',
           assets: {
@@ -581,7 +558,7 @@ final petSchema = Ack.discriminated(
     test('fails when a branch is reused across multiple bases', () async {
       final builder = ackGenerator(BuilderOptions.empty);
 
-      await _expectGenerationFailure(
+      await expectGenerationFailure(
         builder: builder,
         expectedMessage: 'mapped to multiple discriminated bases',
         assets: {
@@ -619,7 +596,7 @@ final anotherPetSchema = Ack.discriminated(
     test('fails when aliased branch is reused across multiple bases', () async {
       final builder = ackGenerator(BuilderOptions.empty);
 
-      await _expectGenerationFailure(
+      await expectGenerationFailure(
         builder: builder,
         expectedMessage: 'mapped to multiple discriminated bases',
         assets: {
@@ -663,7 +640,7 @@ final anotherPetSchema = Ack.discriminated(
     test('fails when a branch is itself a discriminated base', () async {
       final builder = ackGenerator(BuilderOptions.empty);
 
-      await _expectGenerationFailure(
+      await expectGenerationFailure(
         builder: builder,
         expectedMessage: 'Nested discriminated unions are not supported',
         assets: {

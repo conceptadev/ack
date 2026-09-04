@@ -33,7 +33,7 @@ import 'shadows.dart' show shadowCodec;
 /// Unsupported fields:
 /// * [TextStyle.foreground] and [TextStyle.background] are nullable [Paint]
 ///   values, which are not JSON-safe. Encoding a [TextStyle] that sets either
-///   throws [UnsupportedError] rather than dropping the paint silently.
+///   fails validation rather than dropping the paint silently.
 /// * [TextStyle.debugLabel] is debug metadata and is excluded from
 ///   [TextStyle] equality.
 final textStyleCodec = Ack.object({
@@ -96,13 +96,13 @@ JsonMap _encodeTextStyle(TextStyle value) {
   // value that sets them carries paint state this codec cannot represent.
   // Fail loudly instead of silently dropping it to a colorless style.
   if (value.foreground != null) {
-    throw UnsupportedError(
+    throw FormatException(
       'TextStyle.foreground is a Paint with no portable JSON shape and cannot '
       'be encoded. Use TextStyle.color, or apply the Paint outside the codec.',
     );
   }
   if (value.background != null) {
-    throw UnsupportedError(
+    throw FormatException(
       'TextStyle.background is a Paint with no portable JSON shape and cannot '
       'be encoded. Use TextStyle.backgroundColor, or apply the Paint outside '
       'the codec.',

@@ -36,6 +36,8 @@ extension IntegerSchemaExtensions on IntegerSchema {
   }
 
   /// Adds a constraint that the integer must be a multiple of [n].
+  ///
+  /// Integer multiples are checked exactly.
   IntegerSchema multipleOf(int n) {
     return withConstraint(ComparisonConstraint.numberMultipleOf<int>(n));
   }
@@ -80,6 +82,10 @@ extension DoubleSchemaExtensions on DoubleSchema {
   }
 
   /// Adds a constraint that the double must be a multiple of [n].
+  ///
+  /// Doubles are compared with a small scale-relative tolerance (~4 ULP), so
+  /// round accumulated floating-point sums — or validate integer units such as
+  /// cents — before parsing.
   DoubleSchema multipleOf(double n) {
     return withConstraint(ComparisonConstraint.numberMultipleOf<double>(n));
   }
@@ -123,6 +129,10 @@ extension NumberSchemaExtensions on NumberSchema {
   }
 
   /// Adds a constraint that the number must be a multiple of [n].
+  ///
+  /// Integer values and factors are checked exactly; doubles use a small
+  /// scale-relative tolerance (~4 ULP), so round accumulated floating-point sums
+  /// before parsing.
   NumberSchema multipleOf(num n) {
     return withConstraint(ComparisonConstraint.numberMultipleOf<num>(n));
   }

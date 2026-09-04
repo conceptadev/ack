@@ -1,6 +1,6 @@
 /// Edge case examples for schema variable type extraction
 ///
-/// This file demonstrates complex scenarios that should work with @AckType:
+/// This file demonstrates complex scenarios that should work with @AckInfer:
 /// - Lists with typed elements (`List<String>` not `List<dynamic>`)
 /// - Nested schema references
 /// - Complex method chains
@@ -12,7 +12,8 @@ library;
 import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
-part 'schema_types_edge_cases.g.dart';
+part 'schema_types_edge_cases.ack.dart';
+part 'schema_types_edge_cases.ack.g.dart';
 
 // ============================================================================
 // EDGE CASE 1: List Type Extraction
@@ -24,24 +25,24 @@ part 'schema_types_edge_cases.g.dart';
 /// - tags field should be `List<String>`, not `List<dynamic>`
 /// - scores field should be `List<int>`, not `List<dynamic>`
 /// - flags field should be `List<bool>`, not `List<dynamic>`
-@AckType()
+@AckInfer()
 final productSchema = Ack.object({
   'name': Ack.string(),
-  'tags': Ack.list(Ack.string()), // Should generate: List<String> get tags
-  'scores': Ack.list(Ack.integer()), // Should generate: List<int> get scores
-  'flags': Ack.list(Ack.boolean()), // Should generate: List<bool> get flags
+  'tags': Ack.list(Ack.string()), // Generates: final List<String> tags
+  'scores': Ack.list(Ack.integer()), // Generates: final List<int> scores
+  'flags': Ack.list(Ack.boolean()), // Generates: final List<bool> flags
 });
 
 /// Schema with nested lists (matrix/grid data)
 ///
 /// EXPECTED BEHAVIOR:
 /// - matrix field should be `List<List<int>>`
-@AckType()
+@AckInfer()
 final gridSchema = Ack.object({
   'name': Ack.string(),
   'matrix': Ack.list(
     Ack.list(Ack.integer()),
-  ), // Should generate: List<List<int>> get matrix
+  ), // Generates: final List<List<int>> matrix
 });
 
 // ============================================================================
@@ -49,7 +50,7 @@ final gridSchema = Ack.object({
 // ============================================================================
 
 /// Simple address schema for composition
-@AckType()
+@AckInfer()
 final addressSchema = Ack.object({
   'street': Ack.string(),
   'city': Ack.string(),
@@ -61,8 +62,8 @@ final addressSchema = Ack.object({
 ///
 /// EXPECTED BEHAVIOR:
 /// - address field should NOT be null/missing
-/// - Should generate: AddressType get address (or `Map<String, dynamic>`)
-@AckType()
+/// - Generates: `final Address address`
+@AckInfer()
 final personSchema = Ack.object({
   'name': Ack.string(),
   'email': Ack.string(),
@@ -74,7 +75,7 @@ final personSchema = Ack.object({
 ///
 /// EXPECTED BEHAVIOR:
 /// - Both homeAddress and workAddress fields should be present
-@AckType()
+@AckInfer()
 final employeeSchema = Ack.object({
   'name': Ack.string(),
   'employeeId': Ack.string(),
@@ -93,7 +94,7 @@ final employeeSchema = Ack.object({
 /// - nullableField: isRequired=true, isNullable=true
 /// - optionalNullable: isRequired=false, isNullable=true
 /// - requiredField: isRequired=true, isNullable=false
-@AckType()
+@AckInfer()
 final modifierSchema = Ack.object({
   'requiredField': Ack.string(),
   'optionalField': Ack.string().optional(),
@@ -111,7 +112,7 @@ final modifierSchema = Ack.object({
 /// EXPECTED BEHAVIOR:
 /// - optionalTags: `List<String>?`, isRequired=false
 /// - requiredTags: `List<String>`, isRequired=true
-@AckType()
+@AckInfer()
 final taggedItemSchema = Ack.object({
   'name': Ack.string(),
   'requiredTags': Ack.list(Ack.string()),
@@ -122,8 +123,8 @@ final taggedItemSchema = Ack.object({
 /// Schema with list of nested objects
 ///
 /// EXPECTED BEHAVIOR:
-/// - addresses: `List<AddressType>` (eager list with typed elements)
-@AckType()
+/// - addresses: `List<Address>` (eager list with typed elements)
+@AckInfer()
 final contactListSchema = Ack.object({
   'name': Ack.string(),
   'addresses': Ack.list(addressSchema),
@@ -136,27 +137,27 @@ final contactListSchema = Ack.object({
 /// Empty schema (edge case)
 ///
 /// EXPECTED BEHAVIOR:
-/// - Should generate extension type with no fields
+/// Generates an immutable model with no stored schema fields.
 /// - parse() should still work
-@AckType()
+@AckInfer()
 final emptySchema = Ack.object({});
 
 /// Single field schema (minimal case)
-@AckType()
+@AckInfer()
 final minimalSchema = Ack.object({'id': Ack.string()});
 
 // ============================================================================
 // EDGE CASE 6: Naming Variations
 // ============================================================================
 
-/// Schema with 'Schema' suffix (should generate NamedType)
-@AckType()
+/// Schema with 'Schema' suffix (generates `NamedItem`)
+@AckInfer()
 final namedItemSchema = Ack.object({'name': Ack.string()});
 
-/// Schema without 'Schema' suffix (should generate ItemType)
-@AckType()
+/// Schema without 'Schema' suffix (generates `Item`)
+@AckInfer()
 final item = Ack.object({'id': Ack.string()});
 
 /// Schema with unusual name (should handle gracefully)
-@AckType()
+@AckInfer()
 final myCustomSchema123 = Ack.object({'value': Ack.string()});

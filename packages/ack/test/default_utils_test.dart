@@ -61,6 +61,25 @@ void main() {
       expect(clonedList, equals(['a']));
     });
 
+    test('clones sets into detached unmodifiable snapshots', () {
+      final nested = <Object?>['a'];
+      final original = <Object?>{nested};
+
+      final cloned = cloneDefault(original) as Set<Object?>;
+
+      nested.add('b');
+      original.add('later');
+
+      expect(cloned, {
+        ['a'],
+      });
+      expect(() => cloned.add('later'), throwsUnsupportedError);
+      expect(
+        () => (cloned.single as List<Object?>).add('later'),
+        throwsUnsupportedError,
+      );
+    });
+
     test('returns primitives as-is', () {
       const primitive = 'hello';
       expect(identical(cloneDefault(primitive), primitive), isTrue);

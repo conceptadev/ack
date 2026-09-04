@@ -3,31 +3,8 @@ import 'package:build/build.dart';
 import 'package:build_test/build_test.dart';
 import 'package:test/test.dart';
 
+import '../test_utils/generation_test_utils.dart';
 import '../test_utils/test_assets.dart';
-
-Future<void> _expectGenerationFailure({
-  required Builder builder,
-  required Map<String, String> assets,
-  required String expectedMessage,
-  Map<String, Object>? expectedOutputs,
-}) async {
-  var sawExpectedError = false;
-  await testBuilder(
-    builder,
-    assets,
-    outputs: expectedOutputs ?? {},
-    onLog: (log) {
-      if (log.level.name == 'SEVERE' && log.message.contains(expectedMessage)) {
-        sawExpectedError = true;
-      }
-    },
-  );
-  expect(
-    sawExpectedError,
-    isTrue,
-    reason: 'Expected SEVERE log containing "$expectedMessage"',
-  );
-}
 
 void main() {
   group('@AckType cross-file schema references', () {
@@ -372,7 +349,7 @@ final themeSchema = Ack.object({
       () async {
         final builder = ackGenerator(BuilderOptions.empty);
 
-        await _expectGenerationFailure(
+        await expectGenerationFailure(
           builder: builder,
           expectedMessage: 'is not visible from this library',
           expectedOutputs: {'test_pkg|lib/palette_schemas.g.dart': anything},
@@ -484,7 +461,7 @@ final themeSchema = Ack.object({
       () async {
         final builder = ackGenerator(BuilderOptions.empty);
 
-        await _expectGenerationFailure(
+        await expectGenerationFailure(
           builder: builder,
           expectedMessage: 'is ambiguous in this library',
           expectedOutputs: {'test_pkg|lib/palette_schemas.g.dart': anything},
@@ -527,7 +504,7 @@ final themeSchema = Ack.object({
       () async {
         final builder = ackGenerator(BuilderOptions.empty);
 
-        await _expectGenerationFailure(
+        await expectGenerationFailure(
           builder: builder,
           expectedMessage: 'is ambiguous in this library',
           expectedOutputs: {'test_pkg|lib/palette_schemas.g.dart': anything},
@@ -572,7 +549,7 @@ final themeSchema = Ack.object({
       () async {
         final builder = ackGenerator(BuilderOptions.empty);
 
-        await _expectGenerationFailure(
+        await expectGenerationFailure(
           builder: builder,
           expectedMessage: 'is not visible from this library',
           expectedOutputs: {'test_pkg|lib/palette_schemas.g.dart': anything},
@@ -614,7 +591,7 @@ final themeSchema = Ack.object({
       () async {
         final builder = ackGenerator(BuilderOptions.empty);
 
-        await _expectGenerationFailure(
+        await expectGenerationFailure(
           builder: builder,
           expectedMessage:
               'uses a qualified type that cannot be referenced across library boundaries',

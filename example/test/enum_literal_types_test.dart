@@ -4,8 +4,8 @@ import 'package:test/test.dart';
 
 /// Tests for enum, literal, and string-enum schemas.
 ///
-/// Note: Extension types are generated for non-nullable primitive schemas,
-/// but these tests use the schema directly via `safeParse()` or `parse()`.
+/// Generated value models are available for annotated primitive schemas, while
+/// these tests exercise the underlying schemas directly.
 void main() {
   group('Literal Schema (via safeParse)', () {
     test('statusSchema validates literal value', () {

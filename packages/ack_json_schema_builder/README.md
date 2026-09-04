@@ -12,14 +12,14 @@ Converts ACK schemas to json_schema_builder format via `.toJsonSchemaBuilder()`.
 
 ```yaml
 dependencies:
-  ack: ^1.0.0
-  ack_json_schema_builder: ^1.0.0
+  ack: ^1.2.0
+  ack_json_schema_builder: ^1.2.0
   json_schema_builder: ^0.1.3
 ```
 
 ### Compatibility
 
-Requires `json_schema_builder: >=0.1.3 <1.0.0` as a peer dependency. Report [compatibility issues](https://github.com/btwld/ack/issues).
+Requires `json_schema_builder: >=0.1.3 <1.0.0` as a peer dependency. Report [compatibility issues](https://github.com/conceptadev/ack/issues).
 
 ## Conversion Model
 
@@ -63,9 +63,12 @@ the `json_schema_builder` schema. If a downstream validator or consumer ignores
 a JSON Schema keyword, validate with ACK after parsing.
 
 ```dart
-final schema = Ack.date().min(DateTime.utc(2026));
+final schema = Ack.date().min(DateTime(2026));
 final jsonSchema = schema.toJsonSchemaBuilder(); // Includes format: date.
 ```
+
+`Ack.date()` uses local-midnight `DateTime` values at runtime. Use
+`DateTime.utc(...)` with `Ack.datetime()`, whose runtime invariant is UTC.
 
 ## Usage
 
@@ -130,11 +133,12 @@ dart test
 
 ## Contributing
 
-For contribution guidelines, see [CONTRIBUTING.md](../../CONTRIBUTING.md) in the root repository.
+For contribution guidelines, see the repository's
+[CONTRIBUTING.md](https://github.com/conceptadev/ack/blob/main/CONTRIBUTING.md).
 
 ## License
 
-This package is part of the [ACK](https://github.com/btwld/ack) monorepo.
+This package is part of the [ACK](https://github.com/conceptadev/ack) monorepo.
 
 ## Related Packages
 

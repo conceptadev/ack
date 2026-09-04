@@ -41,7 +41,7 @@ final nameSchema = Ack.string();
 final usernameSchema = Ack.string()
   .minLength(3)
   .maxLength(20)
-  .matches(r'[a-zA-Z0-9_]+');
+  .matches(r'^[a-zA-Z0-9_]+$');
 
 // Email validation
 final emailSchema = Ack.string().email();
@@ -61,27 +61,32 @@ final roleSchema = Ack.enumValues(Role.values);
 > **`Ack.string().date()` vs `Ack.date()`:** `Ack.string().date()` checks the
 > format and keeps the value a `String`. [`Ack.date()`](./codecs.mdx) (a codec)
 > validates the same format but returns a `DateTime`. The same applies to
-> `Ack.string().datetime()` vs `Ack.datetime()`.
+> `Ack.string().datetime()` vs `Ack.datetime()`, except announced leap seconds:
+> the string schema preserves them, while the codec rejects them because Dart's
+> `DateTime` cannot represent `:60`.
 
 ### Number
 
-Numeric schemas are strict about their Dart runtime type. `Ack.integer()`
-rejects `double` values (even whole ones like `42.0`); `Ack.double()` rejects
-`int` values. Use `Ack.number()` when either is acceptable. `Ack.double()` and
-`Ack.number()` reject non-finite values (`NaN` and infinities) by default.
+Numeric schemas follow JSON Schema value semantics so native and web builds
+agree. `Ack.integer()` accepts finite numbers with no fractional part and
+losslessly normalizes them to `int`. `Ack.double()` accepts finite numbers that
+can be represented exactly as `double` and normalizes them to `double`.
+`Ack.number()` accepts either representation and preserves it. Add `.safe()` to
+an integer schema when values must remain exact in JavaScript's portable integer
+range. All numeric schemas reject `NaN` and infinities.
 
 ```dart
-// Integer validation (int only — 42.0 would fail)
+// Integer validation (42 and 42.0 both parse to int)
 final ageSchema = Ack.integer()
   .min(0)
   .max(120);
 
-// Double validation (double only — 42 would fail)
+// Double validation (42 and 42.0 both parse to double when lossless)
 final priceSchema = Ack.double()
   .positive()
   .multipleOf(0.5); // Use factors that avoid floating point rounding issues
 
-// Either int or double
+// Preserve an input that is already int or double
 final amountSchema = Ack.number().positive();
 
 final temperatureSchema = Ack.integer(); // Any integer
@@ -134,7 +139,7 @@ final userSchema = Ack.object({
   'address': Ack.object({
     'street': Ack.string(),
     'city': Ack.string(),
-    'zipCode': Ack.string().matches(r'\d{5}'),
+    'zipCode': Ack.string().matches(r'^\d{5}$'),
   }),
 });
 ```
@@ -201,7 +206,10 @@ categorySchema = Ack.object({
 
 The lazy builder is resolved once and memoized. JSON Schema export renders the
 reference through Draft-7 `definitions` / `$ref`, so recursive children are
-referenced rather than inlined forever.
+referenced rather than inlined forever. `maxDepth` defaults to `100`, must be at
+least `1`, and returns a validation failure when parsing, runtime validation, or
+encoding exceeds the limit. Because the limit is runtime-only and cannot be
+represented by `$ref`, exported schema models warn that it was omitted.
 
 ### Any
 
@@ -434,7 +442,7 @@ final userWithAgeSchema = Ack.object({
 
 // Type transformation
 final dateSchema = Ack.string()
-  .matches(r'\d{4}-\d{2}-\d{2}')
+  .matches(r'^\d{4}-\d{2}-\d{2}$')
   .transform<DateTime>((s) => DateTime.parse(s));
 ```
 

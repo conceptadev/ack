@@ -1,3 +1,31 @@
+## 1.2.0
+
+### Added
+
+* Add `@AckInfer()` for immutable schema-first model generation. Custom names
+  are exact and annotated libraries declare `.ack.dart` plus `.ack.g.dart`.
+* Add class-first `@AckModel()`, `@AckField`, constraint annotations,
+  unknown-property modes, exact schema facade names, and the generated JSON
+  marker used by Ack-owned output.
+
+### Deprecated
+
+* Deprecate only `@AckType()`. It will be removed in Ack 2.0.0; use
+  `@AckInfer()` for schema-first models or `@AckModel()` for class-first
+  models. Its Ack 1.1 name suffixing and generated extension-type APIs remain
+  unchanged until removal.
+
+### Changed
+
+* Raise the minimum Dart SDK to 3.9.
+* Make the new `AckInfer` and internal JSON marker annotation classes final.
+* Finalize the pre-release class-first API as `AckUnknownPropertyPolicy`,
+  `unknownProperties`, and `captureField`, with no deprecated aliases.
+
+## 1.1.0
+
+* See [release notes](https://github.com/btwld/ack/releases/tag/v1.1.0) for details.
+
 ## 1.0.1
 
 * See [release notes](https://github.com/btwld/ack/releases/tag/v1.0.1) for details.

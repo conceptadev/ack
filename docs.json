@@ -3,17 +3,18 @@
   "name": "Ack",
   "description": "Documentation for the Ack project",
   "socialPreview": "/assets/ack-social.png",
+  "favicon": "/assets/favicon.svg",
 
-  "theme": {
-    "defaultTheme": "dark"
+  "logo": {
+    "light": "/assets/logo-light.svg",
+    "dark": "/assets/logo-dark.svg"
   },
+
   "header": {
-    "showName": true,
-    "showThemeToggle": false,
-    "showGitHubCard": true
+    "showName": true
   },
   "social": {
-    "github": "btwld/ack"
+    "github": "conceptadev/ack"
   },
   "seo": {
     "noindex": false
@@ -58,7 +59,7 @@
       "pages": [
         { "title": "Codecs", "href": "/core-concepts/codecs" },
         {
-          "title": "TypeSafe Schemas",
+          "title": "Model Code Generation",
           "href": "/core-concepts/typesafe-schemas"
         },
         {
@@ -69,13 +70,26 @@
       ]
     },
     {
+      "group": "Adapter Authors",
+      "pages": [
+        {
+          "title": "Adapter Package Quickstart",
+          "href": "/guides/schema-converter-quickstart"
+        },
+        {
+          "title": "Creating Adapter Packages",
+          "href": "/guides/creating-schema-converter-packages"
+        }
+      ]
+    },
+    {
       "group": "Reference",
       "pages": [{ "title": "API Reference", "href": "/api-reference/" }]
     }
   ],
   "variables": {
     "versions": {
-      "default": "1.0.1",
+      "default": "1.2.0",
       "isPrerelease": false
     }
   },

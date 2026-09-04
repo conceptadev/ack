@@ -17,7 +17,7 @@ void main() {
   };
 
   print('--- Valid data ---');
-  final user = UserWithColorType.parse(validData);
+  final user = UserWithColor.parse(validData);
   print('Name: ${user.firstName} ${user.lastName}');
   print('Age: ${user.age}');
   print('Bio: ${user.profile.bio}');
@@ -31,7 +31,7 @@ void main() {
   // Valid with favoriteColor provided
   print('--- With favorite color ---');
   final withFav = {...validData, 'favoriteColor': '#00FF00'};
-  final userFav = UserWithColorType.parse(withFav);
+  final userFav = UserWithColor.parse(withFav);
   print('Favorite color: ${userFav.favoriteColor}');
   print('');
 
@@ -44,14 +44,14 @@ void main() {
     print('  - ${p.type}');
   }
   // Can access discriminated subtype fields via cast
-  final cat = userPet.pet as CatType;
+  final cat = userPet.pet as Cat;
   print('Cat lives: ${cat.lives}');
   print('');
 
   // Invalid hex color
   print('--- Invalid hex color ---');
   final badColor = {...validData, 'color': 'not-a-color'};
-  final colorResult = UserWithColorType.safeParse(badColor);
+  final colorResult = UserWithColor.safeParse(badColor);
   colorResult.match(
     onOk: (val) => print('OK: $val'),
     onFail: (error) => print('Error: $error'),
@@ -61,7 +61,7 @@ void main() {
   // Age out of range
   print('--- Age out of range ---');
   final badAge = {...validData, 'age': -5};
-  final ageResult = UserWithColorType.safeParse(badAge);
+  final ageResult = UserWithColor.safeParse(badAge);
   ageResult.match(
     onOk: (val) => print('OK: $val'),
     onFail: (error) => print('Error: $error'),
@@ -74,7 +74,7 @@ void main() {
     ...validData,
     'profile': {'website': 'https://example.com'},
   };
-  final profileResult = UserWithColorType.safeParse(badProfile);
+  final profileResult = UserWithColor.safeParse(badProfile);
   profileResult.match(
     onOk: (val) => print('OK: $val'),
     onFail: (error) => print('Error: $error'),

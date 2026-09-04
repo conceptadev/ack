@@ -148,12 +148,12 @@ void main() {
         expect(result.getError(), isA<TypeMismatchError>());
       });
 
-      test('safeParseAs wraps mapper exceptions as SchemaTransformError', () {
+      test('safeParseAs wraps mapper Exceptions as SchemaTransformError', () {
         final schema = Ack.integer();
 
         final result = schema.safeParseAs(
           5,
-          (_) => throw StateError('mapper failed'),
+          (_) => throw FormatException('mapper failed'),
           debugName: 'numberAdapter',
         );
 
@@ -165,17 +165,26 @@ void main() {
         expect(error.schema, same(schema));
         expect(
           error.message,
-          contains('Transformation failed: Bad state: mapper failed'),
+          contains('Transformation failed: FormatException: mapper failed'),
         );
       });
 
-      test('parseAs throws AckException for mapper exceptions', () {
+      test('safeParseAs lets mapper Errors propagate', () {
+        final schema = Ack.integer();
+
+        expect(
+          () => schema.safeParseAs(5, (_) => throw StateError('mapper failed')),
+          throwsA(isA<StateError>()),
+        );
+      });
+
+      test('parseAs throws AckException for mapper Exceptions', () {
         final schema = Ack.integer();
 
         expect(
           () => schema.parseAs(
             7,
-            (_) => throw StateError('mapper exploded'),
+            (_) => throw FormatException('mapper exploded'),
             debugName: 'mapperDebugName',
           ),
           throwsA(
@@ -191,11 +200,49 @@ void main() {
           ),
         );
       });
+
+      test('parseAs lets mapper Errors propagate', () {
+        final schema = Ack.integer();
+
+        expect(
+          () => schema.parseAs(7, (_) => throw StateError('mapper exploded')),
+          throwsA(isA<StateError>()),
+        );
+      });
+
+      test('safeEncode wraps encoder Exceptions as SchemaEncodeError', () {
+        final schema = Ack.string().codec<int>(
+          decode: int.parse,
+          encode: (_) => throw FormatException('encoder failed'),
+        );
+
+        final result = schema.safeEncode(1);
+        expect(result.isFail, isTrue);
+        final error = result.getError();
+        expect(error, isA<SchemaEncodeError>());
+        expect(
+          (error as SchemaEncodeError).kind,
+          SchemaEncodeFailureKind.encoderThrew,
+        );
+      });
+
+      test('safeEncode lets encoder Errors propagate', () {
+        final schema = Ack.string().codec<int>(
+          decode: int.parse,
+          encode: (_) => throw StateError('encoder failed'),
+        );
+
+        expect(() => schema.safeEncode(1), throwsA(isA<StateError>()));
+      });
     });
 
     group('ListSchema', () {
       test('should reject nullable item schemas at construction', () {
         expect(() => Ack.list(Ack.string().nullable()), throwsArgumentError);
+        expect(
+          () => Ack.list(Ack.anyOf([Ack.string().nullable(), Ack.integer()])),
+          throwsArgumentError,
+        );
       });
     });
   });

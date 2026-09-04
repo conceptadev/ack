@@ -36,9 +36,11 @@ sealed class SchemaResult<T extends Object> {
     };
   }
 
-  /// Returns the contained value if this result is successful; otherwise, returns `null`.
-  /// The returned value itself can be `null` if `T` is nullable (e.g. `T = String?`)
-  /// and the validation resulted in `Ok(null)`.
+  /// Returns the contained value if this result is successful; otherwise,
+  /// returns `null`.
+  ///
+  /// Although [T] is non-nullable, the payload can be `null` to represent a
+  /// nullable schema that validated `null`.
   T? getOrNull() {
     return switch (this) {
       Ok(value: final v) => v,
@@ -93,7 +95,7 @@ sealed class SchemaResult<T extends Object> {
   }
 
   /// Executes [action] if this result is successful.
-  /// The [value] passed to the action can be `null` if `T` is nullable.
+  /// The [value] passed to the action can be `null` for nullable schemas.
   void ifOk(void Function(T? value) action) {
     if (this case Ok(value: final v)) {
       action(v);

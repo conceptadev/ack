@@ -1,13 +1,14 @@
 # Contributing to Ack
 
 Thanks for helping improve Ack. Keep changes focused, tested, and easy to
-review.
+review. By participating, you agree to follow the
+[Code of Conduct](./CODE_OF_CONDUCT.md).
 
 ## Development setup
 
 ```bash
-dart pub global activate melos
-melos bootstrap
+dart pub get
+dart run melos bootstrap
 ```
 
 Ack uses a Melos workspace. Run commands from the repository root unless a
@@ -22,20 +23,20 @@ package README says otherwise.
 4. Run the relevant checks:
 
 ```bash
-melos analyze
-melos test
+dart run melos run analyze
+dart run melos run test
 ```
 
 For code generation changes, also run:
 
 ```bash
-melos run test:gen
+dart run melos run test:gen
 ```
 
 For JSON Schema export changes, also run:
 
 ```bash
-melos run validate-jsonschema
+dart run melos run validate-jsonschema
 ```
 
 ## Commit style
@@ -54,3 +55,9 @@ Use `!` or a `BREAKING CHANGE:` footer for breaking API changes.
 
 User-facing changes should update the relevant package `CHANGELOG.md`. Release
 publishing is handled by maintainers through `PUBLISHING.md`.
+
+## Getting help and reporting security issues
+
+Use [SUPPORT.md](./SUPPORT.md) for questions and public bug reports. Follow
+[SECURITY.md](./SECURITY.md) for vulnerabilities; do not disclose suspected
+security issues in a public issue.

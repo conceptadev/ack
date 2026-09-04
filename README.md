@@ -1,32 +1,40 @@
 # Ack
 
-[![CI/CD](https://github.com/btwld/ack/actions/workflows/ci.yml/badge.svg)](https://github.com/btwld/ack/actions/workflows/ci.yml)
-[![docs.page](https://img.shields.io/badge/docs.page-documentation-blue)](https://docs.page/btwld/ack)
+[![CI/CD](https://github.com/conceptadev/ack/actions/workflows/ci.yml/badge.svg)](https://github.com/conceptadev/ack/actions/workflows/ci.yml)
+[![Documentation](https://img.shields.io/badge/docs-documentation-blue)](https://concepta.dev/ack)
 [![pub package](https://img.shields.io/pub/v/ack.svg)](https://pub.dev/packages/ack)
-[![llms.txt](https://img.shields.io/badge/llms.txt-available-8A2BE2)](https://docs.page/btwld/ack/llms.txt)
+[![llms.txt](https://img.shields.io/badge/llms.txt-available-8A2BE2)](https://concepta.dev/documentation/ack/reference/llms-txt)
 
 Ack is a schema validation library for Dart and Flutter. It validates data with a fluent API. Ack is short for "acknowledge".
 
-For AI agents: start at [`/llms.txt`](https://docs.page/btwld/ack/llms.txt).
+For AI agents: start at [`/llms.txt`](https://concepta.dev/documentation/ack/reference/llms-txt).
 
 ## Why use Ack?
 
 - **Validate external payloads**: Guard API and user inputs by validating required fields, types, and constraints at boundaries
 - **Single source of truth**: Define data structures and rules in one place
 - **Less boilerplate**: Minimize repetitive validation and JSON conversion code
-- **Type safety**: Generate typed wrappers for hand-written Ack schemas with `@AckType()`
+- **Type safety**: Generate immutable models for hand-written Ack schemas with `@AckInfer()`
+- **Class-first generation**: Derive validated codec schemas from hand-written Dart classes with `@AckModel()`
 
 ## Packages
 
 This repository is a monorepo containing:
 
 - **[ack](./packages/ack)**: Core validation library with a fluent schema-building API, codecs, and JSON Schema export
-- **[ack_annotations](./packages/ack_annotations)**: The `@AckType()` annotation that marks schemas for code generation
-- **[ack_generator](./packages/ack_generator)**: Code generator that turns `@AckType()` schemas into type-safe extension types
+- **[ack_annotations](./packages/ack_annotations)**: The `@AckInfer()`, `@AckModel()`, and deprecated legacy `@AckType()` annotations
+- **[ack_generator](./packages/ack_generator)**: Generates models from schemas and schemas from hand-written models
 - **[ack_firebase_ai](./packages/ack_firebase_ai)**: Firebase AI (Gemini) schema converter for structured-output generation
 - **[ack_json_schema_builder](./packages/ack_json_schema_builder)**: Converter to `json_schema_builder` schemas
 - **[flutter_codec](./packages/flutter_codec)**: ACK codecs for portable Flutter painting, rendering, and widget values
 - **[example](./example)**: Example projects demonstrating usage of all packages
+
+## Community and support
+
+- Read [CONTRIBUTING.md](./CONTRIBUTING.md) before proposing a change.
+- Use [SUPPORT.md](./SUPPORT.md) for questions, bug reports, and feature requests.
+- Report vulnerabilities privately as described in [SECURITY.md](./SECURITY.md).
+- Participation is governed by the [Code of Conduct](./CODE_OF_CONDUCT.md).
 
 ## Quick start
 
@@ -114,7 +122,7 @@ if (result.isOk) {
 
 ## Code generation
 
-Generate type-safe wrappers for hand-written schemas with `@AckType()`. Add
+Generate immutable models for hand-written schemas with `@AckInfer()`. Add
 `ack_annotations` to `dependencies` and `ack_generator` + `build_runner` to
 `dev_dependencies`, then annotate a top-level schema:
 
@@ -122,9 +130,10 @@ Generate type-safe wrappers for hand-written schemas with `@AckType()`. Add
 import 'package:ack/ack.dart';
 import 'package:ack_annotations/ack_annotations.dart';
 
-part 'user.g.dart';
+part 'user.ack.dart';
+part 'user.ack.g.dart';
 
-@AckType()
+@AckInfer()
 final userSchema = Ack.object({
   'name': Ack.string().minLength(2),
   'email': Ack.string().email(),
@@ -134,18 +143,73 @@ final userSchema = Ack.object({
 Run the generator:
 
 ```bash
-dart run build_runner build --delete-conflicting-outputs
+dart run build_runner build
 ```
 
-This emits a `UserType` extension type with `parse`/`safeParse` and typed
-getters — no manual casting:
+This emits a `User` class with stored typed fields, validation helpers, and a
+JSON boundary:
 
 ```dart
-final user = UserType.parse({'name': 'Alice', 'email': 'alice@example.com'});
-print(user.name); // typed String getter
+final user = User.parse({'name': 'Alice', 'email': 'alice@example.com'});
+print(user.name);     // String
+print(user.toJson()); // {'name': 'Alice', 'email': 'alice@example.com'}
 ```
 
-`@AckType()` supports objects, primitives, lists, enums, explicit transforms, and discriminated unions. See the [TypeSafe Schemas guide](https://docs.page/btwld/ack/core-concepts/typesafe-schemas).
+`@AckInfer()` supports objects, primitives, lists, enums, bidirectional codecs,
+named recursion, and discriminated unions. One-way transforms are rejected
+because a generated model must be encodable. See the
+[Model Code Generation guide](docs/core-concepts/typesafe-schemas.mdx).
+
+### Legacy Ack 1.1 generation
+
+`@AckType()` remains available for source compatibility and keeps the Ack 1.1
+extension-type API and `.g.dart` output unchanged. It is deprecated and will be
+removed in Ack 2.0:
+
+```dart
+import 'package:ack/ack.dart';
+import 'package:ack_annotations/ack_annotations.dart';
+
+part 'legacy_user.g.dart';
+
+@AckType()
+final userSchema = Ack.object({'name': Ack.string()});
+```
+
+This still generates `UserType`, including its Map interface, typed getters,
+`parse` / `safeParse`, and `.args`. New code should use `@AckInfer()` or
+`@AckModel()`.
+
+| Ack 1.1 source | Optional immutable-model migration |
+|---|---|
+| Keep `@AckType()` | Rename it to `@AckInfer()` |
+| Keep `part 'file.g.dart';` | Add `file.ack.dart` and `file.ack.g.dart` parts |
+| Use `*Type`, Map access, and `.args` | Use the generated class, typed fields, `parse`, `fromJson`, and `toJson` |
+
+Legacy and modern declarations may coexist when they are unrelated. A nested
+reference graph cannot cross between them; migrate that connected graph
+together.
+
+Already own the model class? Use `@AckModel()` to derive a codec schema from
+constructor-backed fields while keeping the class hand-written. A class named
+`Account` receives an `AccountSchema` facade for parsing, encoding, schema
+export, and nested composition; the backing codec remains private:
+
+```dart
+@AckModel()
+final class Account with _$AccountAck {
+  const Account({required this.name});
+
+  @MinLength(2)
+  final String name;
+
+  static final fromJson = AccountSchema.fromJson;
+}
+```
+
+`Account.fromJson({'name': 'Ada'})` validates and constructs the model, while
+`account.toJson()` validates and encodes it. See the
+[Model Code Generation guide](docs/core-concepts/typesafe-schemas.mdx).
 
 ## Codecs
 
@@ -171,13 +235,13 @@ csv.encode(['a', 'b', 'c']); // 'a,b,c'
 ```
 
 Use `.transform<R>(...)` for one-way (parse-only) conversions. See the
-[Codecs guide](https://docs.page/btwld/ack/core-concepts/codecs).
+[Codecs guide](https://concepta.dev/documentation/ack/advanced/codecs).
 
 ## Documentation
 
-- Human docs: [docs.page/btwld/ack](https://docs.page/btwld/ack)
-- AI agent index: [docs.page/btwld/ack/llms.txt](https://docs.page/btwld/ack/llms.txt)
-- Canonical plaintext source: [raw.githubusercontent.com/btwld/ack/main/llms.txt](https://raw.githubusercontent.com/btwld/ack/main/llms.txt)
+- Human docs: [concepta.dev/ack](https://concepta.dev/ack)
+- AI agent index: [AI & llms.txt](https://concepta.dev/documentation/ack/reference/llms-txt)
+- Canonical plaintext source: [raw.githubusercontent.com/conceptadev/ack/main/llms.txt](https://raw.githubusercontent.com/conceptadev/ack/main/llms.txt)
 
 ## Development
 
@@ -186,55 +250,55 @@ This project uses [Melos](https://github.com/invertase/melos) to manage the mono
 ### Setup
 
 ```bash
-# Install Melos (if not already installed)
-dart pub global activate melos
+# Resolve the workspace-local Melos dependency
+dart pub get
 
 # Bootstrap the workspace (installs dependencies for all packages)
-melos bootstrap
+dart run melos bootstrap
 ```
 
 ### Common commands (run from root)
 
 ```bash
 # Run tests across all packages
-melos test
+dart run melos run test
 
 # Format code across all packages
-melos format
+dart run melos run format
 
 # Analyze code across all packages
-melos analyze
+dart run melos run analyze
 
 # Check for outdated dependencies
-melos deps-outdated
+dart run melos run deps-outdated
 
 # Run build_runner for packages that need it (e.g., ack_generator, example)
-melos build
+dart run melos run build
 
 # Clean build artifacts
-melos clean
+dart run melos run clean
 
 # Propose/apply version and changelog updates
-melos version
+dart run melos version
 
-# Dry-run pub.dev validation for one package
-(cd packages/ack && dart pub publish --dry-run)
-
-# Publish all packages (no dry-run)
-melos run publish
+# Dry-run pub.dev validation for every package, requiring zero warnings
+dart scripts/publish_dry_run.dart
 ```
+
+Publishing runs only from a `v*` tag through GitHub Actions. See
+[PUBLISHING.md](./PUBLISHING.md).
 
 ### Development tools
 
 ```bash
 # JSON Schema validation (JSON Schema Draft-7 compatibility)
-melos validate-jsonschema
+dart run melos run validate-jsonschema
 
 # API compatibility check (for semantic versioning)
-melos api-check v0.2.0
+dart run melos run api-check -- 1.1.0
 
 # See all available scripts
-melos list-scripts
+dart run melos run --list
 ```
 
 Additional development documentation is available in the `tools/` directory.
@@ -250,6 +314,6 @@ Contributions are welcome. Follow these steps:
 1. Fork the repository
 2. Create a feature branch
 3. Add your changes
-4. Run tests with `melos test`
+4. Run tests with `dart run melos run test`
 5. Follow [Conventional Commits](https://www.conventionalcommits.org/) in your commit messages
 6. Submit a pull request

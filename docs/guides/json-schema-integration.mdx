@@ -9,18 +9,23 @@ Your Ack [schema](../core-concepts/schemas.mdx) already describes your data's sh
 Call `toJsonSchema()` on any `AckSchema` instance. This is the same generic Draft-7 renderer used by `schema.toSchemaModel().toJsonSchema()`.
 
 ```dart
-import 'package:ack/ack.dart';
 import 'dart:convert';
 
-// Example User Schema
+import 'package:ack/ack.dart';
+
+enum UserRole { admin, user, guest }
+
 final userSchema = Ack.object({
   'id': Ack.integer().positive().describe('Unique user identifier'),
-  'name': Ack.string().minLength(2).maxLength(50).describe('User\'s full name'),
-  'email': Ack.string().email().describe('User\'s email address'),
+  'name': Ack.string()
+      .minLength(2)
+      .maxLength(50)
+      .describe("User's full name"),
+  'email': Ack.string().email().describe("User's email address"),
   'role': Ack.enumValues(UserRole.values).withDefault(UserRole.user),
   'isActive': Ack.boolean().withDefault(true),
   'tags': Ack.list(Ack.string()).unique().describe('List of user tags').nullable(),
-  'age': Ack.integer().min(0).max(120).nullable().describe('User\'s age'),
+  'age': Ack.integer().min(0).max(120).nullable().describe("User's age"),
 }).describe('Represents a user in the system');
 
 void main() {
@@ -33,7 +38,12 @@ void main() {
 }
 ```
 
-> **Building an adapter package?** Most users only need `toJsonSchema()` (above). To convert Ack schemas to another target format, render from `schema.toSchemaModel()` (the canonical `AckSchemaModel`) rather than the JSON Schema map — see the [adapter authoring guide on GitHub](https://github.com/btwld/ack/blob/main/docs/guides/creating-schema-converter-packages.md).
+> **Building an adapter package?** Most users only need `toJsonSchema()`
+> (above). To convert Ack schemas to another target format, render from
+> `schema.toSchemaModel()` (the canonical `AckSchemaModel`) rather than the JSON
+> Schema map. Start with the [adapter quickstart](./schema-converter-quickstart.mdx),
+> then use the [complete adapter authoring guide](./creating-schema-converter-packages.mdx)
+> for architecture and testing guidance.
 
 ## Adapter model
 
@@ -64,14 +74,14 @@ for (final warning in model.warnings) {
     },
     "name": {
       "type": "string",
-      "description": "User\'s full name",
+      "description": "User's full name",
       "minLength": 2,
       "maxLength": 50
     },
     "email": {
       "type": "string",
       "format": "email",
-      "description": "User\'s email address"
+      "description": "User's email address"
     },
     "role": {
       "type": "string",
@@ -105,7 +115,7 @@ for (final warning in model.warnings) {
       "anyOf": [
         {
           "type": "integer",
-          "description": "User\'s age",
+          "description": "User's age",
           "minimum": 0,
           "maximum": 120
         },
@@ -299,6 +309,8 @@ final jsonSchema = userSchema.toJsonSchema();
 Schemas with default values include them in the generated JSON Schema:
 
 ```dart
+enum Theme { light, dark }
+
 final configSchema = Ack.object({
   'theme': Ack.enumValues(Theme.values).withDefault(Theme.light),
   'notifications': Ack.boolean().withDefault(true),

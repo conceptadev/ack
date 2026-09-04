@@ -82,7 +82,10 @@ Ack.string().date()
 ```
 
 ### `datetime()`
-Requires a valid ISO 8601 date-time string.
+Requires a valid ISO 8601 date-time string with a timezone. Announced RFC 3339
+leap seconds are accepted and preserved because this schema returns the input
+`String`. The `Ack.datetime()` codec rejects leap seconds because Dart's
+`DateTime` cannot represent them without normalization.
 ```dart
 Ack.string().datetime()
 ```
@@ -94,7 +97,9 @@ Ack.string().time()
 ```
 
 ### `uri()`
-Requires a valid URI per RFC 3986.
+Requires a valid absolute URI with a scheme and host. This is the network-URI
+subset Ack accepts, rather than every relative or non-host URI permitted by RFC
+3986.
 ```dart
 Ack.string().uri()
 ```
@@ -219,7 +224,7 @@ Ack.number().lessThan(100) // < 100
 ```
 
 ### `multipleOf(num factor)`
-Requires a value that is a multiple of `factor`.
+Requires a value that is a multiple of `factor`. Integer checks are exact; doubles use a small scale-relative tolerance, so round accumulated floating-point sums (or validate integer units such as cents) before parsing.
 ```dart
 Ack.integer().multipleOf(5) // Must be divisible by 5
 Ack.double().multipleOf(0.5) // Use factors that avoid floating point rounding issues
@@ -291,19 +296,20 @@ Requires all items to be unique. Uses deep structural equality, so nested maps a
 Ack.list(Ack.string()).unique()
 ```
 
-## Primitive type strictness
+## Primitive inputs and numeric normalization
 
-Primitive schemas (`Ack.string()`, `Ack.integer()`, `Ack.double()`, `Ack.number()`, `Ack.boolean()`) are strict: a value must already match the expected Dart runtime type. Mismatched inputs surface as a `TypeMismatchError` rather than being silently coerced.
+String and boolean schemas require the expected Dart runtime type. Numeric
+schemas require a `num`, but normalize by mathematical value so native and web
+builds behave identically. Non-numeric inputs surface as a `TypeMismatchError`
+rather than being silently coerced.
 
-Each schema maps to a specific runtime type:
-
-| Schema           | Accepted runtime type | Notes                              |
-| ---------------- | --------------------- | ---------------------------------- |
-| `Ack.string()`   | `String`              | rejects `num`, `bool`, etc.        |
-| `Ack.integer()`  | `int`                 | rejects `double` (even `42.0`)     |
-| `Ack.double()`   | `double`              | rejects `int` (even `42`)          |
-| `Ack.number()`   | `num`                 | accepts both `int` and `double`    |
-| `Ack.boolean()`  | `bool`                | rejects `"true"`, `1`, `0`, etc.   |
+| Schema          | Accepted boundary value                         | Runtime value                        |
+| --------------- | ----------------------------------------------- | ------------------------------------ |
+| `Ack.string()`  | `String`                                        | unchanged `String`                   |
+| `Ack.integer()` | finite `num` with no fractional part, lossless  | normalized `int`                     |
+| `Ack.double()`  | finite `num`, exactly representable as `double` | normalized `double`                  |
+| `Ack.number()`  | finite `num`                                    | original `int` or `double`           |
+| `Ack.boolean()` | `bool`                                          | unchanged `bool`                     |
 
 ```dart
 final stringSchema = Ack.string();
@@ -312,13 +318,14 @@ stringSchema.safeParse(123);      // ❌ FAIL: TypeMismatchError
 stringSchema.safeParse(true);     // ❌ FAIL: TypeMismatchError
 
 final intSchema = Ack.integer();
-intSchema.safeParse(42);    // ✅ OK
-intSchema.safeParse('42');  // ❌ FAIL: TypeMismatchError
-intSchema.safeParse(42.0);  // ❌ FAIL: TypeMismatchError (double is not int)
+intSchema.parse(42);       // => 42 (int)
+intSchema.parse(42.0);     // => 42 (int)
+intSchema.safeParse(42.5); // ❌ FAIL: not a mathematical integer
+intSchema.safeParse('42'); // ❌ FAIL: TypeMismatchError
 
 final doubleSchema = Ack.double();
-doubleSchema.safeParse(3.14);  // ✅ OK
-doubleSchema.safeParse(42);    // ❌ FAIL: TypeMismatchError (int is not double)
+doubleSchema.parse(3.14); // => 3.14 (double)
+doubleSchema.parse(42);   // => 42.0 (double)
 
 final numberSchema = Ack.number();
 numberSchema.safeParse(42);    // ✅ OK (int is num)
@@ -326,9 +333,14 @@ numberSchema.safeParse(3.14);  // ✅ OK (double is num)
 numberSchema.safeParse('42');  // ❌ FAIL: TypeMismatchError
 ```
 
-Because `Ack.integer()` and `Ack.double()` do not overlap, use `Ack.number()` when a field may be either an `int` or a `double`. Use `transform`/`codec` only when the boundary value isn't already a `num` (for example, a numeric string).
+`Ack.integer()` and `Ack.double()` overlap for integral values. `Ack.anyOf`
+returns the first successful branch, so order numeric branches according to the
+runtime representation you want. Use `Ack.number()` when validation should
+preserve an input that is already an `int` or `double`. Use `transform`/`codec`
+when the boundary value is not already a `num` (for example, a numeric string).
 
-This strictness makes `anyOf` and discriminated unions reliable — they can distinguish the string `"42"` from the integer `42` without configuration:
+Primitive type checking still lets unions distinguish the string `"42"` from
+the numeric value `42` without configuration:
 
 ```dart
 final stringOrNumber = Ack.anyOf([
@@ -364,7 +376,7 @@ You can chain multiple constraints. Ack evaluates them in the order you apply th
 final usernameSchema = Ack.string()
   .minLength(3)           // First: check min length
   .maxLength(20)          // Second: check max length
-  .matches(r'[a-z0-9_]+') // Third: check pattern (lowercase alphanumeric/underscore)
+  .matches(r'^[a-z0-9_]+$') // Third: require only lowercase letters, digits, or underscores
   .notEmpty();            // Redundant if minLength(>0) is used, but illustrates chaining
 
 final quantitySchema = Ack.integer()

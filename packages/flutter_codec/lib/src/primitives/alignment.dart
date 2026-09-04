@@ -152,7 +152,7 @@ Object _encodeAlignmentGeometry(AlignmentGeometry value) {
         ? {'start': value.start, 'y': value.y}
         : _encodeAlignmentDirectional(value);
   }
-  throw UnsupportedError(
+  throw FormatException(
     'alignmentGeometryCodec cannot encode ${value.runtimeType}; only '
     'Alignment and AlignmentDirectional are supported.',
   );

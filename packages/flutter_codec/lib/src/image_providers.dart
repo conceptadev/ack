@@ -62,7 +62,7 @@ final assetImageCodec =
       ),
       encode: (value) {
         if (value.bundle != null) {
-          throw UnsupportedError(
+          throw FormatException(
             'AssetImage.bundle is not supported by assetImageCodec.',
           );
         }

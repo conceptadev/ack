@@ -21,7 +21,7 @@ import 'primitives/color.dart' show colorCodec;
 // (`Gradient.==` compares `transform`), so it is rejected loudly instead.
 void _requireEncodableTransform(GradientTransform? transform) {
   if (transform != null) {
-    throw UnsupportedError(
+    throw FormatException(
       'Gradient.transform cannot be encoded: GradientTransform has no portable '
       'JSON shape. Apply gradient transforms outside the codec layer.',
     );

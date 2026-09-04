@@ -154,11 +154,12 @@ void main() {
         final usernameSchema = Ack.string()
             .minLength(3)
             .maxLength(20)
-            .matches(r'[a-z0-9_]+')
+            .matches(r'^[a-z0-9_]+$')
             .notEmpty();
 
         expect(usernameSchema.safeParse('user_name').isOk, isTrue);
         expect(usernameSchema.safeParse('UPPER').isFail, isTrue);
+        expect(usernameSchema.safeParse('user-name').isFail, isTrue);
       });
 
       test('numeric constraint chaining', () {

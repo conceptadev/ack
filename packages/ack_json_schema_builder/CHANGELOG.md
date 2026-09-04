@@ -1,3 +1,13 @@
+## 1.2.0
+
+### Changed
+
+* Align the converter with Ack 1.2 and raise the minimum Dart SDK to 3.9.
+
+## 1.1.0
+
+* See [release notes](https://github.com/btwld/ack/releases/tag/v1.1.0) for details.
+
 ## 1.0.1
 
 * See [release notes](https://github.com/btwld/ack/releases/tag/v1.0.1) for details.

@@ -3,6 +3,52 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 1.2.0
+
+* **Deprecated:** `@AckType()` remains available with its Ack 1.1
+  extension-type behavior frozen through 1.x, but it will be removed in
+  Ack 2.0.0. Use `@AckInfer()` for schema-first models or `@AckModel()` for
+  class-first models. Existing `*Type`, Map, `.args`, `parse`, `safeParse`,
+  naming, and `.g.dart` contracts remain unchanged until removal.
+* Add `@AckInfer()` for immutable schema-first models and retain
+  `@AckModel()` for class-first schemas with private codecs and public
+  UpperCamelCase schema facades.
+* Isolate modern output in `.ack.dart` and `.ack.g.dart`, including
+  cross-library model reuse and explicit rejection of mixed nested
+  legacy/modern graphs.
+* Generate copy/value APIs with collection-wrapper-independent equality,
+  explicit-null clearing for nullable `copyWith` fields, and propagated
+  `Error` objects that are not converted into validation failures.
+* Align `uniqueItems` with Draft 7 numeric equality and fail generation on
+  unsupported `JsonKey` behavior, mixed legacy fields, one-way transforms,
+  and recursive class-first graphs across libraries.
+* Normalize losslessly representable numeric inputs consistently across native
+  and web runtimes, align deep numeric equality and hashing, and reject the
+  native minimum integer from `.safe()`.
+* Preserve original boundary values from generated class-first `wireSchema`
+  facades while still validating nested codecs and models.
+* Rename the pre-release class-first unknown-key API to
+  `AckUnknownPropertyPolicy`, `unknownProperties`, and `captureField`; add
+  `deepUnmodifiableJsonMap` and use it for generated captured-property maps.
+* Enforce final class-first value types and fields, recursively freeze parsed
+  class-first collections and captured extras, and use collision-safe private
+  `copyWith` sentinels.
+* Raise the Dart floor to 3.9 and pin `ack_generator` to Analyzer
+  `>=10.0.0 <11.0.0`. Flutter packages now require Flutter 3.35.
+* Align all published Ack packages on the coordinated 1.2.0 release line.
+
+## 1.1.0 - 2026-07-12
+
+* Fix validation edge cases, schema export consistency, schema immutability,
+  generator diagnostics, and workspace/release tooling reliability.
+* Bound lazy recursion through wrappers and fluent copies, align RFC date-time
+  and IPv6 behavior, run root tooling tests in CI, prevent stale API reports,
+  and avoid partial changelog updates when validation fails.
+* **Behavior changes** (no API break): fail-fast schema construction, stricter
+  `multipleOf`/IPv6/date-time validation, `toJsonSchema()` keyword merging, and
+  generator rejection of nullable list elements. See the `ack` and
+  `ack_generator` changelogs for per-package details and migration notes.
+
 ## 1.0.0 - 2026-06-26
 
 * See [release notes](https://github.com/btwld/ack/releases/tag/v1.0.0) for details.

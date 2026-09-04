@@ -64,7 +64,7 @@ final decorationImageCodec =
       ),
       encode: (value) {
         if (value.colorFilter != null) {
-          throw UnsupportedError(
+          throw FormatException(
             'DecorationImage.colorFilter cannot be encoded: ColorFilter keeps '
             'its state in library-private fields with no public getters, so it '
             'has no portable JSON shape, and it is part of DecorationImage '
